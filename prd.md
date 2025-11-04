@@ -1,5 +1,5 @@
 # 📄 Product Requirements Document  
-## FACE — *Framework for Agentic Coding Evaluation*  
+## youBencha — *Friendly Framework for Agentic Coding Evaluation*  
 **Version:** 0.9 (Draft)  
 **Owner:** TBD  
 **Status:** In Review  
@@ -24,7 +24,7 @@ Agentic coding workflows (e.g., GitHub Copilot CLI, Claude Code, autonomous codi
 
 ## 2. Solution Overview
 
-FACE is a **Node-based CLI framework** that evaluates agentic coding tools by:
+**youBencha** is a **Node-based CLI framework** that evaluates agentic coding tools by:
 
 ✅ Running the agent in an isolated workspace  
 ✅ Collecting uniform logs and artifacts  
@@ -33,10 +33,10 @@ FACE is a **Node-based CLI framework** that evaluates agentic coding tools by:
 ✅ Supporting regression via golden datasets  
 ✅ Supporting multiple agents, models, prompts, and configurations  
 
-FACE borrows mental models from **traditional software testing**:
+youBencha borrows mental models from **traditional software testing**:
 
-| Software Testing | FACE Equivalent |
-|------------------|-----------------|
+| Software Testing | youBencha Equivalent |
+|------------------|---------------------|
 | Test Suite | Evaluation Suite |
 | Test Case | Evaluator |
 | Assertions | Evaluation Results |
@@ -50,8 +50,8 @@ FACE borrows mental models from **traditional software testing**:
 | Goal | Success Metric |
 |------|---------------|
 | Provide repeatable and comparable evaluation of coding agents | 90% of evaluation runs are reproducible within variance bounds |
-| Normalize logs across agents | FACE Log Spec adopted by ≥3 agent ecosystems |
-| Enable regression testing for prompts, models, tools | At least 1 live OSS repo uses FACE for regression in CI |
+| Normalize logs across agents | youBencha Log Spec adopted by ≥3 agent ecosystems |
+| Enable regression testing for prompts, models, tools | At least 1 live OSS repo uses youBencha for regression in CI |
 | Allow pluggable evaluators | ≥5 built-in evaluators + plugin API shipped in MVP |
 | Enable multi-agent benchmarking | CLI can compare ≥3 agents in one suite |
 
@@ -96,13 +96,13 @@ Needs:
 
 | Command | Description |
 |---------|-------------|
-| `face run -c suite.yaml` | Runs full evaluation workflow (agent exec + evaluators) |
-| `face report --from results.json` | Generates human-readable report from stored results |
-| `face regress --suite suite.yaml --since v0.3.0` | Compare results against historical baseline |
-| `face dataset add --from agent-run.json` | Adds a passing output to golden dataset store |
-| `face expected promote --from results.json --label <name>` | Promotes evaluation results to a labeled golden dataset for later use as expected reference via `--expected <label>` |
-| `face suggest-eval --source <branch> --expected <branch>` | Analyzes differences between source and expected/ideal branches to suggest evaluators and criteria |
-| `face init --repo <url> --expected-branch <branch>` | Clones repo with both working and expected/ideal branches for evaluation setup |
+| `yb run -c suite.yaml` | Runs full evaluation workflow (agent exec + evaluators) |
+| `yb report --from results.json` | Generates human-readable report from stored results |
+| `yb regress --suite suite.yaml --since v0.3.0` | Compare results against historical baseline |
+| `yb dataset add --from agent-run.json` | Adds a passing output to golden dataset store |
+| `yb expected promote --from results.json --label <name>` | Promotes evaluation results to a labeled golden dataset for later use as expected reference via `--expected <label>` |
+| `yb suggest-eval --source <branch> --expected <branch>` | Analyzes differences between source and expected/ideal branches to suggest evaluators and criteria |
+| `yb init --repo <url> --expected-branch <branch>` | Clones repo with both working and expected/ideal branches for evaluation setup |
 
 ### 5.2 Suite Configuration (JSON/YAML)
 Must include:
@@ -126,12 +126,12 @@ Reproducibility | Logs model name, temp, seed, CPU, OS, etc.
 
 ### 5.4 Agent Adapters
 - Must accept: repo path, suite context, env vars
-- Must output: agent stdout/stderr + normalized **FACE Log**
+- Must output: agent stdout/stderr + normalized **youBencha Log**
 - First supported agent: **GitHub Copilot CLI**
 - Future adapters: Claude Code, Codex, Cursor, Aider, OpenAI o1 agent mode, etc.
 
 ### 5.5 Canonical Log Spec
-FACE will define an official JSON schema containing:
+youBencha will define an official JSON schema containing:
 - Model info, parameters, time, cost, tokens
 - Messages, tool calls, errors
 - Agent execution metadata (exit code, duration, version)
@@ -166,7 +166,7 @@ All evaluators must:
 
 #### 5.6.1 Evaluator Suggestion Workflow
 
-FACE can automatically analyze differences between a source branch and an expected/ideal branch to suggest appropriate evaluators and evaluation criteria.
+youBencha can automatically analyze differences between a source branch and an expected/ideal branch to suggest appropriate evaluators and evaluation criteria.
 
 **Process:**
 
@@ -220,13 +220,13 @@ evaluators:
 
 ### 5.8 Execution Model
 
-FACE defines a clear execution model for agent runs, evaluator execution, and future support for multi-agent and multi-replication runs.
+youBencha defines a clear execution model for agent runs, evaluator execution, and future support for multi-agent and multi-replication runs.
 
 5.8.1 Execution Flow
 FOR EACH AGENT RUN (serial)
   1. Prepare workspace
   2. Execute agent (mutates src-modified)
-  3. Normalize logs to FACE Log
+  3. Normalize logs to youBencha Log
   4. Run evaluators (parallel, unless disabled)
   5. Aggregate results + artifacts
 
@@ -238,10 +238,10 @@ Multi-agent runs	Future	Architecture supports, not implemented in MVP
 Multi-replication (variance runs)	Future	Execution model designed to extend to N replications
 
 5.8.3 CLI Concurrency Flags
-face run --max-parallel-evaluators <n>
+yb run --max-parallel-evaluators <n>
 # future:
-face run --max-parallel-agents <n>
-face run --replications <n> --seed-strategy fixed|increment
+yb run --max-parallel-agents <n>
+yb run --replications <n> --seed-strategy fixed|increment
 
 ---
 
@@ -261,7 +261,7 @@ face run --replications <n> --seed-strategy fixed|increment
 
 ## 7. Architecture Overview
 
-face/
+youbencha/
 cli.ts
 core/
 orchestrator.ts
@@ -278,7 +278,7 @@ expected-diff.ts
 agentic-judge.ts
 schemas/
 suite.schema.ts
-facelog.schema.ts
+youbenchalog.schema.ts
 reporters/
 json.ts
 markdown.ts
@@ -286,18 +286,18 @@ markdown.ts
 Execution flows:
 
 **Standard evaluation:**
-face run
+yb run
 ├─ Prepare workspace (clone repo, copy to src-modified)
 ├─ [Optional] Clone expected branch to src-expected
 ├─ Run agent(s) via adapter(s) on src-modified
-├─ Normalize logs → FACE Log
+├─ Normalize logs → youBencha Log
 ├─ Run evaluators in parallel
 │  └─ [If expected branch exists] Run expected-diff evaluator
 ├─ Aggregate results
 └─ Emit reports + artifact bundle
 
 **Evaluator suggestion workflow:**
-face suggest-eval --source main --expected feature/ai-completed
+yb suggest-eval --source main --expected feature/ai-completed
 ├─ Clone both branches (source → src-source, expected → src-expected)
 ├─ Run branch analyzer
 │  ├─ Diff analysis (files, LOC, patterns)
@@ -322,7 +322,7 @@ Enable teams to leverage existing high-quality AI agent outputs (or manually cre
 
 An **expected reference** may be:
 - **A Git branch** — Compare against a feature branch or ideal implementation
-- **A stored dataset** — Use a labeled golden dataset created with `face expected promote`
+- **A stored dataset** — Use a labeled golden dataset created with `yb expected promote`
 - **A manually provided directory or artifact bundle** — Point to any file path containing reference code/outputs
 
 ### 8.2 Use Cases
@@ -330,7 +330,7 @@ An **expected reference** may be:
 | Scenario | How It Helps | Expected Source Type |
 |----------|-------------|---------------------|
 | Team has a successful agent run | Clone that branch as "expected" and use it to evaluate future agent attempts | `branch` |
-| Agent produces excellent output | Promote results with `face expected promote --label v1-baseline` for reuse | `dataset` |
+| Agent produces excellent output | Promote results with `yb expected promote --label v1-baseline` for reuse | `dataset` |
 | Manual "gold standard" exists | Use human-created ideal solution to compare agent outputs | `branch` or `path` |
 | Iterative agent development | Compare agent v1 vs agent v2 outputs systematically | `dataset` (labeled versions) |
 | Prompt engineering | Evaluate if prompt changes move output closer to or further from ideal | `dataset` or `branch` |
@@ -338,12 +338,12 @@ An **expected reference** may be:
 
 ### 8.3 Expected Reference Resolution
 
-FACE resolves expected references based on `expected_source` type:
+youBencha resolves expected references based on `expected_source` type:
 
 | Source Type | Resolution Process | Example |
 |------------|-------------------|---------|
 | `branch` | Clone specified branch to `src-expected/` | `expected_source: branch`, `expected: feature/ai-completed` |
-| `dataset` | Load labeled dataset from storage (created via `face expected promote`) | `expected_source: dataset`, `expected: v1-baseline` |
+| `dataset` | Load labeled dataset from storage (created via `yb expected promote`) | `expected_source: dataset`, `expected: v1-baseline` |
 | `path` | Copy from specified directory or artifact bundle | `expected_source: path`, `expected: ./golden-outputs/v1/` |
 
 ### 8.4 Branch Analyzer Capabilities
@@ -388,7 +388,7 @@ Maps detected changes to relevant evaluators:
 
 ### 8.6 Output Format
 
-`face suggest-eval` produces:
+`yb suggest-eval` produces:
 
 1. **Analysis Summary** (Markdown/JSON):
 ```markdown
@@ -418,7 +418,7 @@ source_branch: main
 expected_source: branch
 expected: feature/ai-completed
 
-# Option 2: Dataset reference (created via face expected promote)
+# Option 2: Dataset reference (created via youBencha expected promote)
 # expected_source: dataset
 # expected: v1-baseline
 
@@ -451,7 +451,7 @@ evaluators:
 | Risk | Mitigation |
 |------|------------|
 | Agents mutate host FS | sandbox only touches mounted working dir |
-| Logs inconsistent across agents | FACE Log Spec + adapters |
+| Logs inconsistent across agents | youBencha Log Spec + adapters |
 | Vendor changes API/CLI | version pinning + adapter versioning |
 | Stochastic model variance | multi-replication w/ CI bounds |
 | Users misuse LLM-judge results | mark evaluator as "subjective" |
@@ -479,7 +479,7 @@ Not required for MVP:
 - Plugin marketplace
 - Cloud UI
 - GitHub Actions example workflow
-- Golden dataset promotion: `face expected promote` command to label and store results  
+- Golden dataset promotion: `yb expected promote` command to label and store results  
 - Expected reference support: In addition to support for branch, support dataset and path-based expected references  
 
 ---
@@ -492,7 +492,7 @@ Not required for MVP:
 | v0.2 | +4 weeks | Claude Code adapter, regression dataset UX, CI templates, enhanced LLM-based criteria generation |
 | v0.3 | +4 weeks | Web dashboard, HTML reports, evaluator plugins |
 | v0.4 | +6 weeks | Large suite parallelization, distributed runners, multi-expected reference comparison, dataset retention policies |
-| v1.0 | TBD | Multi-agent benchmarks published, FACE Standard adopted by ≥ 3 OSS agents |
+| v1.0 | TBD | Multi-agent benchmarks published, youBencha Standard adopted by ≥ 3 OSS agents |
 
 ---
 
@@ -500,9 +500,9 @@ Not required for MVP:
 
 | Question | Owner |
 |----------|-------|
-| Should FACE maintain an official public "Agent Leaderboard"? | TBD |
-| Should FACE produce a packaged OCI container for CI usage? | Yes (post-MVP) |
-| What is the minimum required schema for FACE log spec? | Needs RFC |
+| Should youBencha maintain an official public "Agent Leaderboard"? | TBD |
+| Should youBencha produce a packaged OCI container for CI usage? | Yes (post-MVP) |
+| What is the minimum required schema for youBencha log spec? | Needs RFC |
 | Should LLM-judge evaluators be in core or plugin-only? | PLUGIN ONLY |
 | Should evaluator suggestion support multiple expected references for comparison? | Post-MVP |
 | How to handle expected references becoming stale/outdated? | Document best practices: version tags, date tracking, dataset labeling conventions |

@@ -1,4 +1,4 @@
-# Implementation Plan: FACE Framework MVP
+# Implementation Plan: youBencha Framework MVP
 
 **Branch**: `001-face-framework` | **Date**: 2025-11-03 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/001-face-framework/spec.md`
@@ -7,7 +7,7 @@
 
 ## Summary
 
-FACE is a Node-based CLI framework for evaluating agentic coding tools. The MVP implements three core capabilities: (1) Running agent evaluations with pluggable evaluators and normalized logging, (2) Comparing agent outputs against expected reference branches, and (3) Suggesting evaluators based on branch analysis. The system uses Commander.js for CLI, TypeScript for type safety, and Zod for schema validation. Evaluation runs execute agents via adapters, normalize logs to FACE Log format, run evaluators in parallel, and output structured JSON results with Markdown reporting.
+youBencha is a friendly, developer-first CLI framework for evaluating agentic coding tools. The MVP implements three core capabilities: (1) Running agent evaluations with pluggable evaluators and normalized logging, (2) Comparing agent outputs against expected reference branches, and (3) Suggesting evaluators based on branch analysis. The system uses Commander.js for CLI, TypeScript for type safety, and Zod for schema validation. Evaluation runs execute agents via adapters, normalize logs to youBencha Log format, run evaluators in parallel, and output structured JSON results with Markdown reporting.
 
 ## Technical Context
 
@@ -30,13 +30,13 @@ FACE is a Node-based CLI framework for evaluating agentic coding tools. The MVP 
 
 - [x] **Agent-Agnostic**: Feature does not hardcode agent-specific logic outside adapters
   - ✅ Agent execution isolated in `adapters/` directory with `AgentAdapter` interface
-  - ✅ Core orchestrator works with normalized FACE Log, agnostic to agent implementation
+  - ✅ Core orchestrator works with normalized youBencha Log, agnostic to agent implementation
   - ✅ MVP includes one adapter (GitHub Copilot CLI) but architecture supports multiple agents
   - ✅ **Phase 1 Confirmation**: Interface contract defined in `contracts/interfaces.md` ensures strict separation
   
 - [x] **Reproducibility**: Configuration captures all inputs; results are deterministic or variance-documented
   - ✅ Suite configuration (YAML/JSON) captures: repo, commit, agent config, evaluators, expected references
-  - ✅ Results bundle includes: OS, Node version, FACE version, timestamps, model parameters
+  - ✅ Results bundle includes: OS, Node version, youBencha version, timestamps, model parameters
   - ✅ Workspace isolation ensures clean state for each run (src-modified/, src-expected/)
   - ✅ **Phase 1 Confirmation**: Data model defines complete capture of execution context and environment
   
@@ -46,9 +46,9 @@ FACE is a Node-based CLI framework for evaluating agentic coding tools. The MVP 
   - ✅ MVP provides 3 built-in evaluators with identical interface patterns
   - ✅ **Phase 1 Confirmation**: Contract tests validate interface compliance before merge
   
-- [x] **FACE Log Compliance**: Any log format changes maintain schema compatibility
-  - ✅ FACE Log schema defined in `schemas/facelog.schema.ts` using Zod
-  - ✅ Adapters transform agent-specific output to normalized FACE Log format
+- [x] **youBencha Log Compliance**: Any log format changes maintain schema compatibility
+  - ✅ youBencha Log schema defined in `schemas/youbenchalog.schema.ts` using Zod
+  - ✅ Adapters transform agent-specific output to normalized youBencha Log format
   - ✅ Schema includes: model info, parameters, tokens, messages, tool calls, errors, metadata
   - ✅ **Phase 1 Confirmation**: Schema version field (v1.0.0) enables future evolution with backward compatibility
   
@@ -59,7 +59,7 @@ FACE is a Node-based CLI framework for evaluating agentic coding tools. The MVP 
   - ✅ **Phase 1 Confirmation**: Workspace manager contract includes lock mechanism and cleanup procedures
   
 - [x] **TDD Required**: Tests written and approved before implementation begins
-  - ✅ Contract tests required for: adapters, evaluators, FACE Log schema
+  - ✅ Contract tests required for: adapters, evaluators, youBencha Log schema
   - ✅ Integration tests required for: CLI commands, end-to-end evaluation flows
   - ✅ Unit tests required for: workspace management, reporters, configuration loaders
   - ✅ **Phase 1 Confirmation**: Contract test examples provided in `contracts/interfaces.md` for all interfaces
@@ -81,13 +81,13 @@ specs/[###-feature]/
 ### Source Code (repository root)
 
 ```text
-face/
+youbencha/
 ├── src/
 │   ├── cli/
 │   │   ├── commands/
-│   │   │   ├── run.ts           # face run command
-│   │   │   ├── report.ts        # face report command
-│   │   │   └── suggest-eval.ts  # face suggest-eval command
+│   │   │   ├── run.ts           # yb run command
+│   │   │   ├── report.ts        # yb report command
+│   │   │   └── suggest-eval.ts  # yb suggest-eval command
 │   │   └── index.ts             # CLI entry point with Commander.js
 │   ├── core/
 │   │   ├── orchestrator.ts      # Main evaluation orchestration
@@ -106,7 +106,7 @@ face/
 │   │   └── agentic-judge.ts     # Generic LLM-based evaluator
 │   ├── schemas/
 │   │   ├── suite.schema.ts      # Suite configuration schema (Zod)
-│   │   ├── facelog.schema.ts    # FACE Log schema (Zod)
+│   │   ├── youbenchalog.schema.ts    # youBencha Log schema (Zod)
 │   │   └── result.schema.ts     # Evaluation result schema (Zod)
 │   ├── reporters/
 │   │   ├── json.ts              # JSON results output
@@ -119,7 +119,7 @@ face/
 │   ├── contract/
 │   │   ├── adapter.test.ts      # AgentAdapter contract tests
 │   │   ├── evaluator.test.ts    # Evaluator contract tests
-│   │   └── facelog.test.ts      # FACE Log schema tests
+│   │   └── youbenchalog.test.ts      # youBencha Log schema tests
 │   ├── integration/
 │   │   ├── run-command.test.ts  # End-to-end run tests
 │   │   ├── report.test.ts       # Report generation tests
@@ -135,7 +135,7 @@ face/
 └── README.md
 ```
 
-**Structure Decision**: Single project structure selected (Option 1). FACE is a CLI tool with modular architecture following constitution principles: adapters isolate agent-specific logic, evaluators are pluggable components, core orchestration is agent-agnostic. The `src/` directory organizes code by functional concern (CLI, core logic, adapters, evaluators, schemas, reporters, utilities). Tests mirror source structure with contract/integration/unit separation per TDD requirements.
+**Structure Decision**: Single project structure selected (Option 1). youBencha is a CLI tool with modular architecture following constitution principles: adapters isolate agent-specific logic, evaluators are pluggable components, core orchestration is agent-agnostic. The `src/` directory organizes code by functional concern (CLI, core logic, adapters, evaluators, schemas, reporters, utilities). Tests mirror source structure with contract/integration/unit separation per TDD requirements.
 
 ## Complexity Tracking
 

@@ -1,7 +1,7 @@
-# Research & Technical Decisions: FACE Framework MVP
+# Research & Technical Decisions: youBencha Framework MVP
 
 **Date**: 2025-11-03  
-**Feature**: 001-face-framework  
+**Feature**: 001-youBencha-framework  
 **Purpose**: Resolve technical unknowns and document architecture decisions
 
 ## Decision Summary
@@ -25,7 +25,7 @@
 **Rationale**:
 - Industry-standard Node.js CLI framework with 30k+ GitHub stars
 - Native TypeScript support with excellent type definitions
-- Built-in support for subcommands (`face run`, `face report`, `face suggest-eval`)
+- Built-in support for subcommands (`youBencha run`, `youBencha report`, `youBencha suggest-eval`)
 - Automatic help generation and argument parsing
 - Minimal learning curve for contributors familiar with Node.js ecosystem
 
@@ -47,7 +47,7 @@
 
 **Rationale**:
 - TypeScript-first schema validation with type inference
-- Runtime validation ensures suite configs and FACE Logs are valid before processing
+- Runtime validation ensures suite configs and youBencha Logs are valid before processing
 - Excellent error messages for user feedback when configs are malformed
 - No separate JSON Schema files to maintain - TypeScript types and validators in one place
 - Widely adopted in modern TypeScript projects (Next.js, tRPC, etc.)
@@ -125,7 +125,7 @@
 **Contract Tests** (`tests/contract/`):
 - `adapter.test.ts`: Verify AgentAdapter interface implementation
 - `evaluator.test.ts`: Verify Evaluator interface implementation
-- `facelog.test.ts`: Verify FACE Log schema compliance
+- `facelog.test.ts`: Verify youBencha Log schema compliance
 
 **Integration Tests** (`tests/integration/`):
 - `run-command.test.ts`: End-to-end evaluation flow with real Git repos
@@ -230,7 +230,7 @@
 ### Decision: Pattern-Based Mapping with Heuristics
 
 **Rationale**:
-- `face suggest-eval` analyzes branch diff to suggest evaluators
+- `youBencha suggest-eval` analyzes branch diff to suggest evaluators
 - Use heuristic rules: file extensions → evaluators, change patterns → criteria
 - Extract metrics from expected branch (run evaluators on it) for thresholds
 
@@ -293,8 +293,8 @@ A: Assume pre-installed and authenticated by user. Document in README as prerequ
 **Q: Should we support monorepos with multiple packages?**  
 A: Not in MVP. Evaluate entire repository as single unit. Monorepo support in future roadmap.
 
-**Q: How to version FACE Log schema for backward compatibility?**  
-A: Include `version` field in FACE Log (MVP uses `v1.0.0`). Future schema changes increment version and adapters specify which version they produce.
+**Q: How to version youBencha Log schema for backward compatibility?**  
+A: Include `version` field in youBencha Log (MVP uses `v1.0.0`). Future schema changes increment version and adapters specify which version they produce.
 
 **Q: Should evaluators be allowed to modify workspace?**  
 A: No. Evaluators receive read-only paths. Constitution requires immutability.
@@ -340,3 +340,4 @@ A: MVP leaves timeout configuration to agent adapter. Future versions add suite-
 ✅ Architecture decisions documented with rationale  
 ✅ Best practices researched and summarized  
 ✅ Ready to proceed to Phase 1: Design & Contracts
+

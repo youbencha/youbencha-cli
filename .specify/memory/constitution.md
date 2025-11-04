@@ -2,7 +2,7 @@
 Sync Impact Report - Constitution v1.0.0
 ========================================
 Version Change: Initial → 1.0.0
-Rationale: First official constitution for FACE project based on PRD v0.9
+Rationale: First official constitution for youBencha project based on PRD v0.9
 
 Principles Established:
 - I. Agent-Agnostic Architecture
@@ -21,18 +21,18 @@ Follow-up TODOs:
 - None - all placeholders filled
 -->
 
-# FACE Constitution
+# youBencha Constitution
 
 ## Core Principles
 
 ### I. Agent-Agnostic Architecture
 
-**Principle**: FACE MUST evaluate any coding agent without bias toward specific implementations.
+**Principle**: youBencha MUST evaluate any coding agent without bias toward specific implementations.
 
 - All agent interactions occur through standardized adapters that implement a common interface
 - Adapters MUST isolate agent-specific details (CLI flags, API calls, configuration) from core orchestration logic
 - No hardcoded agent names, behaviors, or assumptions in core evaluation logic
-- Each adapter MUST produce normalized FACE Log output regardless of underlying agent format
+- Each adapter MUST produce normalized youBencha Log output regardless of underlying agent format
 
 **Rationale**: The framework's value depends on fair, unbiased comparison across diverse agent ecosystems. Tight coupling to specific agents would compromise credibility and limit adoption.
 
@@ -60,12 +60,12 @@ Follow-up TODOs:
 
 **Rationale**: Pluggability enables domain-specific evaluation (security, performance, accessibility) without modifying core framework. Teams can compose evaluation suites tailored to their needs.
 
-### IV. Standard Log Format (FACE Log Spec)
+### IV. Standard Log Format (youBencha Log Spec)
 
-**Principle**: All agent execution data MUST normalize to the canonical FACE Log JSON schema.
+**Principle**: All agent execution data MUST normalize to the canonical youBencha Log JSON schema.
 
-- Adapters MUST transform agent-specific output to FACE Log before evaluation
-- FACE Log MUST include: messages, tool calls, tokens, cost, errors, timing, model metadata
+- Adapters MUST transform agent-specific output to youBencha Log before evaluation
+- youBencha Log MUST include: messages, tool calls, tokens, cost, errors, timing, model metadata
 - Schema MUST be versioned with backward-compatibility requirements
 - Logs MUST be human-readable (JSON with pretty-print) and machine-parseable
 - Log schema MUST be published as a standalone specification for ecosystem adoption
@@ -94,7 +94,7 @@ Follow-up TODOs:
 - Integration tests required for: end-to-end evaluation flows, multi-evaluator orchestration
 - Unit tests required for: utilities, parsers, reporters, configuration loaders
 
-**Rationale**: FACE evaluates code quality; it must exemplify the standards it measures. TDD ensures reliability and prevents regressions as new agents and evaluators are added.
+**Rationale**: youBencha evaluates code quality; it must exemplify the standards it measures. TDD ensures reliability and prevents regressions as new agents and evaluators are added.
 
 ## Architecture Standards
 
@@ -104,7 +104,7 @@ Follow-up TODOs:
 - **Adapters** (`adapters/`): One module per agent, implements `AgentAdapter` interface
 - **Evaluators** (`evaluators/`): One module per evaluator, implements `Evaluator` interface
 - **Reporters** (`reporters/`): JSON, Markdown, and extensible output formats
-- **Schemas** (`schemas/`): TypeScript types and JSON schemas for suite config and FACE Log
+- **Schemas** (`schemas/`): TypeScript types and JSON schemas for suite config and youBencha Log
 
 No circular dependencies allowed. Each module MUST have a single, clear responsibility.
 
@@ -142,7 +142,7 @@ Before merging any pull request:
 
 - [ ] All tests pass (unit, integration, contract)
 - [ ] Coverage ≥80% for modified modules
-- [ ] FACE Log schema compatibility verified (if adapter/log changes)
+- [ ] youBencha Log schema compatibility verified (if adapter/log changes)
 - [ ] Evaluator interface unchanged or backward-compatible (if evaluator changes)
 - [ ] Documentation updated (README, evaluator catalog, API docs)
 - [ ] Constitution compliance confirmed in PR description
@@ -177,3 +177,4 @@ Before merging any pull request:
 ---
 
 **Version**: 1.0.0 | **Ratified**: 2025-11-03 | **Last Amended**: 2025-11-03
+

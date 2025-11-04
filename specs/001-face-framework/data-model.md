@@ -1,7 +1,7 @@
-# Data Model: FACE Framework MVP
+# Data Model: youBencha Framework MVP
 
 **Date**: 2025-11-03  
-**Feature**: 001-face-framework  
+**Feature**: 001-youBencha-framework  
 **Purpose**: Define core entities, their attributes, relationships, and validation rules
 
 ---
@@ -11,7 +11,7 @@
 | Entity | Purpose | Storage |
 |--------|---------|---------|
 | SuiteConfiguration | Evaluation specification (repo, agent, evaluators, expected ref) | User-provided YAML/JSON file |
-| FACELog | Normalized agent execution log | Generated JSON artifact |
+| youBenchaLog | Normalized agent execution log | Generated JSON artifact |
 | EvaluationResult | Output from a single evaluator | Part of Results Bundle JSON |
 | ResultsBundle | Aggregated evaluation output | Generated JSON file |
 | Workspace | Isolated directory structure for evaluation | Filesystem |
@@ -51,7 +51,7 @@
   }>;
   
   // Execution Configuration (optional)
-  workspace_dir?: string;          // Custom workspace directory (default: .face-workspace)
+  workspace_dir?: string;          // Custom workspace directory (default: .youbencha-workspace)
   timeout?: number;                // Max execution time in seconds (default: 1800)
 }
 ```
@@ -79,13 +79,13 @@
 
 ```typescript
 {
-  version: '1.0.0';                // FACE Log schema version
+  version: '1.0.0';                // youBencha Log schema version
   
   // Agent Metadata
   agent: {
     name: string;                  // Agent name (e.g., 'GitHub Copilot CLI')
     version: string;               // Agent version
-    adapter_version: string;       // FACE adapter version
+    adapter_version: string;       // youBencha adapter version
   };
   
   // Model Information
@@ -144,7 +144,7 @@
   environment: {
     os: string;                    // Operating system
     node_version: string;          // Node.js version
-    face_version: string;          // FACE CLI version
+    youbencha_version: string;          // youBencha CLI version
     working_directory: string;     // Workspace path
   };
 }
@@ -238,7 +238,7 @@
     started_at: string;            // ISO 8601 timestamp
     completed_at: string;          // ISO 8601 timestamp
     duration_ms: number;           // Total evaluation time
-    face_version: string;          // FACE CLI version
+    youbencha_version: string;          // youBencha CLI version
     environment: {
       os: string;
       node_version: string;
@@ -249,7 +249,7 @@
   // Agent Execution
   agent: {
     type: string;                  // Agent adapter used
-    face_log_path: string;         // Path to FACE Log JSON
+    youbencha_log_path: string;         // Path to youBencha Log JSON
     status: 'success' | 'failed' | 'timeout';
     exit_code: number;
   };
@@ -268,7 +268,7 @@
   
   // Artifacts Manifest
   artifacts: {
-    face_log: string;              // Path to FACE Log
+    face_log: string;              // Path to youBencha Log
     reports: string[];             // Paths to generated reports
     evaluator_artifacts: string[]; // Paths to evaluator outputs
   };
@@ -284,7 +284,7 @@
 - `overall_status` = 'partial' if some skipped but none failed
 
 **Relationships**:
-- References FACELog (1:1)
+- References youBenchaLog (1:1)
 - Contains EvaluationResults (1:many)
 - Input to Reporters (1:many)
 
@@ -297,12 +297,12 @@
 **Structure**:
 
 ```
-.face-workspace/
+.youbencha-workspace/
 ├── run-<timestamp>/           # One directory per evaluation run
 │   ├── src-modified/          # Cloned repo where agent modifies code
 │   ├── src-expected/          # Expected reference branch (if configured)
 │   ├── artifacts/
-│   │   ├── face.log.json      # FACE Log
+│   │   ├── youBencha.log.json      # youBencha Log
 │   │   ├── results.json       # Results Bundle
 │   │   ├── report.md          # Markdown report
 │   │   └── evaluators/        # Evaluator-specific artifacts
@@ -315,7 +315,7 @@
 
 ```typescript
 {
-  root_dir: string;              // Workspace root (.face-workspace/)
+  root_dir: string;              // Workspace root (.youbencha-workspace/)
   run_id: string;                // Unique run identifier (timestamp-based)
   src_modified_dir: string;      // Path to src-modified/
   src_expected_dir?: string;     // Path to src-expected/ (if expected ref used)
@@ -356,7 +356,7 @@
 
 **Resolution Process**:
 1. User specifies `expected_source: 'branch'` and `expected: 'feature/ai-completed'` in suite config
-2. During workspace setup, FACE clones the specified branch into `src-expected/`
+2. During workspace setup, youBencha clones the specified branch into `src-expected/`
 3. Records the commit SHA of the cloned branch in ExpectedReference
 4. Evaluators that support comparison receive both `src-modified/` and `src-expected/` paths
 
@@ -484,12 +484,12 @@
 
 ```
 IDLE
-  ↓ [face run command]
+  ↓ [youBencha run command]
 WORKSPACE_SETUP (create dirs, clone repos)
   ↓
 AGENT_EXECUTION (run agent adapter)
   ↓
-LOG_NORMALIZATION (transform to FACE Log)
+LOG_NORMALIZATION (transform to youBencha Log)
   ↓
 EVALUATOR_EXECUTION (run evaluators in parallel)
   ↓
@@ -519,7 +519,7 @@ RESULTS AGGREGATED
 | Entity | Validation Layer | Validator |
 |--------|-----------------|-----------|
 | SuiteConfiguration | Parse-time | Zod schema in `suite.schema.ts` |
-| FACELog | Generation-time | Zod schema in `facelog.schema.ts` |
+| youBenchaLog | Generation-time | Zod schema in `youbencha.schema.ts` |
 | EvaluationResult | Generation-time | Zod schema in `result.schema.ts` |
 | ResultsBundle | Aggregation-time | Zod schema in `result.schema.ts` |
 | Workspace | Setup-time | File system checks in `workspace.ts` |
@@ -536,3 +536,4 @@ RESULTS AGGREGATED
 - All schemas versioned (`version` field) for backward compatibility
 - All monetary values (cost) in USD with 4 decimal precision
 - All ratios/percentages stored as decimals (0.0-1.0) not integers (0-100)
+

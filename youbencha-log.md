@@ -1,12 +1,12 @@
 /*
-  FACE Log — Types & Adapter Stubs (v0.1)
+  youBencha Log — Types & Adapter Stubs (v0.1)
   -----------------------------------------------------
   - Generated TypeScript types from the proposed JSON Schema
   - Minimal adapter stubs for Copilot / Claude / Codex / Gemini
   - Helper utilities for normalization & artifact references
 
   Notes:
-  - This is SDK-style code meant to live under: packages/face-core/src/
+  - This is SDK-style code meant to live under: packages/youbencha-core/src/
   - Runtime validation is optional; you can wire Ajv or zod if desired.
 */
 
@@ -14,7 +14,7 @@
 // 1) Types (from schema)
 // =========================
 
-export type FaceLogSchemaVersion = "face-log-0.1";
+export type YouBenchaLogSchemaVersion = "youbencha-log-0.1";
 
 export type ToolId = "copilot" | "claude" | "codex" | "gemini" | "other";
 export type SessionMode = "chat" | "task" | "agent";
@@ -32,7 +32,7 @@ export type EventType =
   | "evaluator.start"
   | "evaluator.end";
 
-export interface FaceSession {
+export interface YouBenchaSession {
   id: string;
   tool: ToolId;
   tool_version?: string;
@@ -43,36 +43,36 @@ export interface FaceSession {
   status: SessionStatus;
 }
 
-export interface FaceIdentity {
+export interface YouBenchaIdentity {
   actor?: Actor;
   user_hash?: string;
   org_hash?: string;
 }
 
-export interface FaceRepoRef {
+export interface YouBenchaRepoRef {
   url: string;
   branch?: string;
   commit?: string;
 }
 
-export interface FaceWorkspace {
+export interface YouBenchaWorkspace {
   source_dir?: string;
   modified_dir?: string;
   expected_dir?: string;
 }
 
-export interface FaceEnvironment {
+export interface YouBenchaEnvironment {
   os: string;
   arch?: string;
   node?: string;
   container_digest?: string;
   network_policy?: "off" | "allowlist";
   seed?: number;
-  repo: FaceRepoRef;
-  workspace?: FaceWorkspace;
+  repo: YouBenchaRepoRef;
+  workspace?: YouBenchaWorkspace;
 }
 
-export interface FaceModelParams {
+export interface YouBenchaModelParams {
   temperature?: number;
   top_p?: number;
   max_tokens?: number;
@@ -80,13 +80,13 @@ export interface FaceModelParams {
   [k: string]: unknown;
 }
 
-export interface FaceModel {
+export interface YouBenchaModel {
   provider: string; // e.g., "openai", "anthropic", "google", "azure", "github", "other"
   name: string;     // e.g., "gpt-4.1-mini"
-  params?: FaceModelParams;
+  params?: YouBenchaModelParams;
 }
 
-export interface FaceCost {
+export interface YouBenchaCost {
   input_tokens?: number;
   output_tokens?: number;
   cache_read_tokens?: number;
@@ -95,37 +95,37 @@ export interface FaceCost {
   currency?: string; // default USD
 }
 
-export interface FaceToolCall {
+export interface YouBenchaToolCall {
   name: string; // bash.run, fs.patch, etc.
   id: string;
   args?: Record<string, unknown>;
 }
 
-export interface FaceAttachment {
+export interface YouBenchaAttachment {
   type: string; // file | image | etc.
   path?: string;
   uri?: string;
   [k: string]: unknown;
 }
 
-export interface FaceMessage {
+export interface YouBenchaMessage {
   id: string;
   ts: string; // ISO datetime
   role: Role;
   channel?: Channel;
   content_type?: ContentType;
   content: string; // serialized content for plaintext/code; for binary, attach artifact and reference here
-  attachments?: FaceAttachment[];
-  tool_calls?: FaceToolCall[];
+  attachments?: YouBenchaAttachment[];
+  tool_calls?: YouBenchaToolCall[];
   latency_ms?: number;
 }
 
-export interface FaceEventBase {
+export interface YouBenchaEventBase {
   ts: string; // ISO datetime
   type: EventType;
 }
 
-export interface FaceEventCommandExec extends FaceEventBase {
+export interface YouBenchaEventCommandExec extends YouBenchaEventBase {
   type: "command.exec";
   command: string;
   cwd?: string;
@@ -135,7 +135,7 @@ export interface FaceEventCommandExec extends FaceEventBase {
   stderr_ref?: string; // artifact://logs/build-stderr.txt
 }
 
-export interface FaceEventFilePatch extends FaceEventBase {
+export interface YouBenchaEventFilePatch extends YouBenchaEventBase {
   type: "file.patch";
   file: string;
   patch_ref?: string; // artifact://patches/0001.patch
@@ -144,25 +144,25 @@ export interface FaceEventFilePatch extends FaceEventBase {
   entropy?: number;
 }
 
-export interface FaceEventFileWrite extends FaceEventBase {
+export interface YouBenchaEventFileWrite extends YouBenchaEventBase {
   type: "file.write";
   file: string;
   bytes?: number;
   sha256?: string;
 }
 
-export interface FaceEventAgentStep extends FaceEventBase {
+export interface YouBenchaEventAgentStep extends YouBenchaEventBase {
   type: "agent.step";
   label?: string;
   detail?: string;
 }
 
-export interface FaceEventEvaluatorStart extends FaceEventBase {
+export interface YouBenchaEventEvaluatorStart extends YouBenchaEventBase {
   type: "evaluator.start";
   name: string;
 }
 
-export interface FaceEventEvaluatorEnd extends FaceEventBase {
+export interface YouBenchaEventEvaluatorEnd extends YouBenchaEventBase {
   type: "evaluator.end";
   name: string;
   status?: "passed" | "failed" | "skipped";
@@ -170,15 +170,15 @@ export interface FaceEventEvaluatorEnd extends FaceEventBase {
   artifact_ref?: string;
 }
 
-export type FaceEvent =
-  | FaceEventCommandExec
-  | FaceEventFilePatch
-  | FaceEventFileWrite
-  | FaceEventAgentStep
-  | FaceEventEvaluatorStart
-  | FaceEventEvaluatorEnd;
+export type YouBenchaEvent =
+  | YouBenchaEventCommandExec
+  | YouBenchaEventFilePatch
+  | YouBenchaEventFileWrite
+  | YouBenchaEventAgentStep
+  | YouBenchaEventEvaluatorStart
+  | YouBenchaEventEvaluatorEnd;
 
-export interface FaceArtifact {
+export interface YouBenchaArtifact {
   name: string;
   type: string; // e.g., unified-diff, text, json, binary
   uri: string;  // artifact://...
@@ -186,55 +186,55 @@ export interface FaceArtifact {
   size_bytes?: number;
 }
 
-export interface FacePrivacy {
+export interface YouBenchaPrivacy {
   pii_redaction?: boolean;
   hash_salt_id?: string;
 }
 
-export interface FaceSummary {
+export interface YouBenchaSummary {
   intent?: string;
   outcome?: string;
   notes?: string;
   errors?: string[];
 }
 
-export interface FaceProvenance {
-  adapter: string;      // e.g., face-adapter-copilot-cli@0.1.0
+export interface YouBenchaProvenance {
+  adapter: string;      // e.g., youbencha-adapter-copilot-cli@0.1.0
   face_version: string; // e.g., 0.9.0
-  generator?: string;   // e.g., face-cli@0.9.0
+  generator?: string;   // e.g., youbencha-cli@0.9.0
 }
 
-export interface FaceLog {
-  schema_version: FaceLogSchemaVersion; // "face-log-0.1"
-  session: FaceSession;
-  identity?: FaceIdentity;
-  environment: FaceEnvironment;
-  model: FaceModel;
-  cost?: FaceCost;
-  messages: FaceMessage[];
-  events?: FaceEvent[];
-  artifacts?: FaceArtifact[];
-  privacy?: FacePrivacy;
-  summary?: FaceSummary;
-  provenance: FaceProvenance;
+export interface YouBenchaLog {
+  schema_version: YouBenchaLogSchemaVersion; // "face-log-0.1"
+  session: YouBenchaSession;
+  identity?: YouBenchaIdentity;
+  environment: YouBenchaEnvironment;
+  model: YouBenchaModel;
+  cost?: YouBenchaCost;
+  messages: YouBenchaMessage[];
+  events?: YouBenchaEvent[];
+  artifacts?: YouBenchaArtifact[];
+  privacy?: YouBenchaPrivacy;
+  summary?: YouBenchaSummary;
+  provenance: YouBenchaProvenance;
 }
 
 // =========================
 // 2) Utilities
 // =========================
 
-export interface NewFaceLogOpts {
+export interface NewYouBenchaLogOpts {
   tool: ToolId;
   sessionId: string;
   sessionStatus?: SessionStatus;
   startedAt?: string; // ISO
   endedAt?: string;   // ISO
-  environment: FaceEnvironment;
-  model: FaceModel;
-  provenance: FaceProvenance;
+  environment: YouBenchaEnvironment;
+  model: YouBenchaModel;
+  provenance: YouBenchaProvenance;
 }
 
-export function newFaceLog(opts: NewFaceLogOpts): FaceLog {
+export function newYouBenchaLog(opts: NewYouBenchaLogOpts): YouBenchaLog {
   const now = new Date().toISOString();
   return {
     schema_version: "face-log-0.1",
@@ -252,17 +252,17 @@ export function newFaceLog(opts: NewFaceLogOpts): FaceLog {
   };
 }
 
-export function addArtifact(log: FaceLog, artifact: FaceArtifact) {
+export function addArtifact(log: YouBenchaLog, artifact: YouBenchaArtifact) {
   if (!log.artifacts) log.artifacts = [];
   log.artifacts.push(artifact);
 }
 
-export function addEvent(log: FaceLog, event: FaceEvent) {
+export function addEvent(log: YouBenchaLog, event: YouBenchaEvent) {
   if (!log.events) log.events = [];
   log.events.push(event);
 }
 
-export function addMessage(log: FaceLog, message: FaceMessage) {
+export function addMessage(log: YouBenchaLog, message: YouBenchaMessage) {
   log.messages.push(message);
 }
 
@@ -273,7 +273,7 @@ export function artifactUri(kind: string, name: string) {
 // =========================
 // 3) Adapter stubs
 // =========================
-// These are minimal mappers from vendor artifacts → FaceLog. They are intentionally
+// These are minimal mappers from vendor artifacts → YouBenchaLog. They are intentionally
 // permissive about input shapes to accommodate vendor drift and community tooling.
 
 // ---- 3.1 Copilot (IDE/CLI hybrid) -----------------------------------------
@@ -298,16 +298,16 @@ export interface CopilotAdapterInput {
   chatSessions: CopilotChatSessionJSON[]; // 1+ sessions merged or the target session
   toolVersion?: string;
   // Optional extras discovered via diagnostics
-  cost?: Partial<FaceCost>;
+  cost?: Partial<YouBenchaCost>;
 }
 
 export function adaptCopilot(
   input: CopilotAdapterInput,
-  base: NewFaceLogOpts
-): FaceLog {
-  const log = newFaceLog(base);
+  base: NewYouBenchaLogOpts
+): YouBenchaLog {
+  const log = newYouBenchaLog(base);
   log.session.tool_version = input.toolVersion;
-  if (input.cost) log.cost = { ...input.cost } as FaceCost;
+  if (input.cost) log.cost = { ...input.cost } as YouBenchaCost;
 
   for (const sess of input.chatSessions) {
     for (const item of sess.items ?? []) {
@@ -342,17 +342,17 @@ export interface ClaudeAdapterInput {
   transcript: ClaudeTranscriptLine[];
   patches?: Array<{ file: string; patchPath: string; linesAdded?: number; linesRemoved?: number; entropy?: number }>; // from .specstory/history or similar
   commands?: Array<{ command: string; cwd?: string; exitCode?: number; durationMs?: number; stdoutPath?: string; stderrPath?: string; ts?: string }>;
-  cost?: Partial<FaceCost>;
+  cost?: Partial<YouBenchaCost>;
   toolVersion?: string;
 }
 
 export function adaptClaude(
   input: ClaudeAdapterInput,
-  base: NewFaceLogOpts
-): FaceLog {
-  const log = newFaceLog(base);
+  base: NewYouBenchaLogOpts
+): YouBenchaLog {
+  const log = newYouBenchaLog(base);
   log.session.tool_version = input.toolVersion;
-  if (input.cost) log.cost = { ...input.cost } as FaceCost;
+  if (input.cost) log.cost = { ...input.cost } as YouBenchaCost;
 
   for (const line of input.transcript) {
     addMessage(log, {
@@ -420,9 +420,9 @@ export interface CodexAdapterInput {
 
 export function adaptCodex(
   input: CodexAdapterInput,
-  base: NewFaceLogOpts
-): FaceLog {
-  const log = newFaceLog(base);
+  base: NewYouBenchaLogOpts
+): YouBenchaLog {
+  const log = newYouBenchaLog(base);
   log.session.tool_version = input.toolVersion;
 
   let inTok = 0, outTok = 0;
@@ -466,17 +466,17 @@ export interface GeminiSessionEntry {
 export interface GeminiAdapterInput {
   entries: GeminiSessionEntry[];
   commands?: Array<{ command: string; cwd?: string; exitCode?: number; durationMs?: number; stdoutPath?: string; stderrPath?: string; ts?: string }>;
-  cost?: Partial<FaceCost>;
+  cost?: Partial<YouBenchaCost>;
   toolVersion?: string;
 }
 
 export function adaptGemini(
   input: GeminiAdapterInput,
-  base: NewFaceLogOpts
-): FaceLog {
-  const log = newFaceLog(base);
+  base: NewYouBenchaLogOpts
+): YouBenchaLog {
+  const log = newYouBenchaLog(base);
   log.session.tool_version = input.toolVersion;
-  if (input.cost) log.cost = { ...input.cost } as FaceCost;
+  if (input.cost) log.cost = { ...input.cost } as YouBenchaCost;
 
   for (const e of input.entries) {
     const ts = typeof e.time === "number" ? new Date(e.time).toISOString() : (e.time ?? new Date().toISOString());
@@ -531,7 +531,7 @@ function basename(p: string): string {
 // 5) Example usage (pseudo)
 // =========================
 /*
-import { newFaceLog, adaptCopilot } from "./face-log";
+import { newYouBenchaLog, adaptCopilot } from "./face-log";
 
 const base = {
   tool: "copilot" as const,
@@ -541,9 +541,10 @@ const base = {
     repo: { url: "https://github.com/org/repo", branch: "main", commit: "abcdef1" },
   },
   model: { provider: "openai", name: "gpt-4.1-mini", params: { temperature: 0.2 } },
-  provenance: { adapter: "face-adapter-copilot-cli@0.1.0", face_version: "0.9.0", generator: "face-cli@0.9.0" },
+  provenance: { adapter: "youbencha-adapter-copilot-cli@0.1.0", face_version: "0.9.0", generator: "youbencha-cli@0.9.0" },
 };
 
 const log = adaptCopilot({ chatSessions: [loadVSCodeChatSessionJSON()] }, base);
 writeFileSync("results/face-log-123.json", JSON.stringify(log, null, 2));
 */
+

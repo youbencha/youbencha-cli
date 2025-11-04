@@ -1,4 +1,4 @@
-# Quickstart Guide: FACE Framework MVP
+# Quickstart Guide: youBencha Framework MVP
 
 **Date**: 2025-11-03  
 **Feature**: 001-face-framework  
@@ -24,9 +24,9 @@
 ## Installation
 
 ```bash
-# Clone FACE repository
-git clone https://github.com/your-org/face.git
-cd face
+# Clone youBencha repository
+git clone https://github.com/your-org/youBencha.git
+cd youBencha
 
 # Install dependencies
 npm install
@@ -71,19 +71,19 @@ evaluators:
 ### Step 2: Run Evaluation
 
 ```bash
-face run -c my-suite.yaml
+yb run -c my-suite.yaml
 ```
 
 **What happens**:
-1. ✅ FACE clones the repository into `.face-workspace/run-<timestamp>/src-modified/`
+1. ✅ youBencha clones the repository into `.youbencha-workspace/run-<timestamp>/src-modified/`
 2. ✅ GitHub Copilot CLI executes with your prompt
-3. ✅ Agent output is normalized to FACE Log format
+3. ✅ Agent output is normalized to youBencha Log format
 4. ✅ Evaluators run in parallel analyzing the changes
-5. ✅ Results are saved to `.face-workspace/run-<timestamp>/artifacts/results.json`
+5. ✅ Results are saved to `.youbencha-workspace/run-<timestamp>/artifacts/results.json`
 
 **Expected output**:
 ```
-🚀 Starting FACE evaluation...
+🚀 Starting youBencha evaluation...
 📦 Cloning repository: https://github.com/example/my-project
 🤖 Executing agent: copilot-cli
 ⏱️  Agent completed in 12.3s
@@ -91,16 +91,16 @@ face run -c my-suite.yaml
   ✓ git-diff (0.5s)
   ✓ agentic-judge (3.2s)
 ✅ Evaluation complete!
-📄 Results: .face-workspace/run-2025-11-03-143022/artifacts/results.json
+📄 Results: .youbencha-workspace/run-2025-11-03-143022/artifacts/results.json
 ```
 
 ### Step 3: Generate Human-Readable Report
 
 ```bash
-face report --from .face-workspace/run-2025-11-03-143022/artifacts/results.json
+yb report --from .youbencha-workspace/run-2025-11-03-143022/artifacts/results.json
 ```
 
-**Output**: Markdown report at `.face-workspace/run-2025-11-03-143022/artifacts/report.md`
+**Output**: Markdown report at `.youbencha-workspace/run-2025-11-03-143022/artifacts/report.md`
 
 ---
 
@@ -135,7 +135,7 @@ evaluators:
 ### Step 2: Run Evaluation
 
 ```bash
-face run -c compare-suite.yaml
+yb run -c compare-suite.yaml
 ```
 
 **What happens**:
@@ -147,7 +147,7 @@ face run -c compare-suite.yaml
 
 **Expected output**:
 ```
-🚀 Starting FACE evaluation...
+🚀 Starting youBencha evaluation...
 📦 Cloning source branch: main
 📦 Cloning expected branch: feature/ai-completed
 🤖 Executing agent: copilot-cli
@@ -165,7 +165,7 @@ face run -c compare-suite.yaml
 ### Step 1: Analyze Branch Differences
 
 ```bash
-face suggest-eval --source main --expected feature/completed
+yb suggest-eval --source main --expected feature/completed
 ```
 
 **What happens**:
@@ -201,7 +201,7 @@ face suggest-eval --source main --expected feature/completed
 cat suggested-suite.yaml
 
 # Run with suggested configuration
-face run -c suggested-suite.yaml
+yb run -c suggested-suite.yaml
 ```
 
 ---
@@ -263,7 +263,7 @@ face run -c suggested-suite.yaml
 ### Markdown Report Example
 
 ```markdown
-# FACE Evaluation Report
+# youBencha Evaluation Report
 
 **Repository**: https://github.com/example/my-project  
 **Branch**: main (abc123def456)  
@@ -320,7 +320,7 @@ face run -c suggested-suite.yaml
 
 ```yaml
 # .github/workflows/agent-eval.yml
-name: FACE Evaluation
+name: youBencha Evaluation
 
 on: [pull_request]
 
@@ -333,36 +333,36 @@ jobs:
         with:
           node-version: '20'
       
-      - name: Install FACE
-        run: npm install -g @face/cli
+      - name: Install youBencha
+        run: npm install -g @youBencha/cli
       
       - name: Run evaluation
-        run: face run -c .face/pr-suite.yaml
+        run: yb run -c .youbencha/pr-suite.yaml
       
       - name: Upload results
         uses: actions/upload-artifact@v3
         with:
-          name: face-results
-          path: .face-workspace/*/artifacts/results.json
+          name: youBencha-results
+          path: .youbencha-workspace/*/artifacts/results.json
 ```
 
 ### 2. Compare Multiple Prompts
 
 ```bash
 # Evaluate prompt variations
-face run -c prompt-v1.yaml
-face run -c prompt-v2.yaml
-face run -c prompt-v3.yaml
+yb run -c prompt-v1.yaml
+yb run -c prompt-v2.yaml
+yb run -c prompt-v3.yaml
 
 # Compare results
-face report --from .face-workspace/run-*/artifacts/results.json
+yb report --from .youbencha-workspace/run-*/artifacts/results.json
 ```
 
 ### 3. Iterative Improvement
 
 ```bash
 # Baseline evaluation
-face run -c baseline.yaml
+yb run -c baseline.yaml
 
 # Promote successful run as expected reference
 git checkout -b expected-baseline
@@ -394,7 +394,7 @@ branch: string                  # Default: main/master
 commit: string                  # Specific commit SHA
 expected_source: 'branch'       # Expected reference type (MVP: branch only)
 expected: string                # Expected reference value (branch name)
-workspace_dir: string           # Default: .face-workspace
+workspace_dir: string           # Default: .youbencha-workspace
 timeout: number                 # Seconds, default: 1800 (30 min)
 ```
 
@@ -405,13 +405,13 @@ timeout: number                 # Seconds, default: 1800 (30 min)
 export OPENAI_API_KEY=sk-...
 
 # Custom workspace location
-export FACE_WORKSPACE_DIR=/tmp/face-workspaces
+export YOUBENCHA_WORKSPACE_DIR=/tmp/youbencha-workspaces
 
 # Disable colored output (for CI)
 export NO_COLOR=1
 
 # Log level (debug, info, warn, error)
-export FACE_LOG_LEVEL=debug
+export YOUBENCHA_LOG_LEVEL=debug
 ```
 
 ---
@@ -460,10 +460,10 @@ github-copilot-cli --version
 **Solution**:
 ```bash
 # Remove lock file
-rm .face-workspace/*/.lock
+rm .youbencha-workspace/*/.lock
 
 # Or clean entire workspace
-rm -rf .face-workspace
+rm -rf .youbencha-workspace
 ```
 
 ---
@@ -474,7 +474,7 @@ rm -rf .face-workspace
 - **Explore evaluator options**: `docs/evaluators.md`
 - **Add custom evaluators**: `docs/extending.md`
 - **Configure CI/CD**: `docs/ci-integration.md`
-- **Join the community**: [GitHub Discussions](https://github.com/your-org/face/discussions)
+- **Join the community**: [GitHub Discussions](https://github.com/your-org/youBencha/discussions)
 
 ---
 
@@ -525,4 +525,7 @@ npm run format
 
 **Ready to evaluate your first agent!** 🚀
 
-Run `face --help` for full CLI documentation.
+Run `youBencha --help` for full CLI documentation.
+
+
+

@@ -1,29 +1,29 @@
-# API Contracts: FACE Framework MVP
+# API Contracts: youBencha Framework MVP
 
 **Date**: 2025-11-03  
-**Feature**: 001-face-framework  
+**Feature**: 001-youBencha-framework  
 **Purpose**: Define interfaces and contracts for adapters, evaluators, and core components
 
 ---
 
 ## Overview
 
-FACE is a CLI tool, not a REST/GraphQL API. However, it has internal programmatic interfaces (contracts) that ensure modularity and pluggability. This document defines those contracts using TypeScript interfaces.
+youBencha is a CLI tool, not a REST/GraphQL API. However, it has internal programmatic interfaces (contracts) that ensure modularity and pluggability. This document defines those contracts using TypeScript interfaces.
 
 ---
 
 ## 1. AgentAdapter Interface
 
-**Purpose**: Standardize how FACE interacts with different coding agents
+**Purpose**: Standardize how youBencha interacts with different coding agents
 
 **Contract**:
 
 ```typescript
 /**
- * AgentAdapter interface for integrating coding agents with FACE
+ * AgentAdapter interface for integrating coding agents with youBencha
  * 
  * Each agent (GitHub Copilot CLI, Claude Code, etc.) implements this interface
- * to enable evaluation within FACE framework.
+ * to enable evaluation within youBencha framework.
  */
 interface AgentAdapter {
   /**
@@ -57,16 +57,16 @@ interface AgentAdapter {
   execute(context: AgentExecutionContext): Promise<AgentExecutionResult>;
   
   /**
-   * Transform agent-specific output to FACE Log format
+   * Transform agent-specific output to youBencha Log format
    * 
    * @param rawOutput - Raw stdout/stderr from agent
    * @param result - Execution result metadata
-   * @returns FACE Log object conforming to schema
+   * @returns youBencha Log object conforming to schema
    */
   normalizeLog(
     rawOutput: string,
     result: AgentExecutionResult
-  ): FACELog;
+  ): YouBenchaLog;
 }
 
 /**
@@ -164,7 +164,7 @@ describe('AgentAdapter Contract', () => {
     );
   });
   
-  test('normalizeLog produces valid FACE Log', () => {
+  test('normalizeLog produces valid youBencha Log', () => {
     const mockResult: AgentExecutionResult = {
       exitCode: 0,
       status: 'success',
@@ -175,12 +175,12 @@ describe('AgentAdapter Contract', () => {
       errors: []
     };
     
-    const faceLog = adapter.normalizeLog('raw output', mockResult);
+    const YouBenchaLog = adapter.normalizeLog('raw output', mockResult);
     
-    expect(faceLog.version).toBe('1.0.0');
-    expect(faceLog.agent).toBeDefined();
-    expect(faceLog.execution).toBeDefined();
-    expect(faceLog.environment).toBeDefined();
+    expect(YouBenchaLog.version).toBe('1.0.0');
+    expect(YouBenchaLog.agent).toBeDefined();
+    expect(YouBenchaLog.execution).toBeDefined();
+    expect(YouBenchaLog.environment).toBeDefined();
   });
 });
 ```
@@ -189,7 +189,7 @@ describe('AgentAdapter Contract', () => {
 
 ## 2. Evaluator Interface
 
-**Purpose**: Standardize how FACE runs evaluators on agent outputs
+**Purpose**: Standardize how youBencha runs evaluators on agent outputs
 
 **Contract**:
 
@@ -249,8 +249,8 @@ interface EvaluationContext {
   /** Path to artifacts directory where evaluator can write outputs */
   artifactsDir: string;
   
-  /** FACE Log from agent execution */
-  faceLog: FACELog;
+  /** youBencha Log from agent execution */
+  YouBenchaLog: YouBenchaLog;
   
   /** Evaluator-specific configuration from suite config */
   config: Record<string, any>;
@@ -324,7 +324,7 @@ describe('Evaluator Contract', () => {
     const context: EvaluationContext = {
       modifiedDir: '/tmp/src-modified',
       artifactsDir: '/tmp/artifacts',
-      faceLog: {} as FACELog,
+      YouBenchaLog: {} as YouBenchaLog,
       config: {},
       suiteConfig: {} as SuiteConfiguration
     };
@@ -337,7 +337,7 @@ describe('Evaluator Contract', () => {
     const context: EvaluationContext = {
       modifiedDir: '/tmp/src-modified',
       artifactsDir: '/tmp/artifacts',
-      faceLog: {} as FACELog,
+      YouBenchaLog: {} as YouBenchaLog,
       config: {},
       suiteConfig: {} as SuiteConfiguration
     };
@@ -364,7 +364,7 @@ describe('Evaluator Contract', () => {
       modifiedDir: '/tmp/src-modified',
       // expectedDir intentionally omitted
       artifactsDir: '/tmp/artifacts',
-      faceLog: {} as FACELog,
+      YouBenchaLog: {} as YouBenchaLog,
       config: {},
       suiteConfig: {} as SuiteConfiguration
     };
@@ -380,7 +380,7 @@ describe('Evaluator Contract', () => {
 
 ## 3. Reporter Interface
 
-**Purpose**: Standardize how FACE generates reports from results
+**Purpose**: Standardize how youBencha generates reports from results
 
 **Contract**:
 
@@ -686,7 +686,7 @@ describe('AgentAdapter Contract Tests', () => {
 
 - New adapters/evaluators can be added without modifying core
 - Core orchestrator uses plugin discovery pattern
-- Versioned schemas (FACE Log, Results Bundle) allow evolution
+- Versioned schemas (youBencha Log, Results Bundle) allow evolution
 
 ---
 
@@ -703,3 +703,4 @@ describe('AgentAdapter Contract Tests', () => {
 - [ ] Implement JSONReporter conforming to Reporter
 - [ ] Implement MarkdownReporter conforming to Reporter
 - [ ] Verify all implementations pass contract tests
+
