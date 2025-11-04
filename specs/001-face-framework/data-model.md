@@ -48,12 +48,81 @@
   evaluators: Array<{
     name: string;                  // Evaluator name (git-diff, expected-diff, agentic-judge)
     config?: Record<string, any>;  // Evaluator-specific configuration
+    // For agentic-judge evaluator:
+    // {
+    //   agent: {
+    //     type: 'copilot-cli',       // Agent adapter to use for evaluation
+    //     config: {
+    //       tools: ['read', 'search', 'analyze'],  // Tools available to agent
+    //       system_prompt: string    // Evaluation instructions for agent
+    //     }
+    //   },
+    //   evaluation_criteria: string[]  // Specific criteria to evaluate
+    // }
   }>;
   
   // Execution Configuration (optional)
   workspace_dir?: string;          // Custom workspace directory (default: .youbencha-workspace)
   timeout?: number;                // Max execution time in seconds (default: 1800)
 }
+```
+
+**Example Configuration with Agentic Judge**:
+
+```yaml
+repo: https://github.com/example/my-project
+branch: main
+expected_source: branch
+expected: feature/ai-completed
+
+agent:
+  type: copilot-cli
+
+evaluators:
+  - name: git-diff
+  
+  - name: expected-diff
+    config:
+      threshold: 0.85
+  
+  - name: agentic-judge
+    config:
+      agent:
+        type: copilot-cli            # Same agent system as main evaluation
+        config:
+          tools:
+            - read                   # Read file contents
+            - search                 # Search for patterns
+            - analyze                # Analyze code complexity
+          system_prompt: |
+            You are evaluating code quality. Review the modified code in src-modified/
+            and compare with expected reference in src-expected/.
+            
+            Evaluate the following criteria:
+            1. Error handling: All functions have proper try-catch or error returns
+            2. Test coverage: ≥80% of modified code has corresponding tests
+            3. Documentation: All public APIs have JSDoc comments
+            
+            Use your tools to:
+            - Read relevant source files
+            - Search for error handling patterns
+            - Analyze test coverage
+            
+            Output your evaluation as JSON:
+            {
+              "status": "passed" | "failed" | "skipped",
+              "metrics": {
+                "error_handling_score": 0.0-1.0,
+                "test_coverage_percent": 0-100,
+                "documented_apis_percent": 0-100
+              },
+              "message": "Summary of findings",
+              "artifacts": ["detailed-report.md"]
+            }
+      evaluation_criteria:
+        - "All modified functions have proper error handling"
+        - "Test coverage ≥80%"
+        - "All public APIs documented with JSDoc"
 ```
 
 **Validation Rules**:
@@ -63,6 +132,8 @@
 - If `expected_source` is provided, `expected` MUST also be provided
 - `expected_source` MUST be 'branch' in MVP (dataset/path support post-MVP)
 - Evaluator names MUST match available evaluators (git-diff, expected-diff, agentic-judge)
+- For agentic-judge evaluator: `config.agent.type` MUST be a valid agent adapter (MVP: 'copilot-cli')
+- For agentic-judge evaluator: `config.agent.config.system_prompt` MUST include instructions to output EvaluationResult JSON
 
 **Relationships**:
 - References Evaluator configurations (1:many)

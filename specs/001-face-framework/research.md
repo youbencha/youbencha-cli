@@ -165,25 +165,67 @@
 
 ---
 
-## 7. LLM Integration for Agentic Judge
+## 7. Agentic Evaluation via Agent Adapters
 
-### Decision: Direct OpenAI SDK (openai npm package)
+### Decision: Reuse Agent Adapter System for Agentic-Judge Evaluator
 
 **Rationale**:
-- `agentic-judge` evaluator needs to call LLM with tool support
-- OpenAI SDK provides function calling / tool use out of the box
-- Simple integration: pass evaluation instructions as system prompt, code files as user context
-- MVP targets OpenAI models (GPT-4, o1) - extensible to other providers post-MVP
+- `agentic-judge` evaluator performs **agentic evaluation**, not just single LLM API calls
+- Evaluator executes a full coding agent (e.g., GitHub Copilot CLI) with tools and iterative reasoning
+- Reuses existing `AgentAdapter` interface - same as primary evaluation agent
+- User configures which agent to use (copilot-cli for MVP), which tools to enable, and system prompt
+- Agent receives evaluation criteria in system prompt and instructions to output structured `EvaluationResult`
+- Agent can read files, analyze code, run commands, iterate on findings (full agentic workflow)
+- Orchestrator initiates agent execution within evaluator context, not direct LLM calls
+
+**Architecture**:
+```
+Orchestrator
+  ↓ runs evaluators in parallel
+  ├── GitDiffEvaluator (code-based)
+  ├── ExpectedDiffEvaluator (code-based)
+  └── AgenticJudgeEvaluator
+        ↓ uses AgentAdapter
+        └── CopilotCLIAdapter (same adapter as main agent)
+              ↓ executes agent with evaluation-specific prompt
+              └── Agent reads code, uses tools, outputs EvaluationResult
+```
 
 **Alternatives Considered**:
-- **LangChain**: Too heavyweight for simple LLM calls with tools
-- **Direct REST API**: More code to maintain, SDK handles retries and streaming
-- **Anthropic SDK**: Would require separate adapter, OpenAI sufficient for MVP
+- **Direct OpenAI SDK**: Would be single LLM call, not agentic; lacks tool use, iteration, multi-step reasoning
+- **LangChain Agents**: Too heavyweight, additional dependency, less control over agent behavior
+- **Separate evaluator-specific agent system**: Duplicates AgentAdapter logic, violates DRY and constitution's modularity principle
+
+**Configuration Example**:
+```yaml
+evaluators:
+  - name: agentic-judge
+    config:
+      agent:
+        type: copilot-cli              # Reuses same agent as main evaluation
+        config:
+          tools: [read, search, analyze]  # Tools available to judge agent
+          system_prompt: |
+            You are a code quality evaluator. Review the modified code for:
+            1. Error handling completeness
+            2. Test coverage adequacy
+            3. Documentation quality
+            
+            Output your evaluation as JSON conforming to EvaluationResult schema:
+            { status: "passed" | "failed", metrics: {...}, message: "..." }
+      evaluation_criteria:
+        - "All functions have proper error handling"
+        - "Test coverage ≥80%"
+        - "Public APIs documented"
+```
 
 **Implementation Notes**:
-- Accept OpenAI API key from environment variable: `OPENAI_API_KEY`
-- Define tool schema for code review operations (read file, analyze complexity, etc.)
-- Parse structured output into `EvaluationResult` format
+- `AgenticJudgeEvaluator` instantiates same `AgentAdapter` used by main orchestrator
+- Evaluation criteria injected into agent's system prompt
+- Agent executes with workspace access (`src-modified/`, `src-expected/`)
+- Agent output parsed into `EvaluationResult` structure
+- Leverages full agentic capabilities: file reading, tool use, iterative refinement
+- MVP uses Copilot CLI; post-MVP supports any agent adapter (Claude Code, Cursor, etc.)
 
 ---
 

@@ -91,7 +91,14 @@ A developer has completed a feature manually or with an agent and wants to set u
 
 - **FR-014**: System MUST include a `git-diff` evaluator that reports files changed, lines added/removed, and change entropy
 - **FR-015**: System MUST include an `expected-diff` evaluator that compares `src-modified/` against `src-expected/` and produces similarity metrics
-- **FR-016**: System MUST include a generic `agentic-judge` evaluator that accepts natural language evaluation instructions, uses tool calls to review code, and produces structured evaluation results
+- **FR-016**: System MUST include an `agentic-judge` evaluator that:
+  - Accepts agent configuration (same AgentAdapter interface as main agent execution)
+  - Accepts system prompt with evaluation instructions and output format requirements
+  - Accepts evaluation criteria as natural language specifications
+  - Executes configured agent (e.g., copilot-cli) with evaluation-specific prompt
+  - Agent operates with full agentic capabilities (tool use, file reading, iterative reasoning)
+  - Parses agent output into structured EvaluationResult conforming to interface
+  - NOT a single LLM API call - uses full agentic workflow for code evaluation
 - **FR-017**: Each evaluator MUST return a result object with: evaluator name, status (passed/failed/skipped), metrics object, message, and optional artifacts array
 - **FR-018**: Evaluators MUST be able to mark themselves as skipped with reason (e.g., missing dependencies, configuration error)
 

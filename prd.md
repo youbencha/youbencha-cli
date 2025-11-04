@@ -148,7 +148,7 @@ youBencha will define an official JSON schema containing:
 | `typecheck` | command-based | pass/fail + error count |
 | `tokens` | log-based | model tokens + cost |
 | `expected-diff` | code-based | comparison against expected/ideal branch output |
-| `agent-judge` | agent/llm-based | agentic |
+| `agentic-judge` | agentic (uses AgentAdapter) | configurable criteria with tool use |
 
 Optional / Post-MVP:
 
@@ -163,6 +163,46 @@ All evaluators must:
 - Implement a shared interface
 - Return ≥1 evaluation result with status: `passed | failed | skipped`
 - May produce artifacts
+
+**Agentic-Judge Evaluator Details:**
+
+The `agentic-judge` evaluator is NOT a simple LLM API call. It performs **agentic code evaluation** by:
+
+1. **Reusing Agent System**: Uses the same `AgentAdapter` interface as main agent execution (e.g., copilot-cli)
+2. **Configurable Agent**: User specifies which agent to use, what tools to enable, and system prompt
+3. **Evaluation-Specific Prompt**: System prompt includes evaluation criteria and output format requirements
+4. **Full Agentic Workflow**: Agent reads files, searches patterns, uses tools, iterates on findings
+5. **Structured Output**: Agent produces JSON conforming to `EvaluationResult` interface
+
+**Configuration Example:**
+```yaml
+evaluators:
+  - name: agentic-judge
+    config:
+      agent:
+        type: copilot-cli           # Same agent as main evaluation
+        config:
+          tools: [read, search, analyze]
+          system_prompt: |
+            Evaluate code quality:
+            1. Error handling completeness
+            2. Test coverage ≥80%
+            3. Documentation quality
+            
+            Use tools to read files and analyze.
+            Output JSON: {"status": "passed"|"failed", "metrics": {...}, "message": "..."}
+      evaluation_criteria:
+        - "All functions have error handling"
+        - "Test coverage ≥80%"
+```
+
+**Execution Flow:**
+1. Orchestrator invokes `AgenticJudgeEvaluator.evaluate()`
+2. Evaluator instantiates configured `AgentAdapter` (e.g., copilot-cli)
+3. Agent receives evaluation prompt and workspace access
+4. Agent uses tools (read, search, analyze) to review code
+5. Agent outputs structured JSON with evaluation results
+6. Evaluator parses JSON into `EvaluationResult` format
 
 #### 5.6.1 Evaluator Suggestion Workflow
 

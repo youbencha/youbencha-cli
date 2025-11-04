@@ -60,12 +60,25 @@ agent:
 # Evaluators to run
 evaluators:
   - name: git-diff
-    config: {}
   
   - name: agentic-judge
     config:
-      criteria: "Code includes proper error handling with try-catch blocks"
-      model: gpt-4
+      agent:
+        type: copilot-cli              # Uses same agent as main evaluation
+        config:
+          tools: [read, search]         # Tools available to judge agent
+          system_prompt: |
+            You are evaluating code quality. Check that the modified code
+            includes proper error handling with try-catch blocks.
+            
+            Read relevant files and output JSON:
+            {
+              "status": "passed" | "failed",
+              "metrics": {"error_handling_score": 0.0-1.0},
+              "message": "Summary of findings"
+            }
+      evaluation_criteria:
+        - "All functions have try-catch blocks or error returns"
 ```
 
 ### Step 2: Run Evaluation
@@ -398,11 +411,31 @@ workspace_dir: string           # Default: .youbencha-workspace
 timeout: number                 # Seconds, default: 1800 (30 min)
 ```
 
+### Agentic-Judge Evaluator Configuration
+
+```yaml
+evaluators:
+  - name: agentic-judge
+    config:
+      agent:
+        type: copilot-cli              # Agent adapter to use (same as main agent)
+        config:
+          tools: [read, search, analyze]  # Tools available to judge
+          system_prompt: |
+            Evaluation instructions here.
+            Must include output format requirements:
+            Output JSON: {"status": "passed"|"failed", "metrics": {...}, "message": "..."}
+      evaluation_criteria:
+        - "Criterion 1"
+        - "Criterion 2"
+      timeout: 300                      # Optional, seconds
+```
+
 ### Environment Variables
 
 ```bash
-# OpenAI API key (for agentic-judge evaluator)
-export OPENAI_API_KEY=sk-...
+# No special environment variables needed for agentic-judge
+# (it uses the configured agent adapter, same as main evaluation)
 
 # Custom workspace location
 export YOUBENCHA_WORKSPACE_DIR=/tmp/youbencha-workspaces
@@ -449,9 +482,10 @@ github-copilot-cli --version
 
 **Common causes**:
 - `expected-diff` evaluator requires `expected_source` configuration
-- `agentic-judge` evaluator requires `OPENAI_API_KEY` environment variable
+- `agentic-judge` evaluator requires `agent` configuration in evaluator config
+- `agentic-judge` evaluator requires the configured agent to be installed and available
 
-**Solution**: Check evaluator requirements in suite config
+**Solution**: Check evaluator requirements in suite config and verify agent availability
 
 ### "Workspace locked" Error
 

@@ -162,7 +162,7 @@ youbencha/
 - Diff Algorithm: diff + Levenshtein distance
 - Testing Framework: Jest with 80% coverage
 - Progress Feedback: ora (spinner library)
-- LLM Integration: OpenAI SDK for agentic-judge
+- Agentic Evaluation: Reuse AgentAdapter interface (copilot-cli for MVP) for agentic-judge evaluator, not single LLM calls
 - Configuration Format: YAML (primary) + JSON fallback
 
 **Dependencies Finalized**: All 7 production dependencies and 7 dev dependencies identified with versions

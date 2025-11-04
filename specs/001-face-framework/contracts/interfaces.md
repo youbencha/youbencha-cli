@@ -260,6 +260,80 @@ interface EvaluationContext {
 }
 
 /**
+ * Configuration for agentic-judge evaluator
+ * 
+ * This evaluator uses the agent adapter system (same as main agent execution)
+ * to perform agentic code evaluation with tool use and iterative reasoning.
+ */
+interface AgenticJudgeConfig {
+  /** Agent configuration - uses AgentAdapter interface */
+  agent: {
+    /** Agent type (e.g., 'copilot-cli') */
+    type: string;
+    
+    /** Agent-specific configuration */
+    config: {
+      /** Tools available to the judge agent */
+      tools?: string[];
+      
+      /** System prompt with evaluation instructions
+       * MUST include:
+       * - Evaluation criteria
+       * - Instructions to output EvaluationResult JSON
+       * - Available workspace paths (src-modified/, src-expected/)
+       */
+      system_prompt: string;
+      
+      /** Additional agent-specific settings */
+      [key: string]: any;
+    };
+  };
+  
+  /** Natural language evaluation criteria (included in system prompt) */
+  evaluation_criteria: string[];
+  
+  /** Maximum time for agent execution (seconds) */
+  timeout?: number;
+}
+
+/**
+ * Example agentic-judge configuration:
+ * 
+ * {
+ *   agent: {
+ *     type: 'copilot-cli',
+ *     config: {
+ *       tools: ['read', 'search', 'analyze'],
+ *       system_prompt: `
+ *         You are a code quality evaluator. Review modified code for:
+ *         1. Error handling completeness
+ *         2. Test coverage (≥80%)
+ *         3. Documentation quality
+ *         
+ *         Use tools to read files, search patterns, analyze coverage.
+ *         
+ *         Output JSON conforming to EvaluationResult:
+ *         {
+ *           "status": "passed" | "failed",
+ *           "metrics": {
+ *             "error_handling_score": 0.0-1.0,
+ *             "test_coverage_percent": 0-100,
+ *             "documented_apis_percent": 0-100
+ *           },
+ *           "message": "Summary of findings"
+ *         }
+ *       `
+ *     }
+ *   },
+ *   evaluation_criteria: [
+ *     "All functions have proper error handling",
+ *     "Test coverage ≥80%",
+ *     "All public APIs documented"
+ *   ]
+ * }
+ */
+
+/**
  * Result from evaluator execution
  */
 interface EvaluationResult {
