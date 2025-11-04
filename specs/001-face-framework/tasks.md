@@ -43,29 +43,29 @@
 
 ### Schemas (TDD: Write tests first)
 
-- [ ] T011 [P] Write schema validation tests for youBencha Log in `tests/contract/youbenchalog.test.ts` (MUST FAIL initially)
-- [ ] T012 [P] Define Zod schema for youBencha Log in `src/schemas/youbenchalog.schema.ts` with version, agent, model, execution, messages, usage, errors, environment fields
-- [ ] T013 [P] Write schema validation tests for Suite Configuration in `tests/contract/suite.test.ts` (MUST FAIL initially)
-- [ ] T014 [P] Define Zod schema for Suite Configuration in `src/schemas/suite.schema.ts` with repo, branch, agent, expected_source, expected, evaluators, workspace_dir, timeout fields
-- [ ] T015 [P] Write schema validation tests for Results Bundle in `tests/contract/results.test.ts` (MUST FAIL initially)
-- [ ] T016 [P] Define Zod schema for Results Bundle in `src/schemas/result.schema.ts` with version, suite, execution, agent, evaluators, summary, artifacts fields
-- [ ] T017 [P] Export inferred TypeScript types from all schemas in `src/schemas/index.ts`
+- [x] T011 [P] Write schema validation tests for youBencha Log in `tests/contract/youbenchalog.test.ts` (MUST FAIL initially)
+- [x] T012 [P] Define Zod schema for youBencha Log in `src/schemas/youbenchalog.schema.ts` with version, agent, model, execution, messages, usage, errors, environment fields
+- [x] T013 [P] Write schema validation tests for Suite Configuration in `tests/contract/suite.test.ts` (MUST FAIL initially)
+- [x] T014 [P] Define Zod schema for Suite Configuration in `src/schemas/suite.schema.ts` with repo, branch, agent, expected_source, expected, evaluators, workspace_dir, timeout fields
+- [x] T015 [P] Write schema validation tests for Results Bundle in `tests/contract/results.test.ts` (MUST FAIL initially)
+- [x] T016 [P] Define Zod schema for Results Bundle in `src/schemas/result.schema.ts` with version, suite, execution, agent, evaluators, summary, artifacts fields
+- [x] T017 [P] Export inferred TypeScript types from all schemas in `src/schemas/index.ts`
 
 ### Base Interfaces & Contract Tests (TDD: Tests define contracts)
 
-- [ ] T018 [P] Write AgentAdapter contract tests in `tests/contract/adapter.test.ts` (define interface expectations, MUST FAIL initially)
-- [ ] T019 [P] Define AgentAdapter interface in `src/adapters/base.ts` with name, version, checkAvailability(), execute(), normalizeLog() methods
-- [ ] T020 [P] Write Evaluator contract tests in `tests/contract/evaluator.test.ts` (define interface expectations, MUST FAIL initially)
-- [ ] T021 [P] Define Evaluator interface in `src/evaluators/base.ts` with name, description, requiresExpectedReference, checkPreconditions(), evaluate() methods
-- [ ] T022 [P] Write Reporter contract tests in `tests/contract/reporter.test.ts` (MUST FAIL initially)
-- [ ] T023 [P] Define Reporter interface in `src/reporters/base.ts` with name, extension, generate(), writeToFile() methods
+- [x] T018 [P] Write AgentAdapter contract tests in `tests/contract/adapter.test.ts` (define interface expectations, MUST FAIL initially)
+- [x] T019 [P] Define AgentAdapter interface in `src/adapters/base.ts` with name, version, checkAvailability(), execute(), normalizeLog() methods
+- [x] T020 [P] Write Evaluator contract tests in `tests/contract/evaluator.test.ts` (define interface expectations, MUST FAIL initially)
+- [x] T021 [P] Define Evaluator interface in `src/evaluators/base.ts` with name, description, requiresExpectedReference, checkPreconditions(), evaluate() methods
+- [x] T022 [P] Write Reporter contract tests in `tests/contract/reporter.test.ts` (MUST FAIL initially)
+- [x] T023 [P] Define Reporter interface in `src/reporters/base.ts` with name, extension, generate(), writeToFile() methods
 
 ### Core Utilities
 
-- [ ] T024 [P] Implement logger utility in `src/lib/logger.ts` (console-based with levels: debug, info, warn, error)
-- [ ] T025 [P] Implement progress feedback in `src/lib/progress.ts` using ora (spinners with start, succeed, fail, text methods)
-- [ ] T026 [P] Implement diff utilities in `src/lib/diff-utils.ts` (Myers diff algorithm, Levenshtein distance, similarity scoring)
-- [ ] T027 [P] Implement path utilities in `src/lib/path-utils.ts` (workspace path generation, safe path joining, directory validation)
+- [x] T024 [P] Implement logger utility in `src/lib/logger.ts` (console-based with levels: debug, info, warn, error)
+- [x] T025 [P] Implement progress feedback in `src/lib/progress.ts` using ora (spinners with start, succeed, fail, text methods)
+- [x] T026 [P] Implement diff utilities in `src/lib/diff-utils.ts` (Myers diff algorithm, Levenshtein distance, similarity scoring)
+- [x] T027 [P] Implement path utilities in `src/lib/path-utils.ts` (workspace path generation, safe path joining, directory validation)
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -79,65 +79,65 @@
 
 ### Core Components (TDD: Write tests before implementation)
 
-- [ ] T028 [P] [US1] Write unit tests for Workspace Manager in `tests/unit/workspace.test.ts` (createWorkspace, cloneRepository, cleanup methods)
-- [ ] T029 [P] [US1] Implement Workspace Manager in `src/core/workspace.ts` (create workspace dirs, use simple-git for cloning, lockfile management, cleanup)
-- [ ] T030 [P] [US1] Write unit tests for Environment detector in `tests/unit/env.test.ts` (OS detection, Node version, metadata capture)
-- [ ] T031 [P] [US1] Implement Environment detector in `src/core/env.ts` (detect OS/platform, Node.js version, youBencha version, timestamps)
-- [ ] T032 [P] [US1] Write unit tests for Storage manager in `tests/unit/storage.test.ts` (save JSON, save artifacts, artifact manifest)
-- [ ] T033 [P] [US1] Implement Storage manager in `src/core/storage.ts` (save youBencha Log, save results bundle, manage artifacts directory)
+- [x] T028 [P] [US1] Write unit tests for Workspace Manager in `tests/unit/workspace.test.ts` (createWorkspace, cloneRepository, cleanup methods)
+- [x] T029 [P] [US1] Implement Workspace Manager in `src/core/workspace.ts` (create workspace dirs, use simple-git for cloning, lockfile management, cleanup)
+- [x] T030 [P] [US1] Write unit tests for Environment detector in `tests/unit/env.test.ts` (OS detection, Node version, metadata capture)
+- [x] T031 [P] [US1] Implement Environment detector in `src/core/env.ts` (detect OS/platform, Node.js version, youBencha version, timestamps)
+- [x] T032 [P] [US1] Write unit tests for Storage manager in `tests/unit/storage.test.ts` (save JSON, save artifacts, artifact manifest)
+- [x] T033 [P] [US1] Implement Storage manager in `src/core/storage.ts` (save youBencha Log, save results bundle, manage artifacts directory)
 
 ### Agent Adapter (TDD: Contract tests already written in Phase 2)
 
-- [ ] T034 [US1] Write unit tests for Copilot CLI adapter in `tests/unit/copilot-cli.test.ts` (execute, normalize log, availability check)
-- [ ] T035 [US1] Implement GitHub Copilot CLI adapter in `src/adapters/copilot-cli.ts` (spawn copilot-cli process, capture stdout/stderr, handle errors)
-- [ ] T036 [US1] Implement log normalization in `src/adapters/copilot-cli.ts` (parse copilot output, transform to youBencha Log schema)
-- [ ] T037 [US1] Implement availability check in `src/adapters/copilot-cli.ts` (verify copilot-cli in PATH, check authentication)
+- [x] T034 [US1] Write unit tests for Copilot CLI adapter in `tests/unit/copilot-cli.test.ts` (execute, normalize log, availability check)
+- [x] T035 [US1] Implement GitHub Copilot CLI adapter in `src/adapters/copilot-cli.ts` (spawn copilot-cli process, capture stdout/stderr, handle errors)
+- [x] T036 [US1] Implement log normalization in `src/adapters/copilot-cli.ts` (parse copilot output, transform to youBencha Log schema)
+- [x] T037 [US1] Implement availability check in `src/adapters/copilot-cli.ts` (verify copilot-cli in PATH, check authentication)
 
 ### Evaluators for US1 (TDD: Contract tests already written in Phase 2)
 
-- [ ] T038 [P] [US1] Write unit tests for GitDiffEvaluator in `tests/unit/git-diff.test.ts` (files changed, lines added/removed, entropy calculation)
-- [ ] T039 [P] [US1] Implement GitDiffEvaluator in `src/evaluators/git-diff.ts` (use simple-git to get diff stats, calculate change entropy, return metrics)
-- [ ] T040 [P] [US1] Write unit tests for AgenticJudgeEvaluator in `tests/unit/agentic-judge.test.ts` (agent execution, output parsing, error handling)
-- [ ] T041 [P] [US1] Implement AgenticJudgeEvaluator in `src/evaluators/agentic-judge.ts` (execute agent via adapter, parse JSON output, handle evaluation criteria)
+- [x] T038 [P] [US1] Write unit tests for GitDiffEvaluator in `tests/unit/git-diff.test.ts` (files changed, lines added/removed, entropy calculation)
+- [x] T039 [P] [US1] Implement GitDiffEvaluator in `src/evaluators/git-diff.ts` (use simple-git to get diff stats, calculate change entropy, return metrics)
+- [x] T040 [P] [US1] Write unit tests for AgenticJudgeEvaluator in `tests/unit/agentic-judge.test.ts` (agent execution, output parsing, error handling)
+- [x] T041 [P] [US1] Implement AgenticJudgeEvaluator in `src/evaluators/agentic-judge.ts` (execute agent via adapter, parse JSON output, handle evaluation criteria)
 
 ### Orchestration (TDD: Write tests before implementation)
 
-- [ ] T042 [US1] Write unit tests for Orchestrator in `tests/unit/orchestrator.test.ts` (runEvaluation flow, error handling, results aggregation)
-- [ ] T043 [US1] Implement Orchestrator core in `src/core/orchestrator.ts` (runEvaluation method, workflow coordination)
-- [ ] T044 [US1] Add workspace setup to Orchestrator (create workspace, clone repo, validate config)
-- [ ] T045 [US1] Add agent execution to Orchestrator (load adapter, execute agent, save youBencha Log)
-- [ ] T046 [US1] Add evaluator execution to Orchestrator (load evaluators, run in parallel, handle failures gracefully)
-- [ ] T047 [US1] Add results bundling to Orchestrator (aggregate evaluator results, calculate summary, create ResultsBundle)
-- [ ] T048 [US1] Add cleanup to Orchestrator (workspace cleanup on completion or error)
+- [x] T042 [US1] Write unit tests for Orchestrator in `tests/unit/orchestrator.test.ts` (runEvaluation flow, error handling, results aggregation)
+- [x] T043 [US1] Implement Orchestrator core in `src/core/orchestrator.ts` (runEvaluation method, workflow coordination)
+- [x] T044 [US1] Add workspace setup to Orchestrator (create workspace, clone repo, validate config)
+- [x] T045 [US1] Add agent execution to Orchestrator (load adapter, execute agent, save youBencha Log)
+- [x] T046 [US1] Add evaluator execution to Orchestrator (load evaluators, run in parallel, handle failures gracefully)
+- [x] T047 [US1] Add results bundling to Orchestrator (aggregate evaluator results, calculate summary, create ResultsBundle)
+- [x] T048 [US1] Add cleanup to Orchestrator (workspace cleanup on completion or error)
 
 ### Reporters (TDD: Contract tests already written in Phase 2)
 
-- [ ] T049 [P] [US1] Write unit tests for JSON Reporter in `tests/unit/json-reporter.test.ts` (generate, writeToFile methods)
-- [ ] T050 [P] [US1] Implement JSON Reporter in `src/reporters/json.ts` (serialize ResultsBundle to pretty JSON, write to file)
-- [ ] T051 [P] [US1] Write unit tests for Markdown Reporter in `tests/unit/markdown-reporter.test.ts` (generate report sections, format metrics)
-- [ ] T052 [P] [US1] Implement Markdown Reporter in `src/reporters/markdown.ts` (generate sections: summary, agent execution, evaluator results, use tables for metrics)
+- [x] T049 [P] [US1] Write unit tests for JSON Reporter in `tests/unit/json-reporter.test.ts` (generate, writeToFile methods)
+- [x] T050 [P] [US1] Implement JSON Reporter in `src/reporters/json.ts` (serialize ResultsBundle to pretty JSON, write to file)
+- [x] T051 [P] [US1] Write unit tests for Markdown Reporter in `tests/unit/markdown-reporter.test.ts` (generate report sections, format metrics)
+- [x] T052 [P] [US1] Implement Markdown Reporter in `src/reporters/markdown.ts` (generate sections: summary, agent execution, evaluator results, use tables for metrics)
 
 ### CLI Commands (TDD: Integration tests validate end-to-end)
 
-- [ ] T053 [US1] Implement CLI entry point in `src/cli/index.ts` (setup Commander.js, register commands, version, help)
-- [ ] T054 [US1] Implement `yb run` command in `src/cli/commands/run.ts` (parse -c flag, load suite config, validate schema, invoke orchestrator)
-- [ ] T055 [US1] Add progress feedback to `yb run` command (spinners for clone, agent execution, evaluators)
-- [ ] T056 [US1] Add error handling to `yb run` command (user-friendly errors, exit codes, cleanup on SIGINT)
-- [ ] T057 [US1] Implement `yb report` command in `src/cli/commands/report.ts` (parse --from flag, load results JSON, invoke reporter, output path)
-- [ ] T058 [US1] Add output options to `yb report` command (--format flag, --output path override)
+- [x] T053 [US1] Implement CLI entry point in `src/cli/index.ts` (setup Commander.js, register commands, version, help)
+- [x] T054 [US1] Implement `yb run` command in `src/cli/commands/run.ts` (parse -c flag, load suite config, validate schema, invoke orchestrator)
+- [x] T055 [US1] Add progress feedback to `yb run` command (spinners for clone, agent execution, evaluators)
+- [x] T056 [US1] Add error handling to `yb run` command (user-friendly errors, exit codes, cleanup on SIGINT)
+- [x] T057 [US1] Implement `yb report` command in `src/cli/commands/report.ts` (parse --from flag, load results JSON, invoke reporter, output path)
+- [x] T058 [US1] Add output options to `yb report` command (--format flag, --output path override)
 
 ### Integration Tests (TDD: Write before final integration)
 
-- [ ] T059 [US1] Write integration test for complete run workflow in `tests/integration/run-command.test.ts` (full eval with mock repo, verify results JSON)
-- [ ] T060 [US1] Write integration test for report generation in `tests/integration/report.test.ts` (load real results, generate markdown, validate content)
-- [ ] T061 [US1] Write integration test for error scenarios in `tests/integration/error-handling.test.ts` (invalid config, repo not found, agent failure)
+- [x] T059 [US1] Write integration test for complete run workflow in `tests/integration/run-command.test.ts` (full eval with mock repo, verify results JSON)
+- [x] T060 [US1] Write integration test for report generation in `tests/integration/report.test.ts` (load real results, generate markdown, validate content)
+- [x] T061 [US1] Write integration test for error scenarios in `tests/integration/error-handling.test.ts` (invalid config, repo not found, agent failure)
 
 ### Validation & Documentation
 
-- [ ] T062 [US1] Create example basic suite in `examples/basic-suite.yaml` (small public repo, copilot-cli agent, git-diff + agentic-judge evaluators)
-- [ ] T063 [US1] Verify quickstart scenario 1 works end-to-end per `quickstart.md` (run evaluation, generate report, validate output)
-- [ ] T064 [US1] Create README.md with installation instructions, basic usage, example commands
-- [ ] T065 [US1] Ensure ≥80% test coverage for all US1 modules (run `npm test -- --coverage`)
+- [x] T062 [US1] Create example basic suite in `examples/basic-suite.yaml` (small public repo, copilot-cli agent, git-diff + agentic-judge evaluators)
+- [x] T063 [US1] Verify quickstart scenario 1 works end-to-end per `quickstart.md` (run evaluation, generate report, validate output)
+- [x] T064 [US1] Create README.md with installation instructions, basic usage, example commands
+- [x] T065 [US1] Ensure ≥80% test coverage for all US1 modules (run `npm test -- --coverage`)
 
 **Checkpoint**: User Story 1 complete - basic agent evaluation works end-to-end with git-diff and agentic-judge evaluators
 
