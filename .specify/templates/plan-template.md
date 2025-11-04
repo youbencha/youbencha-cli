@@ -31,7 +31,12 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+- [ ] **Agent-Agnostic**: Feature does not hardcode agent-specific logic outside adapters
+- [ ] **Reproducibility**: Configuration captures all inputs; results are deterministic or variance-documented
+- [ ] **Pluggable**: New evaluators/adapters implement standard interfaces without core changes
+- [ ] **FACE Log Compliance**: Any log format changes maintain schema compatibility
+- [ ] **Sandbox Isolation**: Agent execution remains isolated; no host system mutations
+- [ ] **TDD Required**: Tests written and approved before implementation begins
 
 ## Project Structure
 
