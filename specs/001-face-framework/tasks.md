@@ -151,37 +151,37 @@
 
 ### Expected Reference Support (TDD: Write tests first)
 
-- [ ] T066 [US2] Write tests for expected reference cloning in `tests/unit/workspace.test.ts` (clone to src-expected/, handle branch not found)
-- [ ] T067 [US2] Add expected reference cloning to Workspace Manager in `src/core/workspace.ts` (clone expected branch to src-expected/ directory)
-- [ ] T068 [US2] Update EvaluationContext type in `src/evaluators/base.ts` to include optional expectedDir: string field
-- [ ] T069 [US2] Write tests for expected branch validation in `tests/unit/orchestrator.test.ts` (fail fast if expected branch missing)
-- [ ] T070 [US2] Add expected branch validation to Orchestrator in `src/core/orchestrator.ts` (validate before agent execution, clear error message)
+- [X] T066 [US2] Write tests for expected reference cloning in `tests/unit/workspace.test.ts` (clone to src-expected/, handle branch not found)
+- [X] T067 [US2] Add expected reference cloning to Workspace Manager in `src/core/workspace.ts` (clone expected branch to src-expected/ directory)
+- [X] T068 [US2] Update EvaluationContext type in `src/evaluators/base.ts` to include optional expectedDir: string field
+- [X] T069 [US2] Write tests for expected branch validation in `tests/unit/orchestrator.test.ts` (fail fast if expected branch missing)
+- [X] T070 [US2] Add expected branch validation to Orchestrator in `src/core/orchestrator.ts` (validate before agent execution, clear error message)
 
 ### Expected-Diff Evaluator (TDD: Write tests before implementation)
 
-- [ ] T071 [US2] Write unit tests for ExpectedDiffEvaluator in `tests/unit/expected-diff.test.ts` (file comparison, similarity scoring, threshold checking)
-- [ ] T072 [US2] Implement ExpectedDiffEvaluator skeleton in `src/evaluators/expected-diff.ts` (requiresExpectedReference: true, checkPreconditions, evaluate stub)
-- [ ] T073 [US2] Implement file-by-file diff comparison (iterate files, use diff-utils for similarity, track file changes)
-- [ ] T074 [US2] Implement aggregate similarity calculation (overall score, files matched/changed/added/removed counts)
-- [ ] T075 [US2] Implement threshold checking (compare aggregate similarity to config.threshold, set status passed/failed)
-- [ ] T076 [US2] Add artifact generation (save detailed diff patch to artifacts/)
+- [X] T071 [US2] Write unit tests for ExpectedDiffEvaluator in `tests/unit/expected-diff.test.ts` (file comparison, similarity scoring, threshold checking)
+- [X] T072 [US2] Implement ExpectedDiffEvaluator skeleton in `src/evaluators/expected-diff.ts` (requiresExpectedReference: true, checkPreconditions, evaluate stub)
+- [X] T073 [US2] Implement file-by-file diff comparison (iterate files, use diff-utils for similarity, track file changes)
+- [X] T074 [US2] Implement aggregate similarity calculation (overall score, files matched/changed/added/removed counts)
+- [X] T075 [US2] Implement threshold checking (compare aggregate similarity to config.threshold, set status passed/failed)
+- [X] T076 [US2] Add artifact generation (save detailed diff patch to artifacts/)
 
 ### Reporter Updates (TDD: Write tests for new sections)
 
-- [ ] T077 [US2] Write tests for expected-diff sections in `tests/unit/markdown-reporter.test.ts` (similarity metrics table, file-level details)
-- [ ] T078 [US2] Update Markdown Reporter in `src/reporters/markdown.ts` to display expected-diff metrics (similarity score, threshold, pass/fail)
-- [ ] T079 [US2] Add file-level diff details section to Markdown report (list files with similarity scores, highlight differences)
+- [X] T077 [US2] Write tests for expected-diff sections in `tests/unit/markdown-reporter.test.ts` (similarity metrics table, file-level details)
+- [X] T078 [US2] Update Markdown Reporter in `src/reporters/markdown.ts` to display expected-diff metrics (similarity score, threshold, pass/fail)
+- [X] T079 [US2] Add file-level diff details section to Markdown report (list files with similarity scores, highlight differences)
 
 ### Integration Tests
 
-- [ ] T080 [US2] Write integration test for expected reference workflow in `tests/integration/expected-ref.test.ts` (clone both branches, run eval, verify expected-diff results)
-- [ ] T081 [US2] Write integration test for expected branch not found in `tests/integration/error-handling.test.ts` (verify error message, no agent execution)
+- [X] T080 [US2] Write integration test for expected reference workflow in `tests/integration/expected-ref.test.ts` (clone both branches, run eval, verify expected-diff results)
+- [X] T081 [US2] Write integration test for expected branch not found in `tests/integration/error-handling.test.ts` (verify error message, no agent execution)
 
 ### Validation & Documentation
 
-- [ ] T082 [US2] Create example suite with expected reference in `examples/expected-ref-suite.yaml` (expected_source: branch, expected: feature/completed, threshold: 0.80)
-- [ ] T083 [US2] Verify quickstart scenario 2 works end-to-end per `quickstart.md` (expected reference comparison with similarity metrics)
-- [ ] T084 [US2] Update README.md with expected reference section (configuration examples, use cases, threshold guidance)
+- [X] T082 [US2] Create example suite with expected reference in `examples/expected-ref-suite.yaml` (expected_source: branch, expected: feature/completed, threshold: 0.80)
+- [X] T083 [US2] Verify quickstart scenario 2 works end-to-end per `quickstart.md` (expected reference comparison with similarity metrics)
+- [X] T084 [US2] Update README.md with expected reference section (configuration examples, use cases, threshold guidance)
 
 **Checkpoint**: User Stories 1 AND 2 complete - users can run basic evaluations AND compare against expected reference branches
 

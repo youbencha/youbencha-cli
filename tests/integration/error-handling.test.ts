@@ -322,6 +322,70 @@ timeout: 1
     // depending on where the timeout occurs
   }, 30000);
 
+  it('should handle expected branch not found', async () => {
+    const expectedBranchConfig = path.join(testWorkspaceDir, 'expected-branch-missing.yaml');
+    
+    // Create a test repo
+    const testRepoDir = path.join(testWorkspaceDir, 'test-repo-expected');
+    await fs.mkdir(testRepoDir, { recursive: true });
+    
+    execSync('git init', { cwd: testRepoDir });
+    execSync('git config user.email "test@example.com"', { cwd: testRepoDir });
+    execSync('git config user.name "Test User"', { cwd: testRepoDir });
+    
+    const testFile = path.join(testRepoDir, 'test.txt');
+    await fs.writeFile(testFile, 'Hello World\n');
+    execSync('git add .', { cwd: testRepoDir });
+    execSync('git commit -m "Initial commit"', { cwd: testRepoDir });
+
+    // Create config with nonexistent expected branch
+    await fs.writeFile(expectedBranchConfig, `
+version: "1.0"
+repo: "${testRepoDir.replace(/\\/g, '/')}"
+branch: main
+expected_source: branch
+expected: nonexistent-expected-branch
+agent:
+  adapter: copilot-cli
+  version: 1.0
+  prompt: "Test prompt"
+evaluators:
+  - name: git-diff
+    config: {}
+  - name: expected-diff
+    config:
+      threshold: 0.80
+workspace_dir: "${testWorkspaceDir.replace(/\\/g, '/')}/.youbencha-workspace"
+timeout: 30
+`);
+
+    // Build the CLI
+    execSync('npm run build', { cwd: path.join(__dirname, '..', '..') });
+
+    const cliPath = path.join(__dirname, '..', '..', 'dist', 'cli', 'index.js');
+    
+    let error: any;
+    try {
+      execSync(`node "${cliPath}" run -c "${expectedBranchConfig}"`, {
+        cwd: path.join(__dirname, '..', '..'),
+        encoding: 'utf-8',
+        timeout: 45000
+      });
+    } catch (err) {
+      error = err;
+    }
+
+    // Should fail with expected branch error
+    expect(error).toBeDefined();
+    expect(error.status).toBe(1);
+    
+    const stderr = error.stderr || error.stdout || '';
+    expect(stderr).toMatch(/expected.*branch|branch.*not found|failed/i);
+    
+    // Should not execute agent when expected branch is missing
+    expect(stderr).not.toMatch(/agent.*execution|copilot.*running/i);
+  }, 60000);
+
   it('should cleanup workspace on error', async () => {
     const errorConfig = path.join(testWorkspaceDir, 'error-cleanup.yaml');
     

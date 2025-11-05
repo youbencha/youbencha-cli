@@ -228,6 +228,104 @@ describe('MarkdownReporter', () => {
       expect(typeof result).toBe('string');
       expect(result.length).toBeGreaterThan(0);
     });
+
+    it('should display expected-diff similarity metrics', async () => {
+      const bundle: ResultsBundle = createMockResultsBundle();
+      bundle.evaluators.push({
+        evaluator: 'expected-diff',
+        status: 'passed',
+        metrics: {
+          aggregate_similarity: 0.85,
+          threshold: 0.80,
+          files_matched: 5,
+          files_changed: 2,
+          files_added: 1,
+          files_removed: 0,
+          file_similarities: [],
+        },
+        message: 'Similarity: 85.0% (threshold: 80%)',
+        duration_ms: 1500,
+        timestamp: '2025-01-01T00:04:15Z',
+      });
+
+      const result = await reporter.generate(bundle);
+
+      expect(result).toContain('expected-diff');
+      expect(result).toContain('Aggregate Similarity');
+      expect(result).toContain('85.0%');
+      expect(result).toContain('Threshold');
+      expect(result).toContain('80%');
+      expect(result).toContain('Files Matched');
+      expect(result).toContain('5');
+    });
+
+    it('should display expected-diff file-level details', async () => {
+      const bundle: ResultsBundle = createMockResultsBundle();
+      bundle.evaluators.push({
+        evaluator: 'expected-diff',
+        status: 'failed',
+        metrics: {
+          aggregate_similarity: 0.65,
+          threshold: 0.80,
+          files_matched: 3,
+          files_changed: 5,
+          files_added: 2,
+          files_removed: 1,
+          file_similarities: [
+            { path: 'file1.ts', similarity: 1.0, status: 'matched' },
+            { path: 'file2.ts', similarity: 0.75, status: 'changed' },
+            { path: 'file3.ts', similarity: 0.45, status: 'changed' },
+            { path: 'file4.ts', similarity: 0.0, status: 'added' },
+          ],
+        },
+        message: 'Similarity: 65.0% (threshold: 80%)',
+        duration_ms: 2000,
+        timestamp: '2025-01-01T00:04:20Z',
+      });
+
+      const result = await reporter.generate(bundle);
+
+      expect(result).toContain('File-Level Details');
+      expect(result).toContain('file1.ts');
+      expect(result).toContain('file2.ts');
+      expect(result).toContain('100.0%');
+      expect(result).toContain('75.0%');
+      expect(result).toContain('matched');
+      expect(result).toContain('changed');
+    });
+
+    it('should truncate file-level details to 20 files', async () => {
+      const bundle: ResultsBundle = createMockResultsBundle();
+      
+      // Create 30 file similarities
+      const file_similarities = Array.from({ length: 30 }, (_, i) => ({
+        path: `file${i}.ts`,
+        similarity: Math.random(),
+        status: 'changed' as const,
+      }));
+      
+      bundle.evaluators.push({
+        evaluator: 'expected-diff',
+        status: 'failed',
+        metrics: {
+          aggregate_similarity: 0.70,
+          threshold: 0.80,
+          files_matched: 10,
+          files_changed: 20,
+          files_added: 0,
+          files_removed: 0,
+          file_similarities,
+        },
+        message: 'Similarity: 70.0% (threshold: 80%)',
+        duration_ms: 2000,
+        timestamp: '2025-01-01T00:04:20Z',
+      });
+
+      const result = await reporter.generate(bundle);
+
+      expect(result).toContain('File-Level Details');
+      expect(result).toContain('10 more files');
+    });
   });
 
   describe('writeToFile()', () => {

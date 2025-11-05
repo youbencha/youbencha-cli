@@ -1,0 +1,70 @@
+# Example Suite Configuration: Expected Reference Comparison
+# 
+# This suite demonstrates comparing agent output against an expected reference branch.
+# The expected-diff evaluator compares files between the agent-modified code
+# and a reference branch to measure how similar the output is to the expected result.
+
+# Repository configuration
+repo: https://github.com/octocat/Spoon-Knife.git
+branch: main  # Branch where agent will make changes
+
+# Expected reference configuration
+expected_source: branch
+expected: change-the-title  # Reference branch to compare against (use a different branch in practice)
+
+# Agent configuration
+agent:
+  type: copilot-cli
+  config:
+    prompt: "Change the title in the README.md to 'The Spoon-Knife Repository'"
+    tools:
+      - read
+      - write
+      - search
+
+# Evaluators
+evaluators:
+  # Git-diff: Track what changes the agent made
+  - name: git-diff
+    config: {}
+  
+  # Expected-diff: Compare agent output with expected reference
+  - name: expected-diff
+    config:
+      threshold: 0.80  # Require 80% similarity to pass
+      # Threshold interpretation:
+      # - 1.0 = 100% identical to expected
+      # - 0.9-0.99 = Very similar (minor differences)
+      # - 0.7-0.89 = Mostly similar (moderate differences)
+      # - <0.7 = Significantly different
+
+  - name: agentic-judge
+    config:
+      criteria:
+        - "README.md was modified"
+        - "README.md mentions The Spoon-Knife Repository"
+        - "No other files were modified"
+
+# Optional: Workspace and execution configuration
+workspace_dir: .youbencha-workspace
+timeout: 300000  # 5 minutes (in milliseconds)
+
+# Usage Examples:
+#
+# 1. Run evaluation with expected reference comparison:
+#    yb run -c examples/expected-ref-suite.yaml
+#
+# 2. View results with similarity metrics:
+#    yb report --from .youbencha-workspace/run-*/artifacts/results.json
+#
+# 3. Check if agent output meets similarity threshold:
+#    - Check "overall_status" in results.json
+#    - "passed" = similarity >= threshold
+#    - "failed" = similarity < threshold
+#
+# Tips:
+# - Use expected-diff when you have a "correct" or "ideal" implementation
+# - Adjust threshold based on your tolerance for variation
+# - Higher thresholds (>0.9) = strict similarity requirement
+# - Lower thresholds (<0.7) = allow more creative agent solutions
+# - Review file-level similarity scores in report.md to identify differences

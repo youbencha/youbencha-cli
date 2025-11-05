@@ -94,6 +94,95 @@ Options:
   --output <path>    Output path (optional)
 ```
 
+## Expected Reference Comparison
+
+youBencha supports comparing agent outputs against an expected reference branch. This is useful when you have a "correct" or "ideal" implementation to compare against.
+
+### Configuration
+
+Add an expected reference to your suite configuration:
+
+```yaml
+repo: https://github.com/octocat/Hello-World.git
+branch: main
+expected_source: branch
+expected: feature/completed  # The reference branch
+
+agent:
+  type: copilot-cli
+  config:
+    prompt: "Implement the feature"
+
+evaluators:
+  - name: expected-diff
+    config:
+      threshold: 0.80  # Require 80% similarity to pass
+```
+
+### Threshold Guidelines
+
+The `threshold` determines how similar the agent output must be to the expected reference:
+
+- **1.0** (100%) - Exact match (very strict)
+- **0.9-0.99** - Very similar with minor differences (strict)
+- **0.7-0.89** - Mostly similar with moderate differences (balanced)
+- **<0.7** - Significantly different (lenient)
+
+**Recommended thresholds:**
+- **0.95+** for generated files (e.g., migrations, configs)
+- **0.80-0.90** for implementation code
+- **0.70-0.80** for creative tasks with multiple valid solutions
+
+### Use Cases
+
+**1. Test-Driven Development**
+```yaml
+expected: tests-implemented
+# Compare agent implementation against expected test-driven approach
+```
+
+**2. Refactoring Verification**
+```yaml
+expected: refactored-solution
+# Ensure agent refactoring matches expected improvements
+```
+
+**3. Bug Fix Validation**
+```yaml
+expected: bug-fixed
+# Compare agent's bug fix with known correct fix
+```
+
+### Interpretation
+
+The expected-diff evaluator provides:
+
+- **Aggregate Similarity**: Overall similarity score (0.0 to 1.0)
+- **File-level Details**: Individual similarity for each file
+- **Status Counts**: matched, changed, added, removed files
+
+Example report section:
+
+```
+### expected-diff
+
+| Metric | Value |
+|--------|-------|
+| Aggregate Similarity | 85.0% |
+| Threshold | 80.0% |
+| Files Matched | 5 |
+| Files Changed | 2 |
+| Files Added | 0 |
+| Files Removed | 0 |
+
+#### File-level Details
+
+| File | Similarity | Status |
+|------|-----------|--------|
+| src/main.ts | 75.0% | 🔄 changed |
+| src/utils.ts | 100.0% | ✓ matched |
+```
+
 ## Built-in Evaluators
 
 ### git-diff
@@ -101,6 +190,14 @@ Options:
 Analyzes Git changes made by the agent.
 
 **Metrics:** files_changed, lines_added, lines_removed, change_entropy
+
+### expected-diff
+
+Compares agent output against expected reference branch.
+
+**Metrics:** aggregate_similarity, threshold, files_matched, files_changed, files_added, files_removed, file_similarities
+
+**Requires:** expected_source and expected configured in suite
 
 ### agentic-judge
 

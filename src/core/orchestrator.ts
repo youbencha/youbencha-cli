@@ -17,6 +17,7 @@ import { AgentAdapter, AgentExecutionContext } from '../adapters/base.js';
 import { CopilotCLIAdapter } from '../adapters/copilot-cli.js';
 import { Evaluator, EvaluationContext } from '../evaluators/base.js';
 import { GitDiffEvaluator } from '../evaluators/git-diff.js';
+import { ExpectedDiffEvaluator } from '../evaluators/expected-diff.js';
 import { AgenticJudgeEvaluator } from '../evaluators/agentic-judge.js';
 import * as logger from '../lib/logger.js';
 
@@ -175,7 +176,7 @@ export class Orchestrator {
 
     // Execute agent
     const executionContext: AgentExecutionContext = {
-      workspaceDir: workspace.paths.runDir,
+      workspaceDir: workspace.paths.modifiedDir,
       repoDir: workspace.paths.modifiedDir,
       config: suiteConfig.agent.config || {},
       timeout: suiteConfig.timeout || 300000, // 5 min default
@@ -415,6 +416,8 @@ export class Orchestrator {
     switch (evaluatorName) {
       case 'git-diff':
         return new GitDiffEvaluator();
+      case 'expected-diff':
+        return new ExpectedDiffEvaluator();
       case 'agentic-judge':
         return new AgenticJudgeEvaluator();
       // Add more evaluators here as they're implemented
