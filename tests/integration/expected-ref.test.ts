@@ -24,7 +24,7 @@ describe('Integration: Expected Reference Workflow', () => {
     await fs.mkdir(testRepoDir, { recursive: true });
     
     // Initialize git repo
-    execSync('git init', { cwd: testRepoDir });
+    execSync('git init -b main', { cwd: testRepoDir });
     execSync('git config user.email "test@example.com"', { cwd: testRepoDir });
     execSync('git config user.name "Test User"', { cwd: testRepoDir });
     

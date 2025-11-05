@@ -163,7 +163,7 @@ timeout: 30
     const testRepoDir = path.join(testWorkspaceDir, 'test-repo');
     await fs.mkdir(testRepoDir, { recursive: true });
     
-    execSync('git init', { cwd: testRepoDir });
+    execSync('git init -b main', { cwd: testRepoDir });
     execSync('git config user.email "test@example.com"', { cwd: testRepoDir });
     execSync('git config user.name "Test User"', { cwd: testRepoDir });
     
@@ -218,7 +218,7 @@ timeout: 30
     const testRepoDir = path.join(testWorkspaceDir, 'test-repo-2');
     await fs.mkdir(testRepoDir, { recursive: true });
     
-    execSync('git init', { cwd: testRepoDir });
+    execSync('git init -b main', { cwd: testRepoDir });
     execSync('git config user.email "test@example.com"', { cwd: testRepoDir });
     execSync('git config user.name "Test User"', { cwd: testRepoDir });
     
@@ -273,7 +273,7 @@ timeout: 30
     const testRepoDir = path.join(testWorkspaceDir, 'test-repo-3');
     await fs.mkdir(testRepoDir, { recursive: true });
     
-    execSync('git init', { cwd: testRepoDir });
+    execSync('git init -b main', { cwd: testRepoDir });
     execSync('git config user.email "test@example.com"', { cwd: testRepoDir });
     execSync('git config user.name "Test User"', { cwd: testRepoDir });
     
@@ -329,7 +329,7 @@ timeout: 1
     const testRepoDir = path.join(testWorkspaceDir, 'test-repo-expected');
     await fs.mkdir(testRepoDir, { recursive: true });
     
-    execSync('git init', { cwd: testRepoDir });
+    execSync('git init -b main', { cwd: testRepoDir });
     execSync('git config user.email "test@example.com"', { cwd: testRepoDir });
     execSync('git config user.name "Test User"', { cwd: testRepoDir });
     
