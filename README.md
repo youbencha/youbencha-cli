@@ -1,5 +1,7 @@
 # youBencha
 
+<!-- This repository provides a testing and benchmarking framework for evaluating AI-powered coding agents. It allows developers to run reproducible evaluations, compare agent performance, and generate detailed reports through a simple CLI interface. -->
+
 A friendly, developer-first CLI framework for evaluating agentic coding tools.
 
 ## What is youBencha?

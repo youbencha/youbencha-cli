@@ -16,6 +16,7 @@ import * as logger from '../../lib/logger.js';
  */
 interface RunCommandOptions {
   config: string;
+  keepWorkspace?: boolean;
 }
 
 /**
@@ -49,7 +50,9 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
     }
 
     // Create orchestrator
-    const orchestrator = new Orchestrator();
+    const orchestrator = new Orchestrator({
+      keepWorkspace: options.keepWorkspace,
+    });
 
     // Run evaluation
     logger.info('Starting evaluation...');

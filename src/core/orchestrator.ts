@@ -154,7 +154,15 @@ export class Orchestrator {
     faceLog: YouBenchaLog;
     agentExecution: ResultsBundle['agent'];
   }> {
-    logger.info('Executing agent...');
+    // Display agent context before execution
+    const prompt = suiteConfig.agent.config?.prompt as string | undefined;
+    if (prompt) {
+      logger.info(`Agent prompt: "${prompt}"`);
+    }
+    logger.info(`Agent type: ${suiteConfig.agent.type}`);
+    logger.info(`Working directory: ${workspace.paths.modifiedDir}`);
+    logger.info('Starting agent execution...');
+    console.log(''); // Add blank line for readability
 
     // Get agent adapter
     const adapter = this.getAgentAdapter(suiteConfig.agent.type);
@@ -176,8 +184,22 @@ export class Orchestrator {
 
     const result = await adapter.execute(executionContext);
 
+    // Display completion summary
+    console.log(''); // Add blank line for readability
+    logger.info(`Agent execution completed: ${result.status}`);
+    logger.info(`Duration: ${(result.durationMs / 1000).toFixed(2)}s`);
+    logger.info(`Exit code: ${result.exitCode}`);
+
     // Normalize to youBencha log
     const faceLog = adapter.normalizeLog(result.output, result);
+
+    // Display usage metrics if available
+    if (faceLog.usage) {
+      logger.info(`Token usage: ${faceLog.usage.total_tokens} tokens (prompt: ${faceLog.usage.prompt_tokens}, completion: ${faceLog.usage.completion_tokens})`);
+      if (faceLog.usage.estimated_cost_usd) {
+        logger.info(`Estimated cost: $${faceLog.usage.estimated_cost_usd.toFixed(4)}`);
+      }
+    }
 
     // Build agent execution metadata
     const agentExecution = {

@@ -33,8 +33,8 @@ export class AgenticJudgeEvaluator implements Evaluator {
    */
   async checkPreconditions(context: EvaluationContext): Promise<boolean> {
     try {
-      // Check if agent configuration exists
-      const agentConfig = context.config.agent as any;
+      // Check if agent configuration exists in suite config
+      const agentConfig = context.suiteConfig.agent;
       if (!agentConfig || !agentConfig.type) {
         return false;
       }
@@ -68,9 +68,9 @@ export class AgenticJudgeEvaluator implements Evaluator {
         );
       }
 
-      // Get adapter for configured agent type
-      const agentConfig = context.config.agent as any;
-      const agentType = agentConfig.type as string;
+      // Get adapter for configured agent type from suite config
+      const agentConfig = context.suiteConfig.agent;
+      const agentType = agentConfig.type;
       const adapter = await this.getAdapter(agentType);
       if (!adapter) {
         return this.createSkippedResult(

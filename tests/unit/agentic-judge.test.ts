@@ -48,12 +48,6 @@ describe('AgenticJudgeEvaluator', () => {
         },
       },
       config: {
-        agent: {
-          type: 'copilot-cli',
-          config: {
-            prompt: 'Evaluate the code quality',
-          },
-        },
         criteria: [
           'Error handling completeness',
           'Test coverage adequacy',
@@ -64,7 +58,12 @@ describe('AgenticJudgeEvaluator', () => {
         version: '1.0.0',
         repo: 'https://github.com/test/repo',
         branch: 'main',
-        agent: { type: 'copilot-cli', config: {} },
+        agent: {
+          type: 'copilot-cli',
+          config: {
+            prompt: 'Evaluate the code quality',
+          },
+        },
         expected_source: 'none',
         evaluators: [],
       },
@@ -105,7 +104,10 @@ describe('AgenticJudgeEvaluator', () => {
     test('returns false when agent config is missing', async () => {
       const contextWithoutAgent = {
         ...mockContext,
-        config: {},
+        suiteConfig: {
+          ...mockContext.suiteConfig,
+          agent: undefined as any,
+        },
       };
       
       const result = await evaluator.checkPreconditions(contextWithoutAgent);
@@ -115,9 +117,10 @@ describe('AgenticJudgeEvaluator', () => {
     test('returns false when agent type is invalid', async () => {
       const contextWithInvalidAgent = {
         ...mockContext,
-        config: {
+        suiteConfig: {
+          ...mockContext.suiteConfig,
           agent: {
-            type: 'invalid-agent-type',
+            type: 'invalid-agent-type' as any,
             config: {},
           },
         },
@@ -308,7 +311,10 @@ describe('AgenticJudgeEvaluator', () => {
     test('skips when preconditions not met', async () => {
       const contextWithoutAgent = {
         ...mockContext,
-        config: {},
+        suiteConfig: {
+          ...mockContext.suiteConfig,
+          agent: undefined as any,
+        },
       };
 
       const result = await evaluator.evaluate(contextWithoutAgent);
@@ -382,19 +388,44 @@ describe('AgenticJudgeEvaluator', () => {
 
   describe('Adapter Loading', () => {
     test('loads copilot-cli adapter when configured', async () => {
+      // Mock the adapter to avoid actually executing copilot
+      const mockAdapter: AgentAdapter = {
+        name: 'copilot-cli',
+        version: '1.0.0',
+        checkAvailability: jest.fn().mockResolvedValue(true),
+        execute: jest.fn().mockResolvedValue({
+          exitCode: 0,
+          status: 'success',
+          output: JSON.stringify({
+            status: 'passed',
+            metrics: { quality_score: 9.0 },
+            message: 'Code quality check passed',
+          }),
+          startedAt: new Date().toISOString(),
+          completedAt: new Date().toISOString(),
+          durationMs: 1000,
+          errors: [],
+        }),
+        normalizeLog: jest.fn(),
+      };
+
+      (evaluator as any).getAdapter = jest.fn().mockResolvedValue(mockAdapter);
+
       const result = await evaluator.evaluate(mockContext);
       
       // Should complete without throwing
       expect(result).toBeDefined();
       expect(result.evaluator).toBe('agentic-judge');
+      expect(result.status).toBe('passed');
     });
 
     test('handles unknown adapter type', async () => {
       const contextWithUnknownAdapter = {
         ...mockContext,
-        config: {
+        suiteConfig: {
+          ...mockContext.suiteConfig,
           agent: {
-            type: 'unknown-adapter',
+            type: 'unknown-adapter' as any,
             config: {},
           },
         },

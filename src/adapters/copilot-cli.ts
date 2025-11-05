@@ -58,12 +58,12 @@ export class CopilotCLIAdapter implements AgentAdapter {
     const errors: Array<{ message: string; timestamp: string; stackTrace?: string }> = [];
 
     try {
-      // Build copilot command arguments
-      const args = this.buildCopilotArgs(context);
+      // Build copilot command
+      const { command, args } = this.buildCopilotCommand(context);
       
       // Execute copilot with timeout
       const result = await this.executeWithTimeout(
-        'copilot',
+        command,
         args,
         context.workspaceDir,
         context.env,
@@ -170,21 +170,35 @@ export class CopilotCLIAdapter implements AgentAdapter {
   }
 
   /**
-   * Build copilot command arguments from context
+   * Build copilot command with proper platform handling
    */
-  private buildCopilotArgs(context: AgentExecutionContext): string[] {
-    const args: string[] = [];
+  private buildCopilotCommand(
+    context: AgentExecutionContext
+  ): { command: string; args: string[] } {
+    const prompt = context.config.prompt as string | undefined;
     
-    // Add prompt using -p flag for programmatic mode
-    if (context.config.prompt) {
-      args.push('-p', context.config.prompt);
+    if (!prompt) {
+      throw new Error('Prompt is required in agent config');
     }
-    
-    // Allow all tools for programmatic execution
-    // This enables copilot to execute commands without manual approval
-    args.push('--allow-all-tools');
-    
-    return args;
+
+    // On Windows PowerShell, copilot is a .ps1 script
+    // Build the full command as a single string for -Command
+    if (process.platform === 'win32') {
+      // Escape the prompt for PowerShell by doubling quotes
+      const escapedPrompt = prompt.replace(/"/g, '""');
+      const commandString = `copilot -p "${escapedPrompt}" --allow-all-tools --allow-all-paths`;
+      
+      return {
+        command: 'pwsh.exe',
+        args: ['-NoProfile', '-Command', commandString],
+      };
+    }
+
+    // Unix-like systems
+    return {
+      command: 'copilot',
+      args: ['-p', prompt, '--allow-all-tools', '--allow-all-paths'],
+    };
   }
 
   /**
@@ -202,10 +216,14 @@ export class CopilotCLIAdapter implements AgentAdapter {
       let timedOut = false;
       let timeoutHandle: NodeJS.Timeout | null = null;
 
+      // Use direct command execution without shell
+      // This ensures arguments are passed correctly without shell parsing
+      const shellConfig = this.getShellConfig();
+
       const childProcess = spawn(command, args, {
         cwd,
         env: { ...process.env, ...env },
-        shell: true,
+        ...shellConfig,
       });
 
       // Set timeout if specified
@@ -223,13 +241,19 @@ export class CopilotCLIAdapter implements AgentAdapter {
         }, timeout);
       }
 
-      // Capture stdout and stderr
+      // Capture stdout and stderr with real-time streaming
       childProcess.stdout?.on('data', (data) => {
-        output += data.toString();
+        const text = data.toString();
+        output += text;
+        // Stream to console in real-time
+        process.stdout.write(text);
       });
 
       childProcess.stderr?.on('data', (data) => {
-        output += data.toString();
+        const text = data.toString();
+        output += text;
+        // Stream to console in real-time
+        process.stderr.write(text);
       });
 
       childProcess.on('error', (error) => {
@@ -250,6 +274,15 @@ export class CopilotCLIAdapter implements AgentAdapter {
         });
       });
     });
+  }
+
+  /**
+   * Get spawn configuration for direct command execution
+   */
+  private getShellConfig(): { shell?: boolean | string; windowsVerbatimArguments?: boolean } {
+    // Don't use shell to avoid argument parsing issues on all platforms
+    // spawn will handle arguments correctly when shell is false
+    return { shell: false };
   }
 
   /**
