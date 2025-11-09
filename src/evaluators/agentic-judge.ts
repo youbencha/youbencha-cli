@@ -6,10 +6,17 @@
  * NOT a single LLM API call - uses full agentic workflow.
  */
 
+import { readFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { Evaluator, EvaluationContext } from './base.js';
 import { EvaluationResult } from '../schemas/result.schema.js';
 import { AgentAdapter, AgentExecutionContext } from '../adapters/base.js';
 import { CopilotCLIAdapter } from '../adapters/copilot-cli.js';
+
+// Get __dirname equivalent in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 /**
  * Agent evaluation result from JSON output
@@ -116,9 +123,11 @@ export class AgenticJudgeEvaluator implements Evaluator {
       // Parse agent output as JSON
       const evaluationOutput = this.parseAgentOutput(agentResult.output);
       if (!evaluationOutput) {
+        // Provide detailed error message with output preview
+        const outputPreview = agentResult.output.substring(0, 500).replace(/\n/g, ' ');
         return this.createSkippedResult(
           startedAt,
-          'Agent output is not valid JSON or missing required fields (status, metrics, message)',
+          `Agent output is not valid JSON or missing required fields (status, metrics, message). Output preview: "${outputPreview}..."`,
           agentResult.durationMs
         );
       }
@@ -162,30 +171,18 @@ export class AgenticJudgeEvaluator implements Evaluator {
    * Build evaluation prompt for agent
    */
   private buildEvaluationPrompt(context: EvaluationContext): string {
+    // Load prompt template
+    const templatePath = join(__dirname, 'prompts', 'agentic-judge.template.txt');
+    const template = readFileSync(templatePath, 'utf-8');
+    
+    // Format criteria list
     const criteria = context.config.criteria as string[] || [];
+    const criteriaList = criteria
+      .map((criterion, index) => `${index + 1}. ${criterion}`)
+      .join('\n');
     
-    let prompt = `You are a code quality evaluator. Review the code in this repository and evaluate it against the following criteria:\n\n`;
-    
-    // Add criteria
-    criteria.forEach((criterion, index) => {
-      prompt += `${index + 1}. ${criterion}\n`;
-    });
-    
-    prompt += `\nAnalyze the code using all available tools (read files, search, analyze patterns). `;
-    prompt += `Provide thorough evaluation with specific examples and evidence.\n\n`;
-    prompt += `Output your evaluation as JSON with the following structure:\n`;
-    prompt += `{\n`;
-    prompt += `  "status": "passed" | "failed",\n`;
-    prompt += `  "metrics": { /* your detailed metrics as key-value pairs */ },\n`;
-    prompt += `  "message": "Summary of evaluation findings"\n`;
-    prompt += `}\n\n`;
-    prompt += `Important:\n`;
-    prompt += `- Use "passed" if code meets the criteria, "failed" if it does not\n`;
-    prompt += `- Include specific metrics relevant to the criteria (e.g., error_handling_score: 8.5)\n`;
-    prompt += `- Provide a clear message explaining your evaluation\n`;
-    prompt += `- Output ONLY the JSON object, no additional text\n`;
-
-    return prompt;
+    // Replace placeholder with criteria
+    return template.replace('{{CRITERIA}}', criteriaList);
   }
 
   /**
@@ -193,14 +190,62 @@ export class AgenticJudgeEvaluator implements Evaluator {
    */
   private parseAgentOutput(output: string): AgentEvaluationOutput | null {
     try {
-      // Try to find JSON in output (may have additional text)
-      const jsonMatch = output.match(/\{[\s\S]*"status"[\s\S]*"metrics"[\s\S]*"message"[\s\S]*\}/);
-      const jsonText = jsonMatch ? jsonMatch[0] : output;
-      
+      // Strategy 1: Try to extract JSON from markdown code block
+      const markdownMatch = output.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+      if (markdownMatch) {
+        const jsonText = markdownMatch[1].trim();
+        const parsed = this.validateAndParse(jsonText);
+        if (parsed) return parsed;
+      }
+
+      // Strategy 2: Try to find JSON object with required fields
+      const jsonObjectMatch = output.match(/\{[\s\S]*?"status"[\s\S]*?"metrics"[\s\S]*?"message"[\s\S]*?\}/);
+      if (jsonObjectMatch) {
+        const parsed = this.validateAndParse(jsonObjectMatch[0]);
+        if (parsed) return parsed;
+      }
+
+      // Strategy 3: Try to parse entire output as JSON
+      const parsed = this.validateAndParse(output.trim());
+      if (parsed) return parsed;
+
+      // Strategy 4: Try to find last complete JSON object in output
+      const lastBraceIndex = output.lastIndexOf('}');
+      if (lastBraceIndex > 0) {
+        const firstBraceIndex = output.lastIndexOf('{', lastBraceIndex);
+        if (firstBraceIndex >= 0) {
+          const jsonCandidate = output.substring(firstBraceIndex, lastBraceIndex + 1);
+          const parsed = this.validateAndParse(jsonCandidate);
+          if (parsed) return parsed;
+        }
+      }
+
+      return null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  /**
+   * Validate and parse JSON string into AgentEvaluationOutput
+   */
+  private validateAndParse(jsonText: string): AgentEvaluationOutput | null {
+    try {
       const parsed = JSON.parse(jsonText);
       
-      // Validate required fields
+      // Validate required fields exist
       if (!parsed.status || !parsed.metrics || !parsed.message) {
+        return null;
+      }
+
+      // Validate types
+      if (typeof parsed.status !== 'string') {
+        return null;
+      }
+      if (typeof parsed.metrics !== 'object' || parsed.metrics === null || Array.isArray(parsed.metrics)) {
+        return null;
+      }
+      if (typeof parsed.message !== 'string') {
         return null;
       }
 
