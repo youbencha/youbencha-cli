@@ -25,7 +25,7 @@
 **Rationale**:
 - Industry-standard Node.js CLI framework with 30k+ GitHub stars
 - Native TypeScript support with excellent type definitions
-- Built-in support for subcommands (`youBencha run`, `youBencha report`, `youBencha suggest-eval`)
+- Built-in support for subcommands (`youBencha run`, `youBencha report`, `youBencha suggest-suite`)
 - Automatic help generation and argument parsing
 - Minimal learning curve for contributors familiar with Node.js ecosystem
 
@@ -130,7 +130,7 @@
 **Integration Tests** (`tests/integration/`):
 - `run-command.test.ts`: End-to-end evaluation flow with real Git repos
 - `report.test.ts`: Results JSON → Markdown report generation
-- `suggest-eval.test.ts`: Branch analysis → evaluator suggestion
+- `suggest-suite.test.ts`: Interactive suite generation → agent workflow validation
 
 **Unit Tests** (`tests/unit/`):
 - All core modules (workspace, orchestrator, analyzers, reporters)
@@ -272,7 +272,7 @@ evaluators:
 ### Decision: Pattern-Based Mapping with Heuristics
 
 **Rationale**:
-- `youBencha suggest-eval` analyzes branch diff to suggest evaluators
+- `youBencha suggest-suite` launches interactive AI agent to generate contextual evaluation suites
 - Use heuristic rules: file extensions → evaluators, change patterns → criteria
 - Extract metrics from expected branch (run evaluators on it) for thresholds
 

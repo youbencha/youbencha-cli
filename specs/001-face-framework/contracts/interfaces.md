@@ -627,28 +627,35 @@ interface WorkspaceManager {
 
 ## 6. Branch Analyzer Contract
 
-**Purpose**: Define branch comparison analysis
+**Purpose**: Define folder comparison analysis for suite generation
 
 **Contract**:
 
 ```typescript
 /**
- * BranchAnalyzer compares two branches and detects patterns
+ * DiffAnalyzer compares source and output folders and detects patterns
+ * Works with both git repositories and plain directories
  */
-interface BranchAnalyzer {
+interface DiffAnalyzer {
   /**
-   * Analyze differences between two branches
+   * Analyze differences between source and output folders
    * 
-   * @param repoPath - Path to repository
-   * @param sourceBranch - Source branch name
-   * @param targetBranch - Target branch name
-   * @returns Promise resolving to analysis results
+   * @param sourcePath - Path to source/baseline folder
+   * @param outputPath - Path to agent output folder
+   * @returns Promise resolving to diff analysis results
    */
-  analyze(
-    repoPath: string,
-    sourceBranch: string,
-    targetBranch: string
-  ): Promise<BranchAnalysis>;
+  analyzeFolders(
+    sourcePath: string,
+    outputPath: string
+  ): Promise<DiffAnalysis>;
+  
+  /**
+   * Detect if path is a git repository
+   * 
+   * @param path - Path to check
+   * @returns True if path is a git repository
+   */
+  isGitRepo(path: string): Promise<boolean>;
   
   /**
    * Detect file type distribution
@@ -659,55 +666,68 @@ interface BranchAnalyzer {
   detectFileTypes(files: string[]): Record<string, number>;
   
   /**
-   * Detect change patterns (tests, config, docs, etc.)
+   * Detect change patterns (tests, config, docs, auth, API, etc.)
    * 
-   * @param analysis - Branch analysis
+   * @param analysis - Diff analysis
    * @returns Detected patterns
    */
-  detectPatterns(analysis: BranchAnalysis): BranchAnalysis['patterns'];
+  detectPatterns(analysis: DiffAnalysis): DiffAnalysis['patterns'];
 }
 ```
 
 ---
 
-## 7. Evaluator Suggester Contract
+## 7. Agent Launcher Contract
 
-**Purpose**: Define evaluator recommendation logic
+**Purpose**: Define interface for launching AI agents with agent files
 
 **Contract**:
 
 ```typescript
 /**
- * EvaluatorSuggester recommends evaluators based on branch analysis
+ * AgentLauncher executes configured AI agent tools with agent files
  */
-interface EvaluatorSuggester {
+interface AgentLauncher {
   /**
-   * Suggest evaluators for given branch analysis
+   * Validate that agent tool is installed
    * 
-   * @param analysis - Branch analysis results
-   * @param availableEvaluators - List of evaluator names available
-   * @returns Promise resolving to suggestions
+   * @param agentTool - Agent tool name (e.g., 'copilot-cli', 'aider')
+   * @returns Promise resolving to validation result
+   * @throws Error if agent tool not found or not configured
    */
-  suggest(
-    analysis: BranchAnalysis,
-    availableEvaluators: string[]
-  ): Promise<EvaluatorSuggestion[]>;
+  validateAgentTool(agentTool: string): Promise<void>;
   
   /**
-   * Generate suite configuration YAML from suggestions
+   * Launch AI agent with agent file and context
    * 
-   * @param repoUrl - Repository URL
-   * @param sourceBranch - Source branch
-   * @param expectedBranch - Expected branch
-   * @param suggestions - Evaluator suggestions
-   * @returns YAML suite configuration
+   * @param agentTool - Agent tool to use
+   * @param agentFilePath - Path to agent file (.agent.md)
+   * @param context - Suite suggestion context (workspace path, etc.)
+   * @returns Promise resolving to agent execution result
    */
-  generateSuiteTemplate(
-    repoUrl: string,
-    sourceBranch: string,
-    expectedBranch: string,
-    suggestions: EvaluatorSuggestion[]
-  ): string;
+  launchAgent(
+    agentTool: string,
+    agentFilePath: string,
+    context: SuiteSuggestionContext
+  ): Promise<AgentExecutionResult>;
+  
+  /**
+   * Get supported agent tools
+   * 
+   * @returns List of supported agent tool names
+   */
+  getSupportedAgents(): string[];
+}
+
+/**
+ * Result from agent execution
+ */
+interface AgentExecutionResult {
+  success: boolean;
+  generatedSuitePath?: string;   // Path to generated suite.yaml
+  error?: string;                 // Error message if failed
+  duration: number;               // Execution time in milliseconds
+}
 }
 ```
 

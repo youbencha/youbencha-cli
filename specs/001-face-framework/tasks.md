@@ -187,48 +187,48 @@
 
 ---
 
-## Phase 5: User Story 3 - Automated Evaluator Suggestions (Priority: P3)
+## Phase 5: User Story 3 - AI-Assisted Suite Generation (Priority: P3)
 
-**Goal**: Enable users to analyze branch differences and get automated evaluator recommendations with thresholds
+**Goal**: Enable users to interactively generate evaluation suites from successful agent outputs using an AI agent that understands user intent
 
-**Independent Test**: Run `yb suggest-eval --source main --expected feature/completed`, verify it outputs valid suite.yaml with recommended evaluators and thresholds based on branch analysis
+**Independent Test**: Run `yb suggest-suite --agent copilot-cli --output-dir ./my-feature-output`, agent prompts for context (baseline, instructions), analyzes changes, generates suite.yaml with contextual evaluators and reasoning
 
-### Branch Analysis Components (TDD: Write tests first)
+### Agent File Creation (TDD: Write tests first)
 
-- [ ] T085 [P] [US3] Write unit tests for BranchAnalyzer in `tests/unit/branch-analyzer.test.ts` (diff detection, file patterns, structural analysis)
-- [ ] T086 [P] [US3] Implement BranchAnalyzer skeleton in `src/core/branch-analyzer.ts` (analyzeBranches method returning BranchAnalysis)
-- [ ] T087 [P] [US3] Implement file change detection (use simple-git to diff branches, categorize files as added/modified/deleted)
-- [ ] T088 [P] [US3] Implement pattern detection (detect test files, config files, docs, dependencies based on file paths and extensions)
-- [ ] T089 [P] [US3] Implement structural analysis (calculate lines changed, file type distribution, change complexity score)
+- [ ] T085 [P] [US3] Create agent file at `agents/suggest-suite.agent.md` with system prompt, workflow instructions, and examples
+- [ ] T086 [P] [US3] Document agent workflow: prompt for output folder → detect git repo → request baseline/source → request instructions → analyze diff → generate suite
+- [ ] T087 [P] [US3] Include youBencha domain knowledge in agent file (evaluator types, suite schema, pattern mapping examples)
+- [ ] T088 [P] [US3] Add example dialogues showing successful suite generation sessions
+- [ ] T089 [P] [US3] Add example generated suites with reasoning comments
 
-### Evaluator Suggestion Logic (TDD: Write tests first)
+### Diff Analysis Components (TDD: Write tests first)
 
-- [ ] T090 [P] [US3] Write unit tests for EvaluatorSuggester in `tests/unit/evaluator-suggester.test.ts` (pattern mapping, threshold calculation, template generation)
-- [ ] T091 [P] [US3] Implement EvaluatorSuggester in `src/core/evaluator-suggester.ts` (suggestEvaluators method taking BranchAnalysis)
-- [ ] T092 [US3] Implement rule-based evaluator mapping (code changes → expected-diff, test patterns → test evaluator, always include git-diff)
-- [ ] T093 [US3] Implement threshold calculation (analyze expected branch metrics, suggest reasonable thresholds with margin)
-- [ ] T094 [US3] Implement suite template generation (format as YAML with comments explaining each evaluator and threshold)
+- [ ] T090 [P] [US3] Write unit tests for DiffAnalyzer in `tests/unit/diff-analyzer.test.ts` (compute diff between source and output folders, detect patterns)
+- [ ] T091 [P] [US3] Implement DiffAnalyzer in `src/core/diff-analyzer.ts` (analyzeFolders method returning DiffAnalysis)
+- [ ] T092 [US3] Implement file change detection (categorize files as added/modified/deleted, handle both git and non-git folders)
+- [ ] T093 [US3] Implement pattern detection (detect test files, config files, docs, dependencies based on file paths and extensions)
+- [ ] T094 [US3] Implement structural analysis (calculate lines changed, file type distribution, change complexity score)
 
 ### CLI Command for US3 (TDD: Integration tests validate workflow)
 
-- [ ] T095 [US3] Implement `yb suggest-eval` command in `src/cli/commands/suggest-eval.ts` (parse --source, --expected, --output flags)
-- [ ] T096 [US3] Add branch cloning for analysis (clone both branches to temporary directories for comparison)
-- [ ] T097 [US3] Add analyzer and suggester invocation (call BranchAnalyzer, pass results to EvaluatorSuggester)
-- [ ] T098 [US3] Add YAML output generation (write suggested suite to file, display path to user)
-- [ ] T099 [US3] Add progress feedback (spinners for cloning, analyzing, generating)
-- [ ] T100 [US3] Wire up suggest-eval command in `src/cli/index.ts` (register with Commander.js)
+- [ ] T095 [US3] Implement `yb suggest-suite` command in `src/cli/commands/suggest-suite.ts` (parse --agent, --output-dir flags)
+- [ ] T096 [US3] Add agent tool validation (check if configured agent is installed before launching)
+- [ ] T097 [US3] Add agent launcher (execute configured agent tool with agent file and workspace context)
+- [ ] T098 [US3] Add path validation (verify output-dir exists and is readable before passing to agent)
+- [ ] T099 [US3] Add progress feedback (show agent launch status, provide clear error messages)
+- [ ] T100 [US3] Wire up suggest-suite command in `src/cli/index.ts` (register with Commander.js)
 
 ### Integration Tests
 
-- [ ] T101 [US3] Write integration test for suggest-eval workflow in `tests/integration/suggest-eval.test.ts` (analyze real branches, verify suite structure)
-- [ ] T102 [US3] Write tests for various branch patterns in `tests/integration/branch-patterns.test.ts` (code-only, tests-only, mixed changes, docs-only)
-- [ ] T103 [US3] Write test for generated suite validity in `tests/integration/suggest-eval.test.ts` (parse generated YAML, validate against suite schema)
+- [ ] T101 [US3] Write integration test for suggest-suite workflow in `tests/integration/suggest-suite.test.ts` (mock agent interaction, verify suite generation)
+- [ ] T102 [US3] Write tests for agent file validation in `tests/integration/suggest-suite.test.ts` (verify agent file structure, workflow completeness)
+- [ ] T103 [US3] Write test for generated suite validity in `tests/integration/suggest-suite.test.ts` (parse generated YAML, validate against suite schema)
 
 ### Validation & Documentation
 
-- [ ] T104 [US3] Create example test repository with branches in `examples/test-repos/sample-project/` (setup main and feature branches with typical changes)
-- [ ] T105 [US3] Verify quickstart scenario 3 works end-to-end per `quickstart.md` (run suggest-eval, verify output, validate generated suite)
-- [ ] T106 [US3] Update README.md with suggest-eval section (command usage, examples, interpretation guide)
+- [ ] T104 [US3] Create example successful output folder in `examples/agent-outputs/auth-feature/` (simulated agent output with code changes)
+- [ ] T105 [US3] Verify quickstart scenario 3 works end-to-end per `quickstart.md` (run suggest-suite, complete interactive session, validate generated suite)
+- [ ] T106 [US3] Update README.md with suggest-suite section (command usage, agent file details, interpretation guide)
 
 **Checkpoint**: All three user stories complete - complete MVP delivered with all P1-P3 functionality
 
@@ -272,7 +272,7 @@
 
 ### Final Validation & Constitution Compliance
 
-- [ ] T127 Run all quickstart.md scenarios manually (scenario 1: basic eval, scenario 2: expected ref, scenario 3: suggest-eval)
+- [ ] T127 Run all quickstart.md scenarios manually (scenario 1: basic eval, scenario 2: expected ref, scenario 3: suggest-suite)
 - [ ] T128 Test with real repositories of different sizes (small: <10MB, medium: 10-100MB, large: 100MB-1GB)
 - [ ] T129 Verify Constitution principles maintained (agent-agnostic adapters, reproducible results, pluggable evaluators, youBencha Log compliance, workspace isolation, TDD coverage)
 - [ ] T130 Create release candidate build with `npm run build`, test npm link installation, verify binary works
@@ -555,7 +555,7 @@ npm test -- --watch
 - **Phase 2 Complete**: All contract tests pass (T011-T027), schemas validate sample data, interfaces defined
 - **Phase 3 Complete**: `yb run -c suite.yaml` works end-to-end, ≥80% coverage, quickstart scenario 1 validated
 - **Phase 4 Complete**: Expected reference comparison works, expected-diff evaluator functional, quickstart scenario 2 validated
-- **Phase 5 Complete**: `yb suggest-eval` generates valid suite configs, quickstart scenario 3 validated
+- **Phase 5 Complete**: `yb suggest-suite` interactive sessions complete successfully, quickstart scenario 3 validated
 - **Phase 6 Complete**: All quickstart scenarios pass, ≥80% coverage maintained, cross-platform tested, documentation complete
 
 ### User Story Validation Commands
@@ -587,7 +587,7 @@ cat .youbencha-workspace/run-*/artifacts/report.md | grep similarity
 **US3 Validation** (Phase 5 Complete):
 ```bash
 # Should generate suite config with recommendations
-yb suggest-eval --source main --expected feature/completed --output suggested.yaml
+yb suggest-suite --agent copilot-cli --output-dir ./feature-output
 
 # Generated suite should be valid YAML
 cat suggested.yaml
