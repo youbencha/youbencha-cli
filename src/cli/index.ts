@@ -14,6 +14,7 @@ import { dirname, join } from 'path';
 // Import commands
 import { runCommand } from './commands/run.js';
 import { reportCommand } from './commands/report.js';
+import { registerSuggestSuiteCommand } from './commands/suggest-suite.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -49,6 +50,9 @@ async function main() {
     .option('--format <format>', 'Report format (json, markdown)', 'markdown')
     .option('--output <path>', 'Output path for report (defaults to artifacts directory)')
     .action(reportCommand);
+
+  // Register suggest-suite command (User Story 3)
+  registerSuggestSuiteCommand(program);
 
   // Parse arguments
   await program.parseAsync(process.argv);

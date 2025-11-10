@@ -195,40 +195,40 @@
 
 ### Agent File Creation (TDD: Write tests first)
 
-- [ ] T085 [P] [US3] Create agent file at `agents/suggest-suite.agent.md` with system prompt, workflow instructions, and examples
-- [ ] T086 [P] [US3] Document agent workflow: prompt for output folder → detect git repo → request baseline/source → request instructions → analyze diff → generate suite
-- [ ] T087 [P] [US3] Include youBencha domain knowledge in agent file (evaluator types, suite schema, pattern mapping examples)
-- [ ] T088 [P] [US3] Add example dialogues showing successful suite generation sessions
-- [ ] T089 [P] [US3] Add example generated suites with reasoning comments
+- [X] T085 [P] [US3] Create agent file at `agents/suggest-suite.agent.md` with system prompt, workflow instructions, and examples
+- [X] T086 [P] [US3] Document agent workflow: prompt for output folder → detect git repo → request baseline/source → request instructions → analyze diff → generate suite
+- [X] T087 [P] [US3] Include youBencha domain knowledge in agent file (evaluator types, suite schema, pattern mapping examples)
+- [X] T088 [P] [US3] Add example dialogues showing successful suite generation sessions
+- [X] T089 [P] [US3] Add example generated suites with reasoning comments
 
 ### Diff Analysis Components (TDD: Write tests first)
 
-- [ ] T090 [P] [US3] Write unit tests for DiffAnalyzer in `tests/unit/diff-analyzer.test.ts` (compute diff between source and output folders, detect patterns)
-- [ ] T091 [P] [US3] Implement DiffAnalyzer in `src/core/diff-analyzer.ts` (analyzeFolders method returning DiffAnalysis)
-- [ ] T092 [US3] Implement file change detection (categorize files as added/modified/deleted, handle both git and non-git folders)
-- [ ] T093 [US3] Implement pattern detection (detect test files, config files, docs, dependencies based on file paths and extensions)
-- [ ] T094 [US3] Implement structural analysis (calculate lines changed, file type distribution, change complexity score)
+- [X] T090 [P] [US3] Write unit tests for DiffAnalyzer in `tests/unit/diff-analyzer.test.ts` (compute diff between source and output folders, detect patterns)
+- [X] T091 [P] [US3] Implement DiffAnalyzer in `src/core/diff-analyzer.ts` (analyzeFolders method returning DiffAnalysis)
+- [X] T092 [US3] Implement file change detection (categorize files as added/modified/deleted, handle both git and non-git folders)
+- [X] T093 [US3] Implement pattern detection (detect test files, config files, docs, dependencies based on file paths and extensions)
+- [X] T094 [US3] Implement structural analysis (calculate lines changed, file type distribution, change complexity score)
 
 ### CLI Command for US3 (TDD: Integration tests validate workflow)
 
-- [ ] T095 [US3] Implement `yb suggest-suite` command in `src/cli/commands/suggest-suite.ts` (parse --agent, --output-dir flags)
-- [ ] T096 [US3] Add agent tool validation (check if configured agent is installed before launching)
-- [ ] T097 [US3] Add agent launcher (execute configured agent tool with agent file and workspace context)
-- [ ] T098 [US3] Add path validation (verify output-dir exists and is readable before passing to agent)
-- [ ] T099 [US3] Add progress feedback (show agent launch status, provide clear error messages)
-- [ ] T100 [US3] Wire up suggest-suite command in `src/cli/index.ts` (register with Commander.js)
+- [X] T095 [US3] Implement `yb suggest-suite` command in `src/cli/commands/suggest-suite.ts` (parse --agent, --output-dir flags)
+- [X] T096 [US3] Add agent tool validation (check if configured agent is installed before launching)
+- [X] T097 [US3] Add agent launcher (execute configured agent tool with agent file and workspace context)
+- [X] T098 [US3] Add path validation (verify output-dir exists and is readable before passing to agent)
+- [X] T099 [US3] Add progress feedback (show agent launch status, provide clear error messages)
+- [X] T100 [US3] Wire up suggest-suite command in `src/cli/index.ts` (register with Commander.js)
 
 ### Integration Tests
 
-- [ ] T101 [US3] Write integration test for suggest-suite workflow in `tests/integration/suggest-suite.test.ts` (mock agent interaction, verify suite generation)
-- [ ] T102 [US3] Write tests for agent file validation in `tests/integration/suggest-suite.test.ts` (verify agent file structure, workflow completeness)
-- [ ] T103 [US3] Write test for generated suite validity in `tests/integration/suggest-suite.test.ts` (parse generated YAML, validate against suite schema)
+- [X] T101 [US3] Write integration test for suggest-suite workflow in `tests/integration/suggest-suite.test.ts` (mock agent interaction, verify suite generation)
+- [X] T102 [US3] Write tests for agent file validation in `tests/integration/suggest-suite.test.ts` (verify agent file structure, workflow completeness)
+- [X] T103 [US3] Write test for generated suite validity in `tests/integration/suggest-suite.test.ts` (parse generated YAML, validate against suite schema)
 
 ### Validation & Documentation
 
-- [ ] T104 [US3] Create example successful output folder in `examples/agent-outputs/auth-feature/` (simulated agent output with code changes)
-- [ ] T105 [US3] Verify quickstart scenario 3 works end-to-end per `quickstart.md` (run suggest-suite, complete interactive session, validate generated suite)
-- [ ] T106 [US3] Update README.md with suggest-suite section (command usage, agent file details, interpretation guide)
+- [X] T104 [US3] Create example successful output folder in `examples/agent-outputs/auth-feature/` (simulated agent output with code changes)
+- [X] T105 [US3] Verify quickstart scenario 3 works end-to-end per `quickstart.md` (run suggest-suite, complete interactive session, validate generated suite)
+- [X] T106 [US3] Update README.md with suggest-suite section (command usage, agent file details, interpretation guide)
 
 **Checkpoint**: All three user stories complete - complete MVP delivered with all P1-P3 functionality
 

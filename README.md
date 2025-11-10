@@ -94,6 +94,65 @@ Options:
   --output <path>    Output path (optional)
 ```
 
+### `yb suggest-suite`
+
+Generate evaluation suite suggestions using AI agent interaction.
+
+```bash
+yb suggest-suite --agent <type> --output-dir <path> [--agent-file <path>]
+
+Options:
+  --agent <type>           Agent tool to use (e.g., copilot-cli) (required)
+  --output-dir <path>      Path to successful agent output folder (required)
+  --agent-file <path>      Custom agent file (default: agents/suggest-suite.agent.md)
+  --save <path>            Path to save generated suite (optional)
+```
+
+**Interactive Workflow:**
+
+The `suggest-suite` command launches an interactive AI agent session that:
+1. Analyzes your agent's output folder
+2. Asks about your baseline/source for comparison
+3. Requests your original instructions/intent
+4. Detects patterns in the changes (auth, tests, API, docs, etc.)
+5. Recommends appropriate evaluators with reasoning
+6. Generates a complete suite configuration
+
+**Example Session:**
+
+```bash
+$ yb suggest-suite --agent copilot-cli --output-dir ./my-feature
+
+🤖 Launching interactive agent session...
+
+Agent: What branch should I use as the baseline for comparison?
+You: main
+
+Agent: What were the original instructions you gave to the agent?
+You: Add JWT authentication with rate limiting and comprehensive error handling
+
+Agent: I've analyzed the changes and detected:
+- Authentication/security code patterns
+- New test files added
+- Error handling patterns
+
+Here's your suggested suite.yaml:
+
+[Generated suite configuration with reasoning]
+
+To use this suite:
+1. Save as 'suite.yaml' in your project
+2. Run: yb run -c suite.yaml
+3. Review evaluation results
+```
+
+**Use Cases:**
+
+- **After successful agent work** - Generate evaluation suite for validation
+- **Quality assurance** - Ensure agent followed best practices
+- **Documentation** - Understand what evaluations are appropriate
+- **Learning** - See how different changes map to evaluators
+
 ## Expected Reference Comparison
 
 youBencha supports comparing agent outputs against an expected reference branch. This is useful when you have a "correct" or "ideal" implementation to compare against.
