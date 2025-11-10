@@ -1,10 +1,13 @@
 <!--
-Sync Impact Report - Constitution v1.0.0
+Sync Impact Report - Constitution v1.1.0
 ========================================
-Version Change: Initial → 1.0.0
-Rationale: First official constitution for youBencha project based on PRD v0.9
+Version Change: 1.0.0 → 1.1.0
+Rationale: MINOR bump - Added new Principle VII (Security by Design) with comprehensive security requirements
 
-Principles Established:
+Principles Modified:
+- Added: VII. Security by Design (comprehensive security dos and don'ts)
+
+Principles Unchanged:
 - I. Agent-Agnostic Architecture
 - II. Reproducibility First
 - III. Pluggable Evaluation
@@ -13,12 +16,19 @@ Principles Established:
 - VI. Test-Driven Development
 
 Templates Status:
-✅ plan-template.md - Aligned with constitution checks
-✅ spec-template.md - User stories align with evaluation principles
-✅ tasks-template.md - Task structure supports modular evaluator development
+✅ plan-template.md - Added Security principle to Constitution Check
+✅ spec-template.md - No changes required (security captured in functional requirements)
+✅ tasks-template.md - No structural changes required (security tasks follow standard pattern)
+
+Security Documentation:
+⚠️ PENDING - SECURITY.md needs to be created (per SECURITY-REMEDIATION.md)
+⚠️ PENDING - README.md security section needs enhancement
 
 Follow-up TODOs:
-- None - all placeholders filled
+- Create SECURITY.md with vulnerability reporting process
+- Enhance README.md security considerations section
+- Implement security fixes from SECURITY-REMEDIATION.md
+- Add security test suite (tests/security/injection.test.ts)
 -->
 
 # youBencha Constitution
@@ -95,6 +105,32 @@ Follow-up TODOs:
 - Unit tests required for: utilities, parsers, reporters, configuration loaders
 
 **Rationale**: youBencha evaluates code quality; it must exemplify the standards it measures. TDD ensures reliability and prevents regressions as new agents and evaluators are added.
+
+### VII. Security by Design
+
+**Principle**: Security MUST be integral to all framework operations, with defense-in-depth and secure defaults.
+
+**DO:**
+- Validate and sanitize ALL user inputs (prompts, paths, URLs, filenames)
+- Use direct command execution (`shell: false`) instead of shell interpretation
+- Restrict repository URLs to HTTPS from public sources (allowlist private networks explicitly)
+- Implement path traversal protection (reject `..`, absolute paths, ensure resolved paths stay within workspace)
+- Apply resource limits (file sizes, directory depth, workspace size, timeouts)
+- Sanitize error messages to prevent information disclosure (remove absolute paths in production)
+- Use proper escaping libraries (e.g., `shell-quote`) if shell execution is unavoidable
+- Document security model clearly (agents have file system access by design)
+- Recommend isolation (containers, VMs) for untrusted configurations
+
+**DON'T:**
+- Never concatenate user input into shell commands
+- Never use `shell: true` with spawn/exec without proper escaping
+- Never trust user-supplied filenames without validation
+- Never expose internal paths in error messages to end users
+- Never allow unlimited resource consumption (files, memory, time)
+- Never accept non-HTTP(S) protocols for repository URLs without explicit opt-in
+- Never skip input validation assuming "trusted" sources
+
+**Rationale**: youBencha executes arbitrary agent code with file system access. Security vulnerabilities (command injection, path traversal, SSRF) could compromise host systems or enable malicious evaluation suites. Defense-in-depth protects users even when running untrusted configurations, maintaining framework credibility and user trust.
 
 ## Architecture Standards
 
@@ -176,5 +212,5 @@ Before merging any pull request:
 
 ---
 
-**Version**: 1.0.0 | **Ratified**: 2025-11-03 | **Last Amended**: 2025-11-03
+**Version**: 1.1.0 | **Ratified**: 2025-11-03 | **Last Amended**: 2025-11-09
 

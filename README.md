@@ -312,6 +312,38 @@ youBencha follows a pluggable architecture:
 - **Reproducible**: Complete execution context captured
 - **youBencha Log Compliance**: Normalized logging format across agents
 
+## Security Considerations
+
+### ⚠️ Important Security Notes
+
+**Before running evaluations:**
+
+1. **Suite configurations execute code**: Only run suite configurations from trusted sources
+2. **Agent file system access**: Agents have full access to the workspace directory
+3. **Isolation strongly recommended**: Run evaluations in containers or VMs for untrusted code
+4. **Repository cloning**: Validates repository URLs but exercise caution with private repos
+
+### Trusted Execution Environments
+
+We recommend running youBencha in isolated environments:
+
+```bash
+# Docker example
+docker run -it --rm \
+  -v $(pwd):/workspace \
+  -w /workspace \
+  node:20 \
+  npx youbencha run -c suite.yaml
+
+# Or use dedicated CI/CD runners
+```
+
+### Reporting Security Issues
+
+Please report security vulnerabilities via [GitHub Security Advisories](https://github.com/youbencha/youbencha-cli/security/advisories) or email security@youbencha.dev. **Do not open public issues for security vulnerabilities.**
+
+For more details, see [SECURITY.md](SECURITY.md).
+
 ## License
 
 MIT

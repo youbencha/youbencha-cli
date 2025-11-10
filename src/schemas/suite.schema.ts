@@ -12,7 +12,16 @@ import { z } from 'zod';
  */
 const agentConfigSchema = z.object({
   type: z.literal('copilot-cli'), // MVP: only copilot-cli supported
-  config: z.record(z.any()).optional(), // Agent-specific configuration
+  config: z
+    .object({
+      prompt: z
+        .string()
+        .min(1, 'Prompt is required')
+        .max(50000, 'Prompt exceeds maximum length of 50000 characters')
+        .optional(),
+    })
+    .catchall(z.any()) // Allow other agent-specific config
+    .optional(),
 });
 
 /**
@@ -29,7 +38,41 @@ const evaluatorConfigSchema = z.object({
 export const suiteConfigSchema = z
   .object({
     // Repository configuration
-    repo: z.string().min(1, 'Repository URL is required'),
+    repo: z
+      .string()
+      .min(1, 'Repository URL is required')
+      .refine(
+        (url) => {
+          // Only allow HTTP(S) URLs for security
+          if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            return false;
+          }
+          
+          // Validate URL format
+          try {
+            const parsed = new URL(url);
+            // Prevent localhost/internal network access
+            const hostname = parsed.hostname.toLowerCase();
+            if (
+              hostname === 'localhost' ||
+              hostname === '127.0.0.1' ||
+              hostname === '0.0.0.0' ||
+              hostname.startsWith('192.168.') ||
+              hostname.startsWith('10.') ||
+              hostname.startsWith('172.16.') ||
+              hostname === '::1'
+            ) {
+              return false;
+            }
+            return true;
+          } catch {
+            return false;
+          }
+        },
+        {
+          message: 'Repository must be a valid HTTP(S) URL to a public repository',
+        }
+      ),
     branch: z.string().optional(),
     commit: z.string().optional(),
 

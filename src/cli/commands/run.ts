@@ -28,6 +28,16 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
   try {
     // Load configuration file
     logger.info(`Loading suite configuration from ${options.config}`);
+    
+    // Validate file size before reading
+    const configStats = await fs.stat(options.config);
+    const maxConfigSize = 1024 * 1024; // 1MB
+    
+    if (configStats.size > maxConfigSize) {
+      logger.error(`Configuration file too large: ${configStats.size} bytes (max: ${maxConfigSize})`);
+      process.exit(1);
+    }
+    
     const configContent = await fs.readFile(options.config, 'utf-8');
     
     // Parse YAML

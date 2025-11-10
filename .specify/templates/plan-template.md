@@ -37,6 +37,7 @@
 - [ ] **youBencha Log Compliance**: Any log format changes maintain schema compatibility
 - [ ] **Sandbox Isolation**: Agent execution remains isolated; no host system mutations
 - [ ] **TDD Required**: Tests written and approved before implementation begins
+- [ ] **Security by Design**: User inputs validated, no shell injection, paths sanitized, resource limits enforced
 
 ## Project Structure
 

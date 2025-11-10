@@ -122,7 +122,7 @@ async function validateOutputDir(dirPath: string): Promise<void> {
  */
 async function validateAgentTool(agentType: string): Promise<void> {
   const supportedAgents: Record<string, string> = {
-    'copilot-cli': 'gh copilot',
+    'copilot-cli': 'copilot',
     'aider': 'aider',
     'cursor': 'cursor',
   };
@@ -134,15 +134,14 @@ async function validateAgentTool(agentType: string): Promise<void> {
     );
   }
 
-  // Check if command is available
+  // Check if command is available without shell
   return new Promise((resolve, reject) => {
     const isWindows = process.platform === 'win32';
     const checkCmd = isWindows ? 'where' : 'which';
-    const [cmd] = command.split(' ');
 
-    const proc = spawn(checkCmd, [cmd], {
+    const proc = spawn(checkCmd, [command], {
       stdio: 'ignore',
-      shell: true
+      shell: false
     });
 
     proc.on('close', (code) => {
@@ -209,17 +208,35 @@ async function launchAgent(
       case 'copilot-cli':
         // Launch GitHub Copilot CLI in interactive mode
         // Pass agent instructions and output directory context
-        proc = spawn('gh', ['copilot', 'suggest'], {
-          stdio: 'inherit',
-          shell: true,
-          cwd: resolvedOutputDir,
-          env: {
-            ...process.env,
-            YOUBENCHA_AGENT_FILE: resolvedAgentFile,
-            YOUBENCHA_OUTPUT_DIR: resolvedOutputDir,
-            YOUBENCHA_AGENT_INSTRUCTIONS: agentContent
-          }
-        });
+        // On Windows, use cmd.exe to execute .bat/.cmd files
+        if (process.platform === 'win32') {
+          proc = spawn('cmd.exe', [
+            '/d', '/s', '/c', 'copilot', 'suggest'
+          ], {
+            stdio: 'inherit',
+            shell: false,
+            cwd: resolvedOutputDir,
+            env: {
+              ...process.env,
+              YOUBENCHA_AGENT_FILE: resolvedAgentFile,
+              YOUBENCHA_OUTPUT_DIR: resolvedOutputDir,
+              YOUBENCHA_AGENT_INSTRUCTIONS: agentContent
+            }
+          });
+        } else {
+          // Unix-like systems can execute scripts directly
+          proc = spawn('copilot', ['suggest'], {
+            stdio: 'inherit',
+            shell: false,
+            cwd: resolvedOutputDir,
+            env: {
+              ...process.env,
+              YOUBENCHA_AGENT_FILE: resolvedAgentFile,
+              YOUBENCHA_OUTPUT_DIR: resolvedOutputDir,
+              YOUBENCHA_AGENT_INSTRUCTIONS: agentContent
+            }
+          });
+        }
         break;
 
       case 'aider':
@@ -230,7 +247,7 @@ async function launchAgent(
           '--no-git'  // Don't auto-commit
         ], {
           stdio: 'inherit',
-          shell: true,
+          shell: false,
           cwd: resolvedOutputDir
         });
         break;

@@ -181,20 +181,19 @@ export class CopilotCLIAdapter implements AgentAdapter {
       throw new Error('Prompt is required in agent config');
     }
 
-    // On Windows PowerShell, copilot is a .ps1 script
-    // Build the full command as a single string for -Command
+    // Use direct command execution without shell on all platforms
+    // On Windows, .bat/.cmd files need to be executed via cmd.exe
+    // spawn() will handle arguments correctly without shell parsing
     if (process.platform === 'win32') {
-      // Escape the prompt for PowerShell by doubling quotes
-      const escapedPrompt = prompt.replace(/"/g, '""');
-      const commandString = `copilot -p "${escapedPrompt}" --allow-all-tools --allow-all-paths`;
-      
+      // Use cmd.exe to execute .bat/.cmd files on Windows
+      // Arguments are passed as an array to prevent injection
       return {
-        command: 'pwsh.exe',
-        args: ['-NoProfile', '-Command', commandString],
+        command: 'cmd.exe',
+        args: ['/d', '/s', '/c', 'copilot', '-p', prompt, '--allow-all-tools', '--allow-all-paths'],
       };
     }
 
-    // Unix-like systems
+    // Unix-like systems can execute scripts directly
     return {
       command: 'copilot',
       args: ['-p', prompt, '--allow-all-tools', '--allow-all-paths'],
