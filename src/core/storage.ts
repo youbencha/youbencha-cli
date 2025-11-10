@@ -66,7 +66,29 @@ export async function saveArtifact(
   filename: string,
   artifactsDir: string
 ): Promise<string> {
+  // Validate filename for security
+  if (!filename || typeof filename !== 'string') {
+    throw new Error('Invalid artifact filename: must be a non-empty string');
+  }
+
+  // Prevent path traversal
+  if (filename.includes('..') || filename.startsWith('/') || filename.startsWith('\\')) {
+    throw new Error('Invalid artifact filename: path traversal detected');
+  }
+
+  // Prevent absolute paths on Windows (C:\, D:\, etc.)
+  if (/^[a-zA-Z]:/.test(filename)) {
+    throw new Error('Invalid artifact filename: absolute paths not allowed');
+  }
+
   const filePath = join(artifactsDir, filename);
+
+  // Double-check resolved path is within artifacts directory
+  const normalizedArtifactsDir = join(artifactsDir, '/');
+  const normalizedFilePath = join(filePath, '/');
+  if (!normalizedFilePath.startsWith(normalizedArtifactsDir)) {
+    throw new Error('Invalid artifact filename: path outside artifacts directory');
+  }
 
   // Ensure parent directory exists
   const parentDir = dirname(filePath);

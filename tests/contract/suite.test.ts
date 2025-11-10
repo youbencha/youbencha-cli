@@ -80,7 +80,7 @@ describe('Suite Configuration Schema Contract', () => {
       expect(result.success).toBe(true);
     });
 
-    it('should accept SSH repository URLs', () => {
+    it('should reject SSH repository URLs for security', () => {
       const config = {
         repo: 'git@github.com:example/test-repo.git',
         agent: {
@@ -94,7 +94,8 @@ describe('Suite Configuration Schema Contract', () => {
       };
 
       const result = suiteConfigSchema.safeParse(config);
-      expect(result.success).toBe(true);
+      expect(result.success).toBe(false);
+      expect(result.error?.issues[0].message).toContain('HTTP(S) URL');
     });
 
     it('should accept configuration with expected reference', () => {

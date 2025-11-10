@@ -30,6 +30,15 @@ export interface OrchestratorOptions {
   
   /** Maximum number of concurrent evaluators (default: 4) */
   maxConcurrentEvaluators?: number;
+  
+  /** Maximum file size in bytes (default: 10MB) */
+  maxFileSize?: number;
+  
+  /** Maximum directory depth (default: 10) */
+  maxDirectoryDepth?: number;
+  
+  /** Maximum workspace size in bytes (default: 1GB) */
+  maxWorkspaceSize?: number;
 }
 
 /**
@@ -43,6 +52,9 @@ export class Orchestrator {
     this.options = {
       keepWorkspace: false,
       maxConcurrentEvaluators: 4,
+      maxFileSize: 10 * 1024 * 1024,        // 10MB
+      maxDirectoryDepth: 10,
+      maxWorkspaceSize: 1024 * 1024 * 1024, // 1GB
       ...options,
     };
     this.workspaceManager = new WorkspaceManager();

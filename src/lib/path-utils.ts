@@ -210,12 +210,26 @@ export async function removeDirectory(dirPath: string): Promise<void> {
  * Get directory size in bytes
  * 
  * @param dirPath - Directory path
+ * @param maxDepth - Maximum directory depth to prevent excessive recursion
+ * @param currentDepth - Current recursion depth (internal use)
  * @returns Total size in bytes
  */
-export async function getDirectorySize(dirPath: string): Promise<number> {
+export async function getDirectorySize(
+  dirPath: string,
+  maxDepth: number = 10,
+  currentDepth: number = 0
+): Promise<number> {
+  if (currentDepth > maxDepth) {
+    throw new Error(`Directory depth exceeds maximum of ${maxDepth} levels`);
+  }
+  
   let totalSize = 0;
   
-  async function calculateSize(currentPath: string): Promise<void> {
+  async function calculateSize(currentPath: string, depth: number): Promise<void> {
+    if (depth > maxDepth) {
+      throw new Error(`Directory depth exceeds maximum of ${maxDepth} levels`);
+    }
+    
     const stats = await fs.stat(currentPath);
     
     if (stats.isFile()) {
@@ -223,12 +237,12 @@ export async function getDirectorySize(dirPath: string): Promise<number> {
     } else if (stats.isDirectory()) {
       const entries = await fs.readdir(currentPath);
       await Promise.all(
-        entries.map((entry) => calculateSize(path.join(currentPath, entry)))
+        entries.map((entry) => calculateSize(path.join(currentPath, entry), depth + 1))
       );
     }
   }
   
-  await calculateSize(dirPath);
+  await calculateSize(dirPath, currentDepth);
   return totalSize;
 }
 
