@@ -172,7 +172,7 @@ export class AgenticJudgeEvaluator implements Evaluator {
    */
   private buildEvaluationPrompt(context: EvaluationContext): string {
     // Load prompt template
-    const templatePath = join(__dirname, 'prompts', 'agentic-judge.template.txt');
+    const templatePath = join(__dirname, 'prompts', 'agentic-judge.template.md');
     const template = readFileSync(templatePath, 'utf-8');
     
     // Format criteria list

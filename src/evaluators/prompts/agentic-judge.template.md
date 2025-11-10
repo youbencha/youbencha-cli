@@ -17,9 +17,9 @@ You MUST output ONLY a valid JSON object with this EXACT structure:
 {
   "status": "passed",
   "metrics": {
-    "criterion_1_score": 8.5,
-    "criterion_2_score": 9.0,
-    "overall_score": 8.75
+    "criterion_1_score": 1,
+    "criterion_2_score": 1,
+    ...
   },
   "message": "Detailed summary of evaluation findings with specific examples"
 }

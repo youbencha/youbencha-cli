@@ -11,6 +11,6 @@ evaluators:
   - name: agentic-judge
     config:
       criteria:
-        - "README.md was modified"
-        - "A helpful comment was added"
-        - "The comment is grammatically correct"
+        - "README.md was modified. Score 1 if true, 0 if false."
+        - "A helpful comment was added to README.md. Score 1 if true, 0 if false."
+        - "The comment added to README.md is grammatically correct. Score 1 if true, 0 if false."
