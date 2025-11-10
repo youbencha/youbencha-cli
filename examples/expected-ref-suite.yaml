@@ -41,9 +41,9 @@ evaluators:
   - name: agentic-judge
     config:
       criteria:
-        - "README.md was modified"
-        - "README.md mentions The Spoon-Knife Repository"
-        - "No other files were modified"
+        readme_modified: "README.md was modified"
+        mentions_spoon_knife: "README.md mentions The Spoon-Knife Repository"
+        no_other_files_modified: "No other files were modified"
 
 # Optional: Workspace and execution configuration
 workspace_dir: .youbencha-workspace

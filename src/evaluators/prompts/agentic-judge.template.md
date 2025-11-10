@@ -17,8 +17,8 @@ You MUST output ONLY a valid JSON object with this EXACT structure:
 {
   "status": "passed",
   "metrics": {
-    "criterion_1_score": 1,
-    "criterion_2_score": 1,
+    "criterion_key_1": 1,
+    "criterion_key_2": 0.95,
     ...
   },
   "message": "Detailed summary of evaluation findings with specific examples"
@@ -29,6 +29,9 @@ You MUST output ONLY a valid JSON object with this EXACT structure:
 
 - **status**: MUST be exactly "passed" or "failed" (string, required)
 - **metrics**: MUST be an object with numeric scores or counts (object, required)
+  - If criteria are provided as key-value pairs, use the criterion keys as metric keys
+  - If criteria are provided as a numbered list, use "criterion_1_score", "criterion_2_score", etc.
+  - Metric values should be numeric (scores, counts, percentages, etc.)
 - **message**: MUST explain your evaluation with evidence (string, required)
 - Output ONLY the JSON object - no markdown, no explanations, no other text
 - Ensure the JSON is valid and parseable

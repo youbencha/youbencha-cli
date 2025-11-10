@@ -175,11 +175,23 @@ export class AgenticJudgeEvaluator implements Evaluator {
     const templatePath = join(__dirname, 'prompts', 'agentic-judge.template.md');
     const template = readFileSync(templatePath, 'utf-8');
     
-    // Format criteria list
-    const criteria = context.config.criteria as string[] || [];
-    const criteriaList = criteria
-      .map((criterion, index) => `${index + 1}. ${criterion}`)
-      .join('\n');
+    // Format criteria list - support both array and object formats
+    const criteria = context.config.criteria;
+    let criteriaList: string;
+    
+    if (Array.isArray(criteria)) {
+      // Legacy array format: ["criterion 1", "criterion 2"]
+      criteriaList = criteria
+        .map((criterion, index) => `${index + 1}. ${criterion}`)
+        .join('\n');
+    } else if (typeof criteria === 'object' && criteria !== null) {
+      // New object format: {"key1": "criterion 1", "key2": "criterion 2"}
+      criteriaList = Object.entries(criteria)
+        .map(([key, value]) => `- **${key}**: ${value}`)
+        .join('\n');
+    } else {
+      criteriaList = '';
+    }
     
     // Replace placeholder with criteria
     return template.replace('{{CRITERIA}}', criteriaList);
