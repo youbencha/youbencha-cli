@@ -64,9 +64,10 @@ export class Orchestrator {
    * Run complete evaluation workflow
    * 
    * @param suiteConfig - Suite configuration
+   * @param configFile - Path to the config file used
    * @returns Results bundle with evaluation results
    */
-  async runEvaluation(suiteConfig: SuiteConfig): Promise<ResultsBundle> {
+  async runEvaluation(suiteConfig: SuiteConfig, configFile: string): Promise<ResultsBundle> {
     const startedAt = new Date().toISOString();
     logger.info('Starting evaluation workflow');
 
@@ -102,6 +103,7 @@ export class Orchestrator {
       // 5. Build results bundle
       const resultsBundle = await this.buildResultsBundle(
         suiteConfig,
+        configFile,
         workspace,
         agentExecution,
         faceLogPath,
@@ -316,6 +318,7 @@ export class Orchestrator {
    */
   private async buildResultsBundle(
     suiteConfig: SuiteConfig,
+    configFile: string,
     workspace: Workspace,
     agentExecution: ResultsBundle['agent'],
     faceLogPath: string,
@@ -341,7 +344,7 @@ export class Orchestrator {
     return {
       version: '1.0.0',
       suite: {
-        config_file: 'suite.yaml',
+        config_file: configFile,
         config_hash: configHash,
         repo: suiteConfig.repo,
         branch: suiteConfig.branch || workspace.branch || 'unknown',

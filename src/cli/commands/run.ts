@@ -66,7 +66,7 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
 
     // Run evaluation
     logger.info('Starting evaluation...');
-    const results = await orchestrator.runEvaluation(suiteConfig);
+    const results = await orchestrator.runEvaluation(suiteConfig, options.config);
 
     // Report success
     logger.info('');

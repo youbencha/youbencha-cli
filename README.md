@@ -57,6 +57,10 @@ evaluators:
 
 ```bash
 yb run -c suite.yaml
+
+or
+
+yb run -c examples/basic-suite.yaml --keep-workspace
 ```
 
 This will:
