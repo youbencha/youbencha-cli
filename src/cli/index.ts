@@ -17,6 +17,7 @@ import { reportCommand } from './commands/report.js';
 import { registerSuggestSuiteCommand } from './commands/suggest-suite.js';
 import { listCommand } from './commands/list.js';
 import { initCommand } from './commands/init.js';
+import { validateCommand } from './commands/validate.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -103,6 +104,21 @@ Examples:
   Use this to discover which evaluators you can use in your suite.yaml
     `)
     .action(listCommand);
+
+  // Register validate command (check suite configuration)
+  program
+    .command('validate')
+    .description('Validate a suite configuration without running it')
+    .requiredOption('-c, --config <path>', 'Path to suite configuration file')
+    .option('-v, --verbose', 'Show detailed validation information')
+    .addHelpText('after', `
+Examples:
+  $ yb validate -c suite.yaml         # Quick validation check
+  $ yb validate -c suite.yaml -v      # Detailed validation with suggestions
+  
+  Use this to check your configuration before committing or running.
+    `)
+    .action(validateCommand);
 
   // Parse arguments
   await program.parseAsync(process.argv);
