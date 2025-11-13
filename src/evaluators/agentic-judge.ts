@@ -32,7 +32,7 @@ interface AgentEvaluationOutput {
  */
 export class AgenticJudgeEvaluator implements Evaluator {
   readonly name = 'agentic-judge';
-  readonly description = 'Uses agentic coding agent with tool use and iterative reasoning to evaluate code quality against specified criteria. Note: Results may vary between runs due to non-deterministic agent behavior.';
+  readonly description = 'Uses an AI agent to evaluate code quality based on your custom criteria. The agent reads files, searches for patterns, and makes judgments like a human reviewer would. Great for assessing things like: test coverage, error handling, documentation quality, and best practices. Note: Results may vary between runs due to AI behavior.';
   readonly requiresExpectedReference = false;
 
   /**

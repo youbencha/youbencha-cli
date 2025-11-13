@@ -31,9 +31,15 @@ npm install --save-dev youbencha
 
 ## Quick Start
 
-### 1. Create a Suite Configuration
+**New to youBencha?** Check out the [Getting Started Guide](GETTING-STARTED.md) for a detailed walkthrough.
 
-Create a `suite.yaml` file:
+### 1. Install
+
+```bash
+npm install -g youbencha
+```
+
+### 2. Create a suite configuration (`suite.yaml`)
 
 ```yaml
 repo: https://github.com/octocat/Hello-World.git
@@ -48,32 +54,36 @@ evaluators:
   - name: git-diff
   - name: agentic-judge
     config:
+      type: copilot-cli
+      agent_name: agentic-judge
       criteria:
-        - "README.md was modified"
-        - "A helpful comment was added"
+        readme_modified: "README.md was modified. Score 1 if true, 0 if false."
+        helpful_comment_added: "A helpful comment was added to README.md. Score 1 if true, 0 if false."
 ```
 
-### 2. Run an Evaluation
+### 3. Run the evaluation
 
 ```bash
 yb run -c suite.yaml
-
-or
-
-yb run -c examples/basic-suite.yaml --keep-workspace
 ```
 
-This will:
-1. Clone the repository to an isolated workspace
-2. Execute the agent with your prompt
-3. Run all configured evaluators
-4. Generate a results bundle
-
-### 3. Generate a Report
+### 4. View results
 
 ```bash
 yb report --from .youbencha-workspace/run-*/artifacts/results.json
 ```
+
+**That's it!** youBencha will clone the repo, run the agent, evaluate the output, and generate a comprehensive report.
+
+---
+
+## What Makes youBencha Different?
+
+- **Agent-Agnostic**: Works with any AI coding agent through pluggable adapters
+- **Reproducible**: Standardized logging captures complete execution context
+- **Flexible Evaluation**: Use built-in evaluators or create custom ones
+- **Developer-Friendly**: Clear error messages, helpful CLI, extensive examples
+- **Comprehensive Reports**: From metrics to human-readable insights
 
 ## Commands
 

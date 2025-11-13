@@ -15,6 +15,7 @@ import { dirname, join } from 'path';
 import { runCommand } from './commands/run.js';
 import { reportCommand } from './commands/report.js';
 import { registerSuggestSuiteCommand } from './commands/suggest-suite.js';
+import { listCommand } from './commands/list.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -73,6 +74,18 @@ Examples:
 
   // Register suggest-suite command (User Story 3)
   registerSuggestSuiteCommand(program);
+
+  // Register list command (show available evaluators)
+  program
+    .command('list')
+    .description('List available evaluators and their descriptions')
+    .addHelpText('after', `
+Examples:
+  $ yb list                           # Show all available evaluators
+  
+  Use this to discover which evaluators you can use in your suite.yaml
+    `)
+    .action(listCommand);
 
   // Parse arguments
   await program.parseAsync(process.argv);
