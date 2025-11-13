@@ -51,26 +51,69 @@ export const suiteConfigSchema = z
           // Validate URL format
           try {
             const parsed = new URL(url);
-            // Prevent localhost/internal network access
             const hostname = parsed.hostname.toLowerCase();
+            
+            // Prevent localhost/internal network access
+            // Block localhost and loopback addresses
             if (
               hostname === 'localhost' ||
               hostname === '127.0.0.1' ||
               hostname === '0.0.0.0' ||
-              hostname.startsWith('192.168.') ||
-              hostname.startsWith('10.') ||
-              hostname.startsWith('172.16.') ||
-              hostname === '::1'
+              hostname === '::1' ||
+              hostname.startsWith('127.') ||
+              hostname === '[::1]'
             ) {
               return false;
             }
+            
+            // Block private IPv4 ranges (RFC 1918)
+            // 10.0.0.0/8
+            if (hostname.startsWith('10.')) {
+              return false;
+            }
+            // 172.16.0.0/12
+            if (hostname.startsWith('172.')) {
+              const secondOctet = parseInt(hostname.split('.')[1], 10);
+              if (secondOctet >= 16 && secondOctet <= 31) {
+                return false;
+              }
+            }
+            // 192.168.0.0/16
+            if (hostname.startsWith('192.168.')) {
+              return false;
+            }
+            
+            // Block link-local addresses
+            // 169.254.0.0/16 (IPv4 link-local)
+            if (hostname.startsWith('169.254.')) {
+              return false;
+            }
+            
+            // Block IPv6 private and link-local addresses
+            if (hostname.includes(':')) {
+              // fe80::/10 (link-local)
+              if (hostname.startsWith('fe80:') || hostname.startsWith('[fe80:')) {
+                return false;
+              }
+              // fc00::/7 (unique local)
+              if (hostname.startsWith('fc') || hostname.startsWith('[fc') ||
+                  hostname.startsWith('fd') || hostname.startsWith('[fd')) {
+                return false;
+              }
+            }
+            
+            // Block .local domains (mDNS)
+            if (hostname.endsWith('.local')) {
+              return false;
+            }
+            
             return true;
           } catch {
             return false;
           }
         },
         {
-          message: 'Repository must be a valid HTTP(S) URL to a public repository',
+          message: 'Repository must be a valid HTTP(S) URL to a public repository (private networks not allowed)',
         }
       ),
     branch: z.string().optional(),

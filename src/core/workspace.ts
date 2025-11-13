@@ -236,6 +236,8 @@ export class WorkspaceManager {
       timeout: {
         block: timeout,
       },
+      // Set maximum buffer size to prevent memory exhaustion (50MB)
+      maxConcurrentProcesses: 1,
     });
     
     try {
@@ -247,14 +249,23 @@ export class WorkspaceManager {
         cloneOptions.push('--single-branch');
       }
       
-      // Shallow clone for performance
+      // Shallow clone for performance and to limit data transfer
       cloneOptions.push('--depth', '1');
+      
+      // Set config to limit resource usage
+      cloneOptions.push('-c', 'http.postBuffer=10485760'); // 10MB buffer
+      cloneOptions.push('-c', 'core.compression=1'); // Low compression for speed
       
       // Clone repository
       await git.clone(repoUrl, targetDir, cloneOptions);
       
       // Get repository git instance for the cloned repo
-      const repoGit: SimpleGit = simpleGit(targetDir);
+      const repoGit: SimpleGit = simpleGit(targetDir, {
+        timeout: {
+          block: timeout,
+        },
+        maxConcurrentProcesses: 1,
+      });
       
       // Checkout specific commit if provided
       if (commit) {
@@ -276,6 +287,16 @@ export class WorkspaceManager {
       
       logger.debug(`Cloned to commit: ${commitSha}`);
       
+      // Verify cloned repository size is reasonable (max 1GB)
+      const repoSize = await this.getDirectorySize(targetDir);
+      const maxRepoSize = 1024 * 1024 * 1024; // 1GB
+      if (repoSize > maxRepoSize) {
+        throw new WorkspaceError(
+          WorkspaceErrorCode.CLONE_FAILED,
+          `Repository too large: ${Math.round(repoSize / (1024 * 1024))}MB (max: ${Math.round(maxRepoSize / (1024 * 1024))}MB)`
+        );
+      }
+      
       return commitSha.trim();
     } catch (error) {
       if (error instanceof WorkspaceError) {
@@ -289,6 +310,14 @@ export class WorkspaceManager {
         gitError
       );
     }
+  }
+  
+  /**
+   * Get directory size in bytes (helper for size validation)
+   */
+  private async getDirectorySize(dirPath: string): Promise<number> {
+    const { getDirectorySize } = await import('../lib/path-utils.js');
+    return getDirectorySize(dirPath);
   }
   
   /**

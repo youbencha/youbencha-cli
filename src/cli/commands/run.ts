@@ -40,8 +40,26 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
     
     const configContent = await fs.readFile(options.config, 'utf-8');
     
-    // Parse YAML
-    const configData = yaml.parse(configContent);
+    // Parse YAML with protection against YAML bombs
+    let configData;
+    try {
+      configData = yaml.parse(configContent, {
+        maxAliasCount: 100,  // Limit alias expansion to prevent DoS
+        strict: true,         // Strict parsing mode
+      });
+    } catch (error) {
+      logger.error('Failed to parse YAML configuration:');
+      logger.error(error instanceof Error ? error.message : String(error));
+      process.exit(1);
+    }
+    
+    // Validate depth of parsed config to prevent deeply nested objects
+    const maxDepth = 10;
+    const depth = getObjectDepth(configData);
+    if (depth > maxDepth) {
+      logger.error(`Configuration structure too deep: ${depth} levels (max: ${maxDepth})`);
+      process.exit(1);
+    }
     
     // Validate against schema
     const spinner = createSpinner('Validating suite configuration...');
@@ -95,4 +113,26 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
     }
     process.exit(1);
   }
+}
+
+/**
+ * Calculate the maximum depth of a nested object
+ */
+function getObjectDepth(obj: any, currentDepth: number = 0): number {
+  if (obj === null || typeof obj !== 'object') {
+    return currentDepth;
+  }
+  
+  if (Array.isArray(obj)) {
+    return Math.max(
+      currentDepth,
+      ...obj.map(item => getObjectDepth(item, currentDepth + 1))
+    );
+  }
+  
+  const depths = Object.values(obj).map(value => 
+    getObjectDepth(value, currentDepth + 1)
+  );
+  
+  return depths.length > 0 ? Math.max(...depths) : currentDepth;
 }

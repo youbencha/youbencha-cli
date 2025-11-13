@@ -189,6 +189,13 @@ export class CopilotCLIAdapter implements AgentAdapter {
       throw new Error('Prompt is required in agent config');
     }
 
+    // Validate inputs to prevent command injection
+    this.validateCommandInput(prompt, 'prompt');
+    if (agent) {
+      this.validateCommandInput(agent, 'agent');
+    }
+    this.validateCommandInput(context.workspaceDir, 'workspaceDir');
+
     // Build base args
     const baseArgs = ['-p', prompt];
     
@@ -218,6 +225,42 @@ export class CopilotCLIAdapter implements AgentAdapter {
       command: 'copilot',
       args: [...baseArgs, '--add-dir', context.workspaceDir],
     };
+  }
+
+  /**
+   * Validate command input to prevent injection attacks
+   * Checks for shell metacharacters and control characters
+   */
+  private validateCommandInput(input: string, fieldName: string): void {
+    // Check for null bytes which can be used to bypass validation
+    if (input.includes('\0')) {
+      throw new Error(`${fieldName} contains null bytes`);
+    }
+    
+    // Check for newlines which could be used for command chaining
+    if (input.includes('\n') || input.includes('\r')) {
+      throw new Error(`${fieldName} contains newline characters`);
+    }
+    
+    // On Windows, check for command separators and dangerous characters
+    if (process.platform === 'win32') {
+      const dangerousChars = ['&', '|', '<', '>', '^', '%'];
+      for (const char of dangerousChars) {
+        if (input.includes(char)) {
+          throw new Error(`${fieldName} contains potentially dangerous character: ${char}`);
+        }
+      }
+    }
+    
+    // On Unix-like systems, check for shell metacharacters
+    if (process.platform !== 'win32') {
+      const dangerousChars = ['&', '|', ';', '<', '>', '`', '$', '(', ')', '{', '}', '[', ']'];
+      for (const char of dangerousChars) {
+        if (input.includes(char)) {
+          throw new Error(`${fieldName} contains potentially dangerous character: ${char}`);
+        }
+      }
+    }
   }
 
   /**

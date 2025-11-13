@@ -15,8 +15,9 @@ import { AgentAdapter, AgentExecutionContext } from '../adapters/base.js';
 import { CopilotCLIAdapter } from '../adapters/copilot-cli.js';
 
 // Get __dirname equivalent in ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const currentFileUrl = import.meta.url;
+const currentFilePath = fileURLToPath(currentFileUrl);
+const currentDirPath = dirname(currentFilePath);
 
 /**
  * Agent evaluation result from JSON output
@@ -216,10 +217,16 @@ export class AgenticJudgeEvaluator implements Evaluator {
     
     // Mode 1: Load instructions from specified file
     if (instructionsFile) {
-      // Support both absolute and relative paths
-      const filePath = instructionsFile.startsWith('/') || instructionsFile.match(/^[a-zA-Z]:/)
-        ? instructionsFile
-        : join(process.cwd(), instructionsFile);
+      // Validate and sanitize the file path to prevent path traversal
+      const filePath = this.validateAndResolvePath(instructionsFile);
+      
+      // Check file size before reading to prevent memory exhaustion
+      const fs = require('fs');
+      const stats = fs.statSync(filePath);
+      const maxFileSize = 1024 * 1024; // 1MB limit
+      if (stats.size > maxFileSize) {
+        throw new Error(`Instructions file too large: ${stats.size} bytes (max: ${maxFileSize})`);
+      }
       
       const template = readFileSync(filePath, 'utf-8');
       
@@ -235,7 +242,7 @@ export class AgenticJudgeEvaluator implements Evaluator {
       return `Evaluation Criteria:\n${criteriaList}`;
     }
     // Mode 2: Use default markdown template
-    const templatePath = join(__dirname, 'prompts', 'agentic-judge.template.md');
+    const templatePath = join(currentDirPath, 'prompts', 'agentic-judge.template.md');
     const template = readFileSync(templatePath, 'utf-8');
     
     // Format criteria list
@@ -243,6 +250,63 @@ export class AgenticJudgeEvaluator implements Evaluator {
     
     // Replace placeholders with actual values
     return template.replace('{{CRITERIA}}', criteriaList);
+  }
+
+  /**
+   * Validate and resolve file path to prevent path traversal attacks
+   */
+  private validateAndResolvePath(filePath: string): string {
+    const path = require('path');
+    const fs = require('fs');
+    
+    // Remove any null bytes
+    if (filePath.includes('\0')) {
+      throw new Error('File path contains null bytes');
+    }
+    
+    // Resolve the path (handles relative paths and normalizes)
+    let resolvedPath: string;
+    if (filePath.startsWith('/') || filePath.match(/^[a-zA-Z]:/)) {
+      // Absolute path
+      resolvedPath = path.resolve(filePath);
+    } else {
+      // Relative path - resolve relative to current working directory
+      resolvedPath = path.resolve(process.cwd(), filePath);
+    }
+    
+    // Normalize to prevent path traversal
+    const normalizedPath = path.normalize(resolvedPath);
+    
+    // Additional security checks
+    // 1. Path must not try to escape the allowed directories
+    const cwd = path.resolve(process.cwd());
+    if (!normalizedPath.startsWith(cwd) && !normalizedPath.startsWith(path.resolve(currentDirPath))) {
+      throw new Error('Access to file outside working directory is not allowed');
+    }
+    
+    // 2. Check that the file exists and is a regular file (not a directory or symlink)
+    try {
+      const stats = fs.lstatSync(normalizedPath);
+      if (!stats.isFile()) {
+        throw new Error('Path must point to a regular file');
+      }
+      // Check for symlinks - follow them but verify the target is also valid
+      if (stats.isSymbolicLink()) {
+        const realPath = fs.realpathSync(normalizedPath);
+        const normalizedRealPath = path.normalize(realPath);
+        if (!normalizedRealPath.startsWith(cwd) && !normalizedRealPath.startsWith(path.resolve(currentDirPath))) {
+          throw new Error('Symlink target is outside allowed directories');
+        }
+        return normalizedRealPath;
+      }
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        throw new Error(`File not found: ${filePath}`);
+      }
+      throw error;
+    }
+    
+    return normalizedPath;
   }
 
   /**
