@@ -25,6 +25,12 @@ interface AgentEvaluationOutput {
   status: 'passed' | 'failed';
   metrics: Record<string, any>;
   message: string;
+  evidence?: {
+    files_examined?: string[];
+    patterns_found?: Record<string, number>;
+    reasoning?: string;
+    confidence?: number;
+  };
 }
 
 /**
@@ -175,15 +181,37 @@ export class AgenticJudgeEvaluator implements Evaluator {
       const completedAt = new Date().toISOString();
       const durationMs = new Date(completedAt).getTime() - new Date(startedAt).getTime();
 
+      // Build enriched metrics with evidence
+      const enrichedMetrics: Record<string, any> = {
+        ...evaluationOutput.metrics,
+        agent_type: agentType,
+        agent_duration_ms: agentResult.durationMs,
+      };
+
+      // Add evidence-based metrics if available
+      if (evaluationOutput.evidence) {
+        if (evaluationOutput.evidence.confidence !== undefined) {
+          enrichedMetrics.evaluation_confidence = evaluationOutput.evidence.confidence;
+        }
+        if (evaluationOutput.evidence.files_examined) {
+          enrichedMetrics.files_examined_count = evaluationOutput.evidence.files_examined.length;
+        }
+      }
+
+      // Build message with evidence summary
+      let enhancedMessage = evaluationOutput.message;
+      if (evaluationOutput.evidence?.reasoning) {
+        enhancedMessage += `\n\nReasoning: ${evaluationOutput.evidence.reasoning}`;
+      }
+      if (evaluationOutput.evidence?.files_examined && evaluationOutput.evidence.files_examined.length > 0) {
+        enhancedMessage += `\n\nFiles examined: ${evaluationOutput.evidence.files_examined.join(', ')}`;
+      }
+
       return {
         evaluator: this.name,
         status: evaluationOutput.status,
-        metrics: {
-          ...evaluationOutput.metrics,
-          agent_type: agentType,
-          agent_duration_ms: agentResult.durationMs,
-        },
-        message: evaluationOutput.message,
+        metrics: enrichedMetrics,
+        message: enhancedMessage,
         duration_ms: durationMs,
         timestamp: completedAt,
       };

@@ -28,11 +28,20 @@ Your final response MUST include a JSON code block with this EXACT structure:
 {
   "status": "passed",
   "metrics": {
-    "readme_modified": 1, //where readme_modified is a criteria name given
+    "readme_modified": 1,
     "helpful_comment_added": 1,
     "grammatically_correct": 0.8
   },
-  "message": "Summary of findings with specific evidence"
+  "message": "Summary of findings with specific evidence",
+  "evidence": {
+    "files_examined": ["README.md", "docs/guide.md"],
+    "patterns_found": {
+      "helpful_comments": 3,
+      "documentation_sections": 2
+    },
+    "reasoning": "README.md contains 3 helpful comments explaining the codebase structure. Documentation is well-organized.",
+    "confidence": 0.95
+  }
 }
 ```
 
@@ -46,7 +55,13 @@ Your final response MUST include a JSON code block with this EXACT structure:
     "helpful_comment_added": 0,
     "grammatically_correct": 0
   },
-  "message": "README was not modified. No changes detected in any files."
+  "message": "README was not modified. No changes detected in any files.",
+  "evidence": {
+    "files_examined": ["README.md"],
+    "patterns_found": {},
+    "reasoning": "Examined README.md but found no modifications compared to baseline. No new comments or documentation added.",
+    "confidence": 1.0
+  }
 }
 ```
 
@@ -59,6 +74,11 @@ Your final response MUST include a JSON code block with this EXACT structure:
   - Use the exact criterion keys from the "Evaluation Criteria" section above
   - Values: 1 = criterion met, 0 = not met, 0-1 for partial scores
 - **message**: MUST be a string with a summary and specific examples from the code
+- **evidence**: MUST be an object containing evaluation details
+  - **files_examined**: Array of file paths that were reviewed
+  - **patterns_found**: Object mapping pattern names to counts
+  - **reasoning**: Detailed explanation of how criteria were evaluated
+  - **confidence**: Number 0.0-1.0 indicating confidence in evaluation
 
 ### Critical Requirements
 
