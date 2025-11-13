@@ -45,7 +45,10 @@ export class AgenticJudgeEvaluator implements Evaluator {
       if (!agentConfig || !agentConfig.type) {
         return false;
       }
-
+      const agentType = context.config.type;
+      if (!agentType) {
+        return false;
+      }
       // Validate criteria exists and is not empty
       const criteria = context.config.criteria;
       if (!criteria) {
@@ -86,16 +89,40 @@ export class AgenticJudgeEvaluator implements Evaluator {
           'Agent not configured or not available - check agent.type in evaluator config and ensure agent is installed'
         );
       }
-
       // Get adapter for configured agent type from suite config
       const agentConfig = context.suiteConfig.agent;
-      const agentType = agentConfig.type;
+      console.log('Agent config from suiteConfig:', agentConfig);
+      const agentType = context.config?.type as string;
+      console.log('Agent type from config:', agentType);
+      if (!agentType) {
+        return this.createSkippedResult(
+          startedAt,
+          'Agent type not specified in evaluator config (config.type)'
+        );
+      }
       const adapter = await this.getAdapter(agentType);
       if (!adapter) {
         return this.createSkippedResult(
           startedAt,
           `Unknown adapter type: ${agentType}`
         );
+      }
+
+      //if type == copilot-cli and agentName is specified, copy .github/agents folder to modifiedDir
+      console.log('context.config:', context.config);
+      if (agentType === 'copilot-cli' && context.config.agent_name) {
+        console.log('Copying .github/agents to modifiedDir for copilot-cli agent...');
+        const fs = await import('fs-extra');
+        const sourceAgentsDir = join(process.cwd(), '.github', 'agents');
+        console.log('Source agents dir:', sourceAgentsDir);
+        const destAgentsDir = join(context.modifiedDir, '.github', 'agents');
+        console.log('Destination agents dir:', destAgentsDir);
+        try {
+          await fs.default.copy(sourceAgentsDir, destAgentsDir);
+          console.log('Copied .github/agents successfully');
+        } catch (error) {
+          console.error('Failed to copy .github/agents:', error);
+        }
       }
 
       // Build evaluation prompt
@@ -106,8 +133,9 @@ export class AgenticJudgeEvaluator implements Evaluator {
         workspaceDir: context.modifiedDir,
         repoDir: context.modifiedDir,
         config: {
-          ...(agentConfig.config || {}),
           prompt: evaluationPrompt,
+          // Pass through agent parameter if specified in evaluator config
+          agent: context.config.agent_name,
         },
         timeout: (context.config.timeout as number) || 300000, // 5 min default
         env: {},
@@ -183,31 +211,57 @@ export class AgenticJudgeEvaluator implements Evaluator {
    * Build evaluation prompt for agent
    */
   private buildEvaluationPrompt(context: EvaluationContext): string {
-    // Load prompt template
+    const instructionsFile = context.config['instructions-file'] as string | undefined;
+    const agentName = context.config['agent_name'] as string | undefined;
+    
+    // Mode 1: Load instructions from specified file
+    if (instructionsFile) {
+      // Support both absolute and relative paths
+      const filePath = instructionsFile.startsWith('/') || instructionsFile.match(/^[a-zA-Z]:/)
+        ? instructionsFile
+        : join(process.cwd(), instructionsFile);
+      
+      const template = readFileSync(filePath, 'utf-8');
+      
+      // Format criteria list
+      const criteriaList = this.formatCriteria(context.config.criteria);
+      
+      // Replace placeholders with actual values
+      return template.replace('{{CRITERIA}}', criteriaList);
+    }
+    if (agentName) {
+      //agent has instructions, just send criteria
+      const criteriaList = this.formatCriteria(context.config.criteria);
+      return `Evaluation Criteria:\n${criteriaList}`;
+    }
+    // Mode 2: Use default markdown template
     const templatePath = join(__dirname, 'prompts', 'agentic-judge.template.md');
     const template = readFileSync(templatePath, 'utf-8');
     
-    // Format criteria list - support both array and object formats
-    const criteria = context.config.criteria;
-    let criteriaList: string;
+    // Format criteria list
+    const criteriaList = this.formatCriteria(context.config.criteria);
     
+    // Replace placeholders with actual values
+    return template.replace('{{CRITERIA}}', criteriaList);
+  }
+
+  /**
+   * Format criteria list for prompt
+   */
+  private formatCriteria(criteria: any): string {
     if (Array.isArray(criteria)) {
       // Legacy array format: ["criterion 1", "criterion 2"]
-      criteriaList = criteria
+      return criteria
         .map((criterion, index) => `${index + 1}. ${criterion}`)
         .join('\n');
     } else if (typeof criteria === 'object' && criteria !== null) {
       // New object format: {"key1": "criterion 1", "key2": "criterion 2"}
       // Use snake_case keys for consistency with youBencha Log format
-      criteriaList = Object.entries(criteria)
+      return Object.entries(criteria)
         .map(([key, value]) => `- **${key}**: ${value}`)
         .join('\n');
-    } else {
-      criteriaList = '';
     }
-    
-    // Replace placeholders with actual values
-    return template.replace('{{CRITERIA}}', criteriaList);
+    return '';
   }
 
   /**

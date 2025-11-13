@@ -183,10 +183,22 @@ export class CopilotCLIAdapter implements AgentAdapter {
     context: AgentExecutionContext
   ): { command: string; args: string[] } {
     const prompt = context.config.prompt as string | undefined;
+    const agent = context.config.agent as string | undefined;
     
     if (!prompt) {
       throw new Error('Prompt is required in agent config');
     }
+
+    // Build base args
+    const baseArgs = ['-p', prompt];
+    
+    // Add agent if specified
+    if (agent) {
+      baseArgs.push('--agent', agent);
+    }
+    
+    // Add tool permissions
+    baseArgs.push('--allow-all-tools', '--allow-all-paths');
 
     // Use direct command execution without shell on all platforms
     // On Windows, .bat/.cmd files need to be executed via cmd.exe
@@ -197,25 +209,14 @@ export class CopilotCLIAdapter implements AgentAdapter {
       // Use both --allow-all-paths (disable path verification) and --add-dir (explicit allow)
       return {
         command: 'cmd.exe',
-        args: [
-          '/d', '/s', '/c', 
-          'copilot', 
-          '-p', prompt, 
-          '--allow-all-tools',
-          '--allow-all-paths'
-        ],
+        args: ['/d', '/s', '/c', 'copilot', ...baseArgs],
       };
     }
 
     // Unix-like systems can execute scripts directly
     return {
       command: 'copilot',
-      args: [
-        '-p', prompt, 
-        '--allow-all-tools',
-        '--allow-all-paths',
-        '--add-dir', context.workspaceDir
-      ],
+      args: [...baseArgs, '--add-dir', context.workspaceDir],
     };
   }
 
