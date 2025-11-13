@@ -14,10 +14,15 @@ import { EvaluationResult } from '../schemas/result.schema.js';
 import { AgentAdapter, AgentExecutionContext } from '../adapters/base.js';
 import { CopilotCLIAdapter } from '../adapters/copilot-cli.js';
 
-// Get __dirname equivalent in ES modules
-const currentFileUrl = import.meta.url;
-const currentFilePath = fileURLToPath(currentFileUrl);
-const currentDirPath = dirname(currentFilePath);
+// Get __dirname equivalent in ES modules - wrapped in function for Jest compatibility
+function getCurrentDirectory(): string {
+  // Check if import.meta is available (ES modules)
+  if (typeof import.meta !== 'undefined' && import.meta.url) {
+    return dirname(fileURLToPath(import.meta.url));
+  }
+  // Fallback for CommonJS/Jest
+  return __dirname;
+}
 
 /**
  * Agent evaluation result from JSON output
@@ -242,7 +247,7 @@ export class AgenticJudgeEvaluator implements Evaluator {
       return `Evaluation Criteria:\n${criteriaList}`;
     }
     // Mode 2: Use default markdown template
-    const templatePath = join(currentDirPath, 'prompts', 'agentic-judge.template.md');
+    const templatePath = join(getCurrentDirectory(), 'prompts', 'agentic-judge.template.md');
     const template = readFileSync(templatePath, 'utf-8');
     
     // Format criteria list
@@ -280,7 +285,7 @@ export class AgenticJudgeEvaluator implements Evaluator {
     // Additional security checks
     // 1. Path must not try to escape the allowed directories
     const cwd = path.resolve(process.cwd());
-    if (!normalizedPath.startsWith(cwd) && !normalizedPath.startsWith(path.resolve(currentDirPath))) {
+    if (!normalizedPath.startsWith(cwd) && !normalizedPath.startsWith(path.resolve(getCurrentDirectory()))) {
       throw new Error('Access to file outside working directory is not allowed');
     }
     
@@ -294,7 +299,7 @@ export class AgenticJudgeEvaluator implements Evaluator {
       if (stats.isSymbolicLink()) {
         const realPath = fs.realpathSync(normalizedPath);
         const normalizedRealPath = path.normalize(realPath);
-        if (!normalizedRealPath.startsWith(cwd) && !normalizedRealPath.startsWith(path.resolve(currentDirPath))) {
+        if (!normalizedRealPath.startsWith(cwd) && !normalizedRealPath.startsWith(path.resolve(getCurrentDirectory()))) {
           throw new Error('Symlink target is outside allowed directories');
         }
         return normalizedRealPath;
