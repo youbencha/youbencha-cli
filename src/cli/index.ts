@@ -32,23 +32,43 @@ async function main() {
 
   program
     .name('yb')
-    .description('youBencha - A friendly CLI framework for evaluating agentic coding tools')
+    .description('youBencha - Evaluate and compare AI coding agents with confidence\n\n' +
+      '  A developer-friendly framework for testing AI coding tools.\n' +
+      '  Run agents, measure their output, and get objective insights.\n\n' +
+      '  Quick start: yb run -c examples/basic-suite.yaml')
     .version(packageJson.version);
 
   // Register commands
   program
     .command('run')
-    .description('Run an evaluation suite')
-    .requiredOption('-c, --config <path>', 'Path to suite configuration file')
-    .option('--keep-workspace', 'Keep workspace directory after evaluation (for debugging)')
+    .description('Run an evaluation suite against an AI agent')
+    .requiredOption('-c, --config <path>', 'Path to suite configuration file (e.g., suite.yaml)')
+    .option('--keep-workspace', 'Keep workspace directory after evaluation (useful for debugging)')
+    .addHelpText('after', `
+Examples:
+  $ yb run -c suite.yaml                    # Run evaluation with default settings
+  $ yb run -c suite.yaml --keep-workspace   # Keep files for inspection
+  
+  See examples/basic-suite.yaml for a working configuration.
+    `)
     .action(runCommand);
 
   program
     .command('report')
-    .description('Generate a report from evaluation results')
-    .requiredOption('--from <path>', 'Path to results JSON file')
-    .option('--format <format>', 'Report format (json, markdown)', 'markdown')
+    .description('Generate a human-readable report from evaluation results')
+    .requiredOption('--from <path>', 'Path to results JSON file (e.g., .youbencha-workspace/run-*/artifacts/results.json)')
+    .option('--format <format>', 'Report format: json, markdown', 'markdown')
     .option('--output <path>', 'Output path for report (defaults to artifacts directory)')
+    .addHelpText('after', `
+Examples:
+  $ yb report --from .youbencha-workspace/run-abc123/artifacts/results.json
+  $ yb report --from results.json --format markdown --output report.md
+  
+  The report includes:
+  - Overall evaluation status
+  - Individual evaluator results with metrics
+  - Links to detailed artifacts
+    `)
     .action(reportCommand);
 
   // Register suggest-suite command (User Story 3)
