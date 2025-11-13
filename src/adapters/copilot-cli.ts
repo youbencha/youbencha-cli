@@ -201,15 +201,23 @@ export class CopilotCLIAdapter implements AgentAdapter {
     baseArgs.push('--allow-all-tools', '--allow-all-paths');
 
     // Use direct command execution without shell on all platforms
-    // On Windows, .bat/.cmd files need to be executed via cmd.exe
+    // On Windows, use PowerShell with secure execution policy
     // spawn() will handle arguments correctly without shell parsing
     if (process.platform === 'win32') {
-      // Use cmd.exe to execute .bat/.cmd files on Windows
+      // Use PowerShell with secure execution settings
+      // -NoProfile: Don't load PowerShell profiles (prevents executing untrusted profile scripts)
+      // -ExecutionPolicy Bypass: Allow script execution for this session only
+      // -Command: Execute the command and arguments
       // Arguments are passed as an array to prevent injection
-      // Use both --allow-all-paths (disable path verification) and --add-dir (explicit allow)
+      const copilotCommand = ['copilot', ...baseArgs].map(arg => {
+        // Escape arguments for PowerShell to prevent injection
+        // Use single quotes and escape any single quotes in the argument
+        return `'${arg.replace(/'/g, "''")}'`;
+      }).join(' ');
+      
       return {
-        command: 'cmd.exe',
-        args: ['/d', '/s', '/c', 'copilot', ...baseArgs],
+        command: 'powershell.exe',
+        args: ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', copilotCommand],
       };
     }
 

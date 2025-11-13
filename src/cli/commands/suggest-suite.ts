@@ -208,10 +208,19 @@ async function launchAgent(
       case 'copilot-cli':
         // Launch GitHub Copilot CLI in interactive mode
         // Pass agent instructions and output directory context
-        // On Windows, use cmd.exe to execute .bat/.cmd files
+        // On Windows, use PowerShell with secure execution policy
         if (process.platform === 'win32') {
-          proc = spawn('cmd.exe', [
-            '/d', '/s', '/c', 'copilot', 'suggest'
+          // Use PowerShell with secure execution settings
+          // -NoProfile: Don't load PowerShell profiles (prevents executing untrusted profile scripts)
+          // -ExecutionPolicy Bypass: Allow script execution for this session only
+          // -Command: Execute the command
+          // Arguments are properly escaped to prevent injection
+          const command = "copilot suggest";
+          
+          proc = spawn('powershell.exe', [
+            '-NoProfile',
+            '-ExecutionPolicy', 'Bypass',
+            '-Command', command
           ], {
             stdio: 'inherit',
             shell: false,
