@@ -32,7 +32,7 @@ interface AgentEvaluationOutput {
  */
 export class AgenticJudgeEvaluator implements Evaluator {
   readonly name = 'agentic-judge';
-  readonly description = 'Uses agentic coding agent with tool use and iterative reasoning to evaluate code quality against specified criteria';
+  readonly description = 'Uses agentic coding agent with tool use and iterative reasoning to evaluate code quality against specified criteria. Note: Results may vary between runs due to non-deterministic agent behavior.';
   readonly requiresExpectedReference = false;
 
   /**
@@ -43,6 +43,18 @@ export class AgenticJudgeEvaluator implements Evaluator {
       // Check if agent configuration exists in suite config
       const agentConfig = context.suiteConfig.agent;
       if (!agentConfig || !agentConfig.type) {
+        return false;
+      }
+
+      // Validate criteria exists and is not empty
+      const criteria = context.config.criteria;
+      if (!criteria) {
+        return false;
+      }
+      if (Array.isArray(criteria) && criteria.length === 0) {
+        return false;
+      }
+      if (typeof criteria === 'object' && !Array.isArray(criteria) && Object.keys(criteria).length === 0) {
         return false;
       }
 
@@ -186,6 +198,7 @@ export class AgenticJudgeEvaluator implements Evaluator {
         .join('\n');
     } else if (typeof criteria === 'object' && criteria !== null) {
       // New object format: {"key1": "criterion 1", "key2": "criterion 2"}
+      // Use snake_case keys for consistency with youBencha Log format
       criteriaList = Object.entries(criteria)
         .map(([key, value]) => `- **${key}**: ${value}`)
         .join('\n');
@@ -193,7 +206,7 @@ export class AgenticJudgeEvaluator implements Evaluator {
       criteriaList = '';
     }
     
-    // Replace placeholder with criteria
+    // Replace placeholders with actual values
     return template.replace('{{CRITERIA}}', criteriaList);
   }
 
@@ -228,6 +241,16 @@ export class AgenticJudgeEvaluator implements Evaluator {
         if (firstBraceIndex >= 0) {
           const jsonCandidate = output.substring(firstBraceIndex, lastBraceIndex + 1);
           const parsed = this.validateAndParse(jsonCandidate);
+          if (parsed) return parsed;
+        }
+      }
+
+      // Strategy 5: Find all JSON objects with required fields and use the last valid one
+      // This handles cases where agent outputs multiple JSON blocks (e.g., thought process + final result)
+      const jsonMatches = output.match(/\{[^{}]*"status"[^{}]*"metrics"[^{}]*"message"[^{}]*\}/g);
+      if (jsonMatches && jsonMatches.length > 0) {
+        for (let i = jsonMatches.length - 1; i >= 0; i--) {
+          const parsed = this.validateAndParse(jsonMatches[i]);
           if (parsed) return parsed;
         }
       }

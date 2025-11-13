@@ -61,6 +61,13 @@ export class CopilotCLIAdapter implements AgentAdapter {
       // Build copilot command
       const { command, args } = this.buildCopilotCommand(context);
       
+      // Log the command being executed for debugging
+      console.log('[DEBUG] Copilot CLI Command:');
+      console.log(`  Command: ${command}`);
+      console.log(`  Args: ${JSON.stringify(args)}`);
+      console.log(`  CWD: ${context.workspaceDir}`);
+      console.log(`  Prompt length: ${(context.config.prompt as string)?.length || 0} chars`);
+      
       // Execute copilot with timeout
       const result = await this.executeWithTimeout(
         command,
@@ -187,16 +194,28 @@ export class CopilotCLIAdapter implements AgentAdapter {
     if (process.platform === 'win32') {
       // Use cmd.exe to execute .bat/.cmd files on Windows
       // Arguments are passed as an array to prevent injection
+      // Use both --allow-all-paths (disable path verification) and --add-dir (explicit allow)
       return {
         command: 'cmd.exe',
-        args: ['/d', '/s', '/c', 'copilot', '-p', prompt, '--allow-all-tools', '--allow-all-paths'],
+        args: [
+          '/d', '/s', '/c', 
+          'copilot', 
+          '-p', prompt, 
+          '--allow-all-tools',
+          '--allow-all-paths'
+        ],
       };
     }
 
     // Unix-like systems can execute scripts directly
     return {
       command: 'copilot',
-      args: ['-p', prompt, '--allow-all-tools', '--allow-all-paths'],
+      args: [
+        '-p', prompt, 
+        '--allow-all-tools',
+        '--allow-all-paths',
+        '--add-dir', context.workspaceDir
+      ],
     };
   }
 

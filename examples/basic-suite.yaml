@@ -10,6 +10,9 @@ evaluators:
   - name: git-diff
   - name: agentic-judge
     config:
+      # Optional: Set timeout in milliseconds (default: 300000 = 5 minutes)
+      # timeout: 600000
+      # Criteria keys become metric names in output (use snake_case for consistency)
       criteria:
         readme_modified: "README.md was modified. Score 1 if true, 0 if false."
         helpful_comment_added: "A helpful comment was added to README.md. Score 1 if true, 0 if false."
