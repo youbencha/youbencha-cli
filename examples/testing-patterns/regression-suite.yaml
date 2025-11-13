@@ -1,0 +1,78 @@
+# Regression Test Suite
+# Purpose: Compare against known-good baseline to detect regressions
+# Analogy: Like snapshot tests or baseline performance tests
+
+version: "1.0.0"
+repo: https://github.com/octocat/Hello-World.git
+branch: feature/new-implementation
+
+# Compare against a known-good reference
+expected_source: branch
+expected: feature/completed-correctly  # Branch with ideal implementation
+
+agent:
+  type: copilot-cli
+  config:
+    prompt: "Refactor the authentication module to use modern async/await patterns"
+
+evaluators:
+  # Track refactoring scope
+  - name: git-diff
+  
+  # Compare structure to known-good implementation
+  - name: expected-diff
+    config:
+      threshold: 0.85  # Require 85% similarity
+      # Higher threshold (0.90-0.95) for:
+      #   - Bug fixes (should be minimal changes)
+      #   - Config updates (should match exactly)
+      # Lower threshold (0.70-0.85) for:
+      #   - Refactoring (structure changes but preserves behavior)
+      #   - Feature additions (new code added)
+  
+  # Verify refactoring quality
+  - name: agentic-judge
+    config:
+      type: copilot-cli
+      agent_name: agentic-judge
+      timeout: 180000  # 3 minutes
+      
+      criteria:
+        behavior_preserved:
+          "All original functionality is preserved.
+          API contracts unchanged (same inputs/outputs).
+          No features removed or altered."
+        
+        async_conversion_complete:
+          "All callbacks converted to async/await.
+          Promise chains replaced with async/await.
+          No callback hell patterns remaining."
+        
+        error_handling_maintained:
+          "Original error handling logic preserved.
+          Try-catch blocks cover all async operations.
+          Error types and messages consistent with original."
+        
+        performance_equivalent:
+          "No obvious performance regressions.
+          Async patterns don't introduce bottlenecks.
+          Parallel operations remain parallel."
+
+# Expected outcomes:
+# - expected-diff shows 85%+ similarity (structure preserved)
+# - Files matched vs changed vs added breakdown
+# - Per-file similarity scores
+# - Agentic judge confirms behavior preservation
+
+# Usage:
+# yb run -c regression-suite.yaml
+#
+# If expected-diff similarity is low (<85%):
+# - Review per-file details to see what diverged
+# - Ensure refactoring didn't change too much structure
+# - Consider if threshold needs adjustment
+#
+# If agentic-judge finds behavior changes:
+# - Review specific criteria that failed
+# - Check if original functionality is preserved
+# - Verify tests still pass
