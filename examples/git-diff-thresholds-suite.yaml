@@ -19,15 +19,15 @@ evaluators:
       assertions:
         # Maximum number of files that can be changed
         # Use this to ensure focused changes (e.g., for a bug fix)
-        max_files_changed: 2
+        max_files_changed: 1
         
         # Maximum number of lines added
         # Prevents overly verbose or bloated changes
-        max_lines_added: 50
+        max_lines_added: 1
         
         # Maximum number of lines removed
         # Ensures refactoring doesn't delete too much code
-        max_lines_removed: 20
+        max_lines_removed: 0
         
         # Maximum total changes (additions + deletions)
         # Alternative to separate add/remove limits
