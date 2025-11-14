@@ -71,7 +71,7 @@ const executionMetadataSchema = z.object({
 const agentExecutionSchema = z.object({
   type: z.string(),
   youbencha_log_path: z.string(),
-  status: z.enum(['success', 'failed', 'timeout']),
+  status: z.enum(['success', 'failed', 'timeout', 'skipped']),
   exit_code: z.number(),
 });
 

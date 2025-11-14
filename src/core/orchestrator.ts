@@ -69,7 +69,13 @@ export class Orchestrator {
    */
   async runEvaluation(suiteConfig: SuiteConfig, configFile: string): Promise<ResultsBundle> {
     const startedAt = new Date().toISOString();
-    logger.info('Starting evaluation workflow');
+    const isPRMode = !!suiteConfig.pull_request;
+    
+    if (isPRMode) {
+      logger.info('Starting evaluation workflow (PR evaluation mode)');
+    } else {
+      logger.info('Starting evaluation workflow');
+    }
 
     let workspace: Workspace | null = null;
 
@@ -78,12 +84,27 @@ export class Orchestrator {
       workspace = await this.setupWorkspace(suiteConfig);
       logger.info(`Workspace created: ${workspace.runId}`);
 
-      // 2. Execute agent
-      const { agentLog, agentExecution } = await this.executeAgent(
-        suiteConfig,
-        workspace
-      );
-      logger.info(`Agent execution completed: ${agentExecution.status}`);
+      // 2. Execute agent (skip in PR mode)
+      let agentLog: YouBenchaLog;
+      let agentExecution: ResultsBundle['agent'];
+      
+      if (isPRMode) {
+        // Skip agent execution in PR mode - create minimal log
+        logger.info('Skipping agent execution (PR evaluation mode)');
+        agentLog = this.createMinimalYouBenchaLog(suiteConfig, workspace);
+        agentExecution = {
+          type: 'none',
+          youbencha_log_path: 'youbencha.log.json',
+          status: 'skipped',
+          exit_code: 0,
+        };
+      } else {
+        // Normal agent execution
+        const result = await this.executeAgent(suiteConfig, workspace);
+        agentLog = result.agentLog;
+        agentExecution = result.agentExecution;
+        logger.info(`Agent execution completed: ${agentExecution.status}`);
+      }
 
       // 3. Save youBencha log
       const agentLogPath = await saveYouBenchaLog(
@@ -145,10 +166,21 @@ export class Orchestrator {
   private async setupWorkspace(suiteConfig: SuiteConfig): Promise<Workspace> {
     logger.info('Setting up workspace...');
 
+    // Extract PR number if in PR mode
+    let pullRequestNumber: number | undefined;
+    if (suiteConfig.pull_request) {
+      const prMatch = suiteConfig.pull_request.url.match(/\/pull\/(\d+)\/?$/);
+      if (prMatch) {
+        pullRequestNumber = parseInt(prMatch[1], 10);
+        logger.info(`Pull request mode: evaluating PR #${pullRequestNumber}`);
+      }
+    }
+
     const workspaceConfig: WorkspaceConfig = {
       repo: suiteConfig.repo,
       branch: suiteConfig.branch,
       commit: suiteConfig.commit,
+      pullRequestNumber,
       expectedBranch: suiteConfig.expected,
       workspaceRoot: suiteConfig.workspace_dir,
       timeout: suiteConfig.timeout,
@@ -162,9 +194,6 @@ export class Orchestrator {
   /**
    * Execute agent via adapter
    */
-  /**
-   * Execute agent via adapter
-   */
   private async executeAgent(
     suiteConfig: SuiteConfig,
     workspace: Workspace
@@ -172,6 +201,11 @@ export class Orchestrator {
     agentLog: YouBenchaLog;
     agentExecution: ResultsBundle['agent'];
   }> {
+    // Ensure agent config is defined (should be guaranteed by schema validation)
+    if (!suiteConfig.agent) {
+      throw new Error('Agent configuration is required for non-PR evaluation mode');
+    }
+
     // Copy agent files if agent name is specified and type is copilot-cli
     if (suiteConfig.agent.type === 'copilot-cli' && suiteConfig.agent.agent_name) {
       logger.info(`Copying agent definition for: ${suiteConfig.agent.agent_name}`);
@@ -249,6 +283,55 @@ export class Orchestrator {
     };
 
     return { agentLog, agentExecution };
+  }
+
+  /**
+   * Create a minimal YouBencha log for PR evaluation mode (no agent execution)
+   */
+  private createMinimalYouBenchaLog(
+    _suiteConfig: SuiteConfig,
+    workspace: Workspace
+  ): YouBenchaLog {
+    const timestamp = new Date().toISOString();
+    return {
+      version: '1.0.0',
+      agent: {
+        name: 'pr-evaluation',
+        version: 'n/a',
+        adapter_version: 'n/a',
+      },
+      model: {
+        name: 'none',
+        provider: 'none',
+        parameters: {},
+      },
+      execution: {
+        started_at: timestamp,
+        completed_at: timestamp,
+        duration_ms: 0,
+        exit_code: 0,
+        status: 'success',
+      },
+      usage: {
+        prompt_tokens: 0,
+        completion_tokens: 0,
+        total_tokens: 0,
+      },
+      messages: [
+        {
+          role: 'system',
+          content: 'PR evaluation mode - agent execution skipped',
+          timestamp,
+        },
+      ],
+      errors: [],
+      environment: {
+        os: process.platform,
+        node_version: process.version,
+        youbencha_version: '0.1.0',
+        working_directory: workspace.paths.modifiedDir,
+      },
+    };
   }
 
   /**

@@ -1,0 +1,56 @@
+# Example Suite Configuration: Pull Request Evaluation
+# 
+# This suite demonstrates evaluating an existing pull request without running an agent.
+# Use this mode when an AI agent has already made changes in a PR and you want to
+# evaluate those changes.
+
+# Repository configuration (required)
+repo: https://github.com/octocat/Hello-World.git
+
+# Pull request configuration (for PR evaluation mode)
+# When pull_request is specified, agent execution is skipped
+pull_request:
+  url: https://github.com/octocat/Hello-World/pull/1
+
+# Optional: Expected reference branch for comparison
+# This compares the PR changes against a reference implementation
+# expected_source: branch
+# expected: expected-branch-name
+
+# Evaluators to run on the PR changes
+evaluators:
+  # Git-diff: Analyze what changes were made in the PR
+  - name: git-diff
+    config: {}
+  
+  # Agentic-judge: Evaluate PR changes against specific criteria
+  - name: agentic-judge
+    config:
+      type: copilot-cli
+      agent_name: agentic-judge
+      criteria:
+        readme_modified: "README.md was modified. Score 1 if true, 0 if false."
+        code_quality: "The code changes are well-structured and maintainable. Score 0-1."
+        documentation_updated: "Documentation was updated to reflect changes. Score 1 if true, 0 if false."
+
+# Optional: Workspace and execution configuration
+workspace_dir: .youbencha-workspace
+timeout: 300000  # 5 minutes (in milliseconds)
+
+# Usage Examples:
+#
+# 1. Run evaluation on an existing PR:
+#    yb run -c examples/pr-evaluation-suite.yaml
+#
+# 2. View results:
+#    yb report --from .youbencha-workspace/run-*/artifacts/results.json
+#
+# 3. Keep workspace for inspection:
+#    yb run -c examples/pr-evaluation-suite.yaml --keep-workspace
+#
+# Benefits of PR Evaluation Mode:
+# - No agent execution needed - evaluate existing changes
+# - Faster evaluation - skip code generation step
+# - Useful for CI/CD pipelines to evaluate PR quality
+# - Can run multiple evaluators on the same PR
+# - Compare against expected implementations with expected-diff
