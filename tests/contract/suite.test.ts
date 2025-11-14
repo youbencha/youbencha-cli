@@ -167,7 +167,7 @@ describe('Suite Configuration Schema Contract', () => {
       expect(result.success).toBe(false);
     });
 
-    it('should reject configuration without agent', () => {
+    it('should reject configuration without agent (legacy test - now requires agent OR pull_request)', () => {
       const invalidConfig = {
         repo: 'https://github.com/example/test-repo',
         evaluators: [
@@ -178,7 +178,11 @@ describe('Suite Configuration Schema Contract', () => {
       };
 
       const result = suiteConfigSchema.safeParse(invalidConfig);
+      // Should fail because neither agent nor pull_request is provided
       expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0].message).toContain('Either agent configuration or pull_request');
+      }
     });
 
     it('should reject configuration without evaluators', () => {
@@ -369,12 +373,129 @@ describe('Suite Configuration Schema Contract', () => {
 
       // Type assertions to verify proper inference
       const repoUrl: string = config.repo;
-      const agentType: 'copilot-cli' = config.agent.type;
+      const agentType: 'copilot-cli' | undefined = config.agent?.type;
       const evaluatorName: string = config.evaluators[0].name;
 
       expect(repoUrl).toBe('https://github.com/example/test-repo');
       expect(agentType).toBe('copilot-cli');
       expect(evaluatorName).toBe('git-diff');
+    });
+  });
+
+  describe('Pull Request Evaluation Mode', () => {
+    it('should accept configuration with pull_request instead of agent', () => {
+      const config = {
+        repo: 'https://github.com/example/test-repo',
+        pull_request: {
+          url: 'https://github.com/example/test-repo/pull/123',
+        },
+        evaluators: [
+          {
+            name: 'git-diff',
+          },
+        ],
+      };
+
+      const result = suiteConfigSchema.safeParse(config);
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject invalid PR URL format', () => {
+      const config = {
+        repo: 'https://github.com/example/test-repo',
+        pull_request: {
+          url: 'https://github.com/example/test-repo/issues/123', // Issues, not PR
+        },
+        evaluators: [
+          {
+            name: 'git-diff',
+          },
+        ],
+      };
+
+      const result = suiteConfigSchema.safeParse(config);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0].message).toContain('valid GitHub PR URL');
+      }
+    });
+
+    it('should reject configuration with both agent and pull_request', () => {
+      const config = {
+        repo: 'https://github.com/example/test-repo',
+        agent: {
+          type: 'copilot-cli',
+        },
+        pull_request: {
+          url: 'https://github.com/example/test-repo/pull/123',
+        },
+        evaluators: [
+          {
+            name: 'git-diff',
+          },
+        ],
+      };
+
+      const result = suiteConfigSchema.safeParse(config);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0].message).toContain('Either agent configuration or pull_request');
+      }
+    });
+
+    it('should accept PR URL with trailing slash', () => {
+      const config = {
+        repo: 'https://github.com/example/test-repo',
+        pull_request: {
+          url: 'https://github.com/example/test-repo/pull/456/',
+        },
+        evaluators: [
+          {
+            name: 'git-diff',
+          },
+        ],
+      };
+
+      const result = suiteConfigSchema.safeParse(config);
+      expect(result.success).toBe(true);
+    });
+
+    it('should work with expected reference in PR mode', () => {
+      const config = {
+        repo: 'https://github.com/example/test-repo',
+        pull_request: {
+          url: 'https://github.com/example/test-repo/pull/123',
+        },
+        expected_source: 'branch',
+        expected: 'main',
+        evaluators: [
+          {
+            name: 'expected-diff',
+          },
+        ],
+      };
+
+      const result = suiteConfigSchema.safeParse(config);
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe('Invalid Suite Configuration - Updated', () => {
+    it('should reject configuration without agent or pull_request', () => {
+      const invalidConfig = {
+        repo: 'https://github.com/example/test-repo',
+        evaluators: [
+          {
+            name: 'git-diff',
+          },
+        ],
+      };
+
+      const result = suiteConfigSchema.safeParse(invalidConfig);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0].message).toContain('Either agent configuration or pull_request');
+      }
     });
   });
 });

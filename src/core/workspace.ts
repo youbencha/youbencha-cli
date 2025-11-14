@@ -29,6 +29,9 @@ export interface WorkspaceConfig {
   /** Specific commit SHA to checkout (optional) */
   commit?: string;
   
+  /** Pull request number to fetch (optional - for PR evaluation mode) */
+  pullRequestNumber?: number;
+  
   /** Expected reference branch for comparison (optional) */
   expectedBranch?: string;
   
@@ -163,13 +166,25 @@ export class WorkspaceManager {
     
     try {
       // Clone modified source repository
-      const modifiedCommit = await this.cloneRepository(
-        config.repo,
-        paths.modifiedDir,
-        config.branch,
-        config.commit,
-        config.timeout || this.defaultTimeout
-      );
+      let modifiedCommit: string;
+      if (config.pullRequestNumber) {
+        // Clone PR branch using pull request refs
+        modifiedCommit = await this.clonePullRequest(
+          config.repo,
+          paths.modifiedDir,
+          config.pullRequestNumber,
+          config.timeout || this.defaultTimeout
+        );
+      } else {
+        // Clone regular branch/commit
+        modifiedCommit = await this.cloneRepository(
+          config.repo,
+          paths.modifiedDir,
+          config.branch,
+          config.commit,
+          config.timeout || this.defaultTimeout
+        );
+      }
       
       // Clone expected reference if configured
       let expectedCommit: string | undefined;
@@ -286,6 +301,61 @@ export class WorkspaceManager {
       throw new WorkspaceError(
         WorkspaceErrorCode.CLONE_FAILED,
         `Failed to clone repository '${repoUrl}': ${gitError.message}`,
+        gitError
+      );
+    }
+  }
+  
+  /**
+   * Clone a Git repository from a pull request
+   * 
+   * @param repoUrl - Repository URL
+   * @param targetDir - Target directory path
+   * @param prNumber - Pull request number
+   * @param timeout - Timeout in milliseconds
+   * @returns Resolved commit SHA
+   * @throws WorkspaceError if clone fails
+   */
+  private async clonePullRequest(
+    repoUrl: string,
+    targetDir: string,
+    prNumber: number,
+    timeout: number = this.defaultTimeout
+  ): Promise<string> {
+    logger.debug(`Cloning PR #${prNumber} from ${repoUrl} to ${targetDir}`);
+    
+    const git: SimpleGit = simpleGit({
+      timeout: {
+        block: timeout,
+      },
+    });
+    
+    try {
+      // Clone the repository first (without specific branch)
+      await git.clone(repoUrl, targetDir, ['--depth', '1']);
+      
+      // Get repository git instance for the cloned repo
+      const repoGit: SimpleGit = simpleGit(targetDir);
+      
+      // Fetch the PR ref - GitHub exposes PRs as refs/pull/{number}/head
+      const prRef = `pull/${prNumber}/head`;
+      await repoGit.fetch(['origin', `+refs/${prRef}:refs/remotes/origin/${prRef}`]);
+      
+      // Checkout the PR head
+      await repoGit.checkout(`origin/${prRef}`);
+      
+      // Get current commit SHA
+      const commitSha = await repoGit.revparse(['HEAD']);
+      
+      logger.debug(`Cloned PR to commit: ${commitSha}`);
+      logger.info(`Cloned pull request #${prNumber}`);
+      
+      return commitSha.trim();
+    } catch (error) {
+      const gitError = error as GitError;
+      throw new WorkspaceError(
+        WorkspaceErrorCode.CLONE_FAILED,
+        `Failed to clone pull request #${prNumber} from '${repoUrl}': ${gitError.message}`,
         gitError
       );
     }

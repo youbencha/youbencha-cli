@@ -34,6 +34,25 @@ const evaluatorConfigSchema = z.object({
 });
 
 /**
+ * Pull request configuration schema
+ */
+const pullRequestConfigSchema = z.object({
+  url: z
+    .string()
+    .min(1, 'Pull request URL is required')
+    .refine(
+      (url) => {
+        // Must be a GitHub PR URL
+        const prRegex = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/pull\/(\d+)\/?$/;
+        return prRegex.test(url);
+      },
+      {
+        message: 'Pull request URL must be a valid GitHub PR URL (e.g., https://github.com/owner/repo/pull/123)',
+      }
+    ),
+});
+
+/**
  * Suite Configuration schema with validation rules
  */
 export const suiteConfigSchema = z
@@ -77,8 +96,11 @@ export const suiteConfigSchema = z
     branch: z.string().optional(),
     commit: z.string().optional(),
 
-    // Agent configuration
-    agent: agentConfigSchema,
+    // Pull request configuration (optional - for evaluating existing PRs)
+    pull_request: pullRequestConfigSchema.optional(),
+
+    // Agent configuration (optional when using pull_request mode)
+    agent: agentConfigSchema.optional(),
 
     // Expected reference configuration (optional)
     expected_source: z.literal('branch').optional(), // MVP: only 'branch' supported
@@ -106,6 +128,28 @@ export const suiteConfigSchema = z
         'When expected_source is provided, expected value must also be provided',
       path: ['expected'],
     }
+  )
+  .refine(
+    (data) => {
+      // Either agent or pull_request must be provided, but not both
+      const hasAgent = data.agent !== undefined;
+      const hasPullRequest = data.pull_request !== undefined;
+      
+      if (!hasAgent && !hasPullRequest) {
+        return false;
+      }
+      
+      if (hasAgent && hasPullRequest) {
+        return false;
+      }
+      
+      return true;
+    },
+    {
+      message:
+        'Either agent configuration or pull_request must be provided, but not both',
+      path: ['agent', 'pull_request'],
+    }
   );
 
 /**
@@ -117,6 +161,11 @@ export type SuiteConfig = z.infer<typeof suiteConfigSchema>;
  * Helper type for agent configuration
  */
 export type AgentConfig = z.infer<typeof agentConfigSchema>;
+
+/**
+ * Helper type for pull request configuration
+ */
+export type PullRequestConfig = z.infer<typeof pullRequestConfigSchema>;
 
 /**
  * Helper type for evaluator configuration

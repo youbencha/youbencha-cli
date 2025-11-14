@@ -129,14 +129,20 @@ export async function validateCommand(options: ValidateCommandOptions): Promise<
 
     // Check agent configuration
     if (options.verbose) {
-      logger.info('🤖 Agent:');
-      logger.info(`   Type: ${suiteConfig.agent.type}`);
-      if (suiteConfig.agent.config?.prompt) {
-        const promptLength = suiteConfig.agent.config.prompt.length;
-        logger.info(`   Prompt length: ${promptLength} characters`);
-        if (promptLength < 10) {
-          logger.warn('   ⚠️  Prompt is very short - consider adding more detail');
+      if (suiteConfig.agent) {
+        logger.info('🤖 Agent:');
+        logger.info(`   Type: ${suiteConfig.agent.type}`);
+        if (suiteConfig.agent.config?.prompt) {
+          const promptLength = suiteConfig.agent.config.prompt.length;
+          logger.info(`   Prompt length: ${promptLength} characters`);
+          if (promptLength < 10) {
+            logger.warn('   ⚠️  Prompt is very short - consider adding more detail');
+          }
         }
+      } else if (suiteConfig.pull_request) {
+        logger.info('🔗 Pull Request:');
+        logger.info(`   URL: ${suiteConfig.pull_request.url}`);
+        logger.info('   Mode: PR evaluation (agent execution will be skipped)');
       }
       logger.info('');
     }
@@ -178,7 +184,11 @@ export async function validateCommand(options: ValidateCommandOptions): Promise<
     logger.info('');
     logger.info('📋 Summary:');
     logger.info(`   Repository: ${suiteConfig.repo}`);
-    logger.info(`   Agent: ${suiteConfig.agent.type}`);
+    if (suiteConfig.agent) {
+      logger.info(`   Agent: ${suiteConfig.agent.type}`);
+    } else if (suiteConfig.pull_request) {
+      logger.info(`   Mode: Pull Request Evaluation`);
+    }
     logger.info(`   Evaluators: ${suiteConfig.evaluators.length} configured`);
     logger.info('');
     logger.info('🚀 Ready to run:');
