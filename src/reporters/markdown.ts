@@ -81,7 +81,7 @@ export class MarkdownReporter implements Reporter {
     // Statistics table
     lines.push('| Metric | Value |');
     lines.push('|--------|-------|');
-    lines.push(`| Total Assertions | ${bundle.summary.total_assertions} |`);
+    lines.push(`| Total Evaluators | ${bundle.summary.total_evaluators} |`);
     lines.push(`| Passed | ${bundle.summary.passed} |`);
     lines.push(`| Failed | ${bundle.summary.failed} |`);
     lines.push(`| Skipped | ${bundle.summary.skipped} |`);
@@ -159,21 +159,21 @@ export class MarkdownReporter implements Reporter {
   }
 
   /**
-   * Generate assertion results section
+   * Generate evaluator results section
    */
   private generateEvaluatorResults(bundle: ResultsBundle): string {
     const lines: string[] = [];
     
-    lines.push('## Assertion Results');
+    lines.push('## Evaluator Results');
     lines.push('');
     
-    if (bundle.assertions.length === 0) {
-      lines.push('No assertions were run.');
+    if (bundle.evaluators.length === 0) {
+      lines.push('No evaluators were run.');
       return lines.join('\n');
     }
     
-    for (const assertion of bundle.assertions) {
-      lines.push(this.generateEvaluatorSection(assertion));
+    for (const evaluator of bundle.evaluators) {
+      lines.push(this.generateEvaluatorSection(evaluator));
       lines.push('');
     }
     
@@ -337,9 +337,9 @@ export class MarkdownReporter implements Reporter {
       lines.push('');
     }
     
-    if (bundle.artifacts.assertion_artifacts.length > 0) {
-      lines.push('**Assertion Artifacts:**');
-      for (const artifact of bundle.artifacts.assertion_artifacts) {
+    if (bundle.artifacts.evaluator_artifacts.length > 0) {
+      lines.push('**Evaluator Artifacts:**');
+      for (const artifact of bundle.artifacts.evaluator_artifacts) {
         lines.push(`- \`${artifact}\``);
       }
       lines.push('');

@@ -92,13 +92,13 @@ export class Orchestrator {
       );
       logger.info(`youBencha log saved: ${agentLogPath}`);
 
-      // 4. Run assertions
-      const assertionResults = await this.runAssertions(
+      // 4. Run evaluators
+      const evaluatorResults = await this.runEvaluators(
         testCaseConfig,
         workspace,
         agentLog
       );
-      logger.info(`Assertions completed: ${assertionResults.length} results`);
+      logger.info(`Evaluators completed: ${evaluatorResults.length} results`);
 
       // 5. Build results bundle
       const resultsBundle = await this.buildResultsBundle(
@@ -107,7 +107,7 @@ export class Orchestrator {
         workspace,
         agentExecution,
         agentLogPath,
-        assertionResults,
+        evaluatorResults,
         startedAt
       );
 
@@ -252,31 +252,31 @@ export class Orchestrator {
   }
 
   /**
-   * Run all configured assertions
+   * Run all configured evaluators
    */
-  private async runAssertions(
+  private async runEvaluators(
     testCaseConfig: TestCaseConfig,
     workspace: Workspace,
     agentLog: YouBenchaLog
   ): Promise<EvaluationResult[]> {
-    logger.info('Running assertions...');
+    logger.info('Running evaluators...');
 
     const results: EvaluationResult[] = [];
 
-    // Run assertions in parallel using Promise.allSettled
-    const assertionPromises = testCaseConfig.assertions.map(async (assertionConfig) => {
+    // Run evaluators in parallel using Promise.allSettled
+    const evaluatorPromises = testCaseConfig.evaluators.map(async (evaluatorConfig) => {
       try {
-        const evaluator = this.getEvaluator(assertionConfig.name);
+        const evaluator = this.getEvaluator(evaluatorConfig.name);
         if (!evaluator) {
           return {
-            evaluator: assertionConfig.name,
+            evaluator: evaluatorConfig.name,
             status: 'skipped' as const,
             metrics: {},
-            message: `Unknown assertion: ${assertionConfig.name}`,
+            message: `Unknown evaluator: ${evaluatorConfig.name}`,
             duration_ms: 0,
             timestamp: new Date().toISOString(),
             error: {
-              message: `Assertion '${assertionConfig.name}' not found`,
+              message: `Evaluator '${evaluatorConfig.name}' not found`,
             },
           };
         }
@@ -287,7 +287,7 @@ export class Orchestrator {
           expectedDir: workspace.paths.expectedDir,
           artifactsDir: workspace.paths.artifactsDir,
           agentLog,
-          config: assertionConfig.config || {},
+          config: evaluatorConfig.config || {},
           testCaseConfig,
         };
 
@@ -297,10 +297,10 @@ export class Orchestrator {
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         return {
-          evaluator: assertionConfig.name,
+          evaluator: evaluatorConfig.name,
           status: 'skipped' as const,
           metrics: {},
-          message: `Assertion error: ${errorMessage}`,
+          message: `Evaluator error: ${errorMessage}`,
           duration_ms: 0,
           timestamp: new Date().toISOString(),
           error: {
@@ -311,7 +311,7 @@ export class Orchestrator {
       }
     });
 
-    const settledResults = await Promise.allSettled(assertionPromises);
+    const settledResults = await Promise.allSettled(evaluatorPromises);
 
     // Collect results
     for (const settled of settledResults) {
@@ -319,12 +319,12 @@ export class Orchestrator {
         results.push(settled.value);
       } else {
         // Promise rejected (should not happen as we catch errors above)
-        logger.error('Assertion promise rejected', settled.reason);
+        logger.error('Evaluator promise rejected', settled.reason);
         results.push({
           evaluator: 'unknown',
           status: 'skipped',
           metrics: {},
-          message: `Assertion failed: ${settled.reason}`,
+          message: `Evaluator failed: ${settled.reason}`,
           duration_ms: 0,
           timestamp: new Date().toISOString(),
           error: {
@@ -346,7 +346,7 @@ export class Orchestrator {
     workspace: Workspace,
     agentExecution: ResultsBundle['agent'],
     agentLogPath: string,
-    assertionResults: EvaluationResult[],
+    evaluatorResults: EvaluationResult[],
     startedAt: string
   ): Promise<ResultsBundle> {
     const completedAt = new Date().toISOString();
@@ -354,11 +354,11 @@ export class Orchestrator {
     const env = detectEnvironment();
 
     // Calculate summary statistics
-    const summary = this.calculateSummary(assertionResults);
+    const summary = this.calculateSummary(evaluatorResults);
 
     // Get artifacts manifest
     const allArtifacts = await getArtifactManifest(workspace.paths.artifactsDir);
-    const assertionArtifacts = allArtifacts.filter(
+    const evaluatorArtifacts = allArtifacts.filter(
       (f) => !f.includes('youbencha.log.json') && !f.includes('results.json')
     );
 
@@ -389,18 +389,18 @@ export class Orchestrator {
         },
       },
       agent: agentExecution,
-      assertions: assertionResults,
+      evaluators: evaluatorResults,
       summary,
       artifacts: {
         agent_log: path.basename(agentLogPath),
         reports: [], // Reports generated separately via yb report command
-        assertion_artifacts: assertionArtifacts,
+        evaluator_artifacts: evaluatorArtifacts,
       },
     };
   }
 
   /**
-   * Calculate summary statistics from assertion results
+   * Calculate summary statistics from evaluator results
    */
   private calculateSummary(results: EvaluationResult[]): ResultsBundle['summary'] {
     const total = results.length;
@@ -409,8 +409,8 @@ export class Orchestrator {
     const skipped = results.filter((r) => r.status === 'skipped').length;
 
     // Overall status logic:
-    // - passed: all assertions passed
-    // - failed: any assertion failed
+    // - passed: all evaluators passed
+    // - failed: any evaluator failed
     // - partial: some passed, some skipped, none failed
     let overallStatus: 'passed' | 'failed' | 'partial';
     if (failed > 0) {
@@ -422,7 +422,7 @@ export class Orchestrator {
     }
 
     return {
-      total_assertions: total,
+      total_evaluators: total,
       passed,
       failed,
       skipped,

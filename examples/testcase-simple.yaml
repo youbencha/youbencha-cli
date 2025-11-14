@@ -15,12 +15,12 @@ agent:
   config:
     prompt: "Add a friendly welcome message to the README file"
 
-# Assertions - how to measure the agent's output quality
-assertions:
+# Evaluators - run checks and generate assertions about the code
+evaluators:
   # git-diff: Measures the scope of changes (files changed, lines added/removed)
   - name: git-diff
   
-  # agentic-judge: Uses AI to evaluate quality based on your assertions
+  # agentic-judge: Uses AI to evaluate quality based on assertions
   - name: agentic-judge
     config:
       type: copilot-cli

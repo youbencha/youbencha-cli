@@ -26,12 +26,12 @@ const agentConfigSchema = z.object({
 });
 
 /**
- * Assertion configuration schema
- * Assertions define expected outcomes that can be evaluated as pass/fail
+ * Evaluator configuration schema
+ * Evaluators run checks and generate assertions about the code
  */
-const assertionConfigSchema = z.object({
+const evaluatorConfigSchema = z.object({
   name: z.string(),
-  config: z.record(z.any()).optional(), // Assertion-specific configuration
+  config: z.record(z.any()).optional(), // Evaluator-specific configuration
 });
 
 /**
@@ -95,10 +95,10 @@ export const testCaseConfigSchema = z
     expected_source: z.literal('branch').optional(), // MVP: only 'branch' supported
     expected: z.string().optional(),
 
-    // Assertions configuration (evaluators)
-    assertions: z
-      .array(assertionConfigSchema)
-      .min(1, 'At least one assertion is required'),
+    // Evaluators configuration
+    evaluators: z
+      .array(evaluatorConfigSchema)
+      .min(1, 'At least one evaluator is required'),
 
     // Execution configuration (optional)
     workspace_dir: z.string().optional(),
@@ -130,11 +130,11 @@ export type TestCaseConfig = z.infer<typeof testCaseConfigSchema>;
 export type AgentConfig = z.infer<typeof agentConfigSchema>;
 
 /**
- * Helper type for assertion configuration
+ * Helper type for evaluator configuration
  */
-export type AssertionConfig = z.infer<typeof assertionConfigSchema>;
+export type EvaluatorConfig = z.infer<typeof evaluatorConfigSchema>;
 
 // Legacy exports for backward compatibility during transition
 export const suiteConfigSchema = testCaseConfigSchema;
 export type SuiteConfig = TestCaseConfig;
-export type EvaluatorConfig = AssertionConfig;
+export type AssertionConfig = EvaluatorConfig;

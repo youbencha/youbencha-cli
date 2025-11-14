@@ -1,7 +1,7 @@
 /**
  * List Command
  * 
- * Lists available assertions and their descriptions.
+ * Lists available evaluators and their descriptions.
  */
 
 import * as logger from '../../lib/logger.js';
@@ -10,10 +10,10 @@ import { ExpectedDiffEvaluator } from '../../evaluators/expected-diff.js';
 import { AgenticJudgeEvaluator } from '../../evaluators/agentic-judge.js';
 
 /**
- * List command handler - shows available assertions
+ * List command handler - shows available evaluators
  */
 export async function listCommand(): Promise<void> {
-  // Get all evaluators (assertions)
+  // Get all evaluators
   const evaluators = [
     new GitDiffEvaluator(),
     new ExpectedDiffEvaluator(),
@@ -21,7 +21,7 @@ export async function listCommand(): Promise<void> {
   ];
 
   logger.info('');
-  logger.info('📋 Available Assertions:');
+  logger.info('📋 Available Evaluators:');
   logger.info('');
 
   evaluators.forEach((evaluator) => {
@@ -33,7 +33,7 @@ export async function listCommand(): Promise<void> {
 
   logger.info('💡 Usage in test case config (e.g., testcase-example.yaml):');
   logger.info('');
-  logger.info('  assertions:');
+  logger.info('  evaluators:');
   logger.info('    - name: git-diff');
   logger.info('    - name: expected-diff');
   logger.info('      config:');

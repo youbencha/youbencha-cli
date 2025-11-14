@@ -81,7 +81,7 @@ const agentExecutionSchema = z.object({
  * Summary statistics schema for results bundle
  */
 const summarySchema = z.object({
-  total_assertions: z.number().nonnegative(),
+  total_evaluators: z.number().nonnegative(),
   passed: z.number().nonnegative(),
   failed: z.number().nonnegative(),
   skipped: z.number().nonnegative(),
@@ -94,7 +94,7 @@ const summarySchema = z.object({
 const artifactsManifestSchema = z.object({
   agent_log: z.string(),
   reports: z.array(z.string()),
-  assertion_artifacts: z.array(z.string()),
+  evaluator_artifacts: z.array(z.string()),
 });
 
 /**
@@ -105,7 +105,7 @@ export const resultsBundleSchema = z.object({
   test_case: testCaseMetadataSchema,
   execution: executionMetadataSchema,
   agent: agentExecutionSchema,
-  assertions: z.array(evaluationResultSchema),
+  evaluators: z.array(evaluationResultSchema),
   summary: summarySchema,
   artifacts: artifactsManifestSchema,
 });

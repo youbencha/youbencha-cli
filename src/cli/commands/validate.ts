@@ -147,30 +147,30 @@ export async function validateCommand(options: ValidateCommandOptions): Promise<
       logger.info('');
     }
 
-    // Check assertions
-    logger.info('✅ Assertions:');
-    const assertionNames = testCaseConfig.assertions.map(e => e.name);
-    const uniqueAssertions = new Set(assertionNames);
+    // Check evaluators
+    logger.info('📊 Evaluators:');
+    const evaluatorNames = testCaseConfig.evaluators.map(e => e.name);
+    const uniqueEvaluators = new Set(evaluatorNames);
     
-    if (assertionNames.length !== uniqueAssertions.size) {
-      logger.warn('   ⚠️  Duplicate assertions detected (this is usually unintentional)');
+    if (evaluatorNames.length !== uniqueEvaluators.size) {
+      logger.warn('   ⚠️  Duplicate evaluators detected (this is usually unintentional)');
     }
     
-    assertionNames.forEach((name, index) => {
-      const config = testCaseConfig.assertions[index].config;
+    evaluatorNames.forEach((name, index) => {
+      const config = testCaseConfig.evaluators[index].config;
       const hasConfig = config && Object.keys(config).length > 0;
       logger.info(`   ${index + 1}. ${name}${hasConfig ? ' (configured)' : ''}`);
       
       // Check if expected-diff is used without expected reference
       if (name === 'expected-diff' && !testCaseConfig.expected) {
-        logger.warn('      ⚠️  expected-diff assertion requires expected reference configuration');
+        logger.warn('      ⚠️  expected-diff evaluator requires expected reference configuration');
       }
       
       // Check if agentic-judge has assertions
       if (name === 'agentic-judge') {
         const assertions = config?.assertions || config?.criteria; // Support both
         if (!assertions || (typeof assertions === 'object' && Object.keys(assertions).length === 0)) {
-          logger.warn('      ⚠️  agentic-judge assertion should have evaluation assertions defined');
+          logger.warn('      ⚠️  agentic-judge evaluator should have assertions defined');
         } else if (options.verbose && typeof assertions === 'object') {
           logger.info(`      Assertions: ${Object.keys(assertions).length} defined`);
         }
@@ -186,7 +186,7 @@ export async function validateCommand(options: ValidateCommandOptions): Promise<
     logger.info(`   Test Case: ${testCaseConfig.name}`);
     logger.info(`   Repository: ${testCaseConfig.repo}`);
     logger.info(`   Agent: ${testCaseConfig.agent.type}`);
-    logger.info(`   Assertions: ${testCaseConfig.assertions.length} configured`);
+    logger.info(`   Evaluators: ${testCaseConfig.evaluators.length} configured`);
     logger.info('');
     logger.info('🚀 Ready to run:');
     logger.info(`   yb run -c ${options.config}`);

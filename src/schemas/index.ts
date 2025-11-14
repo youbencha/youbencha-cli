@@ -18,11 +18,11 @@ export {
   testCaseConfigSchema,
   type TestCaseConfig,
   type AgentConfig,
-  type AssertionConfig,
+  type EvaluatorConfig,
   // Legacy exports for backward compatibility
   suiteConfigSchema,
   type SuiteConfig,
-  type EvaluatorConfig,
+  type AssertionConfig,
 } from './testcase.schema.js';
 
 // Results schema and types

@@ -103,7 +103,7 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
     logger.info('');
     logger.info('📊 Results Summary:');
     logger.info(`   Status: ${results.summary.overall_status === 'passed' ? '✓ PASSED' : results.summary.overall_status === 'failed' ? '✗ FAILED' : '⊘ PARTIAL'}`);
-    logger.info(`   Assertions: ${results.summary.passed} passed, ${results.summary.failed} failed, ${results.summary.skipped} skipped (${results.summary.total_assertions} total)`);
+    logger.info(`   Evaluators: ${results.summary.passed} passed, ${results.summary.failed} failed, ${results.summary.skipped} skipped (${results.summary.total_evaluators} total)`);
     logger.info('');
     logger.info('📁 Results Location:');
     logger.info(`   ${results.execution.environment.workspace_dir}/artifacts/`);
@@ -112,7 +112,7 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
     logger.info('   1. Generate a readable report:');
     logger.info(`      yb report --from ${results.execution.environment.workspace_dir}/artifacts/results.json`);
     logger.info('');
-    logger.info('   2. Review individual assertion outputs in the artifacts directory');
+    logger.info('   2. Review individual evaluator outputs in the artifacts directory');
     logger.info('');
     if (results.summary.failed > 0) {
       logger.info('⚠️  Some evaluators failed. Check the report for details.');
