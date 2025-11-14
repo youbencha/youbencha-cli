@@ -14,10 +14,6 @@ import { EvaluationResult } from '../schemas/result.schema.js';
 import { AgentAdapter, AgentExecutionContext } from '../adapters/base.js';
 import { CopilotCLIAdapter } from '../adapters/copilot-cli.js';
 
-// Get __dirname equivalent in ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
 /**
  * Agent evaluation result from JSON output
  */
@@ -34,6 +30,25 @@ export class AgenticJudgeEvaluator implements Evaluator {
   readonly name = 'agentic-judge';
   readonly description = 'Uses an AI agent to evaluate code quality based on your custom criteria. The agent reads files, searches for patterns, and makes judgments like a human reviewer would. Great for assessing things like: test coverage, error handling, documentation quality, and best practices. Note: Results may vary between runs due to AI behavior.';
   readonly requiresExpectedReference = false;
+
+  // Template path - can be overridden for testing
+  private templateBasePath: string | null = null;
+
+  /**
+   * Get the base path for templates (lazy evaluation to avoid import.meta issues in tests)
+   */
+  private getTemplateBasePath(): string {
+    if (this.templateBasePath) {
+      return this.templateBasePath;
+    }
+    // Fallback for test environment - use __dirname if available
+    if (typeof __dirname !== 'undefined') {
+      return __dirname;
+    }
+    // This will work at runtime in ES modules
+    const filename = fileURLToPath(import.meta.url);
+    return dirname(filename);
+  }
 
   /**
    * Check if evaluator can run (agent configured and available)
@@ -79,12 +94,18 @@ export class AgenticJudgeEvaluator implements Evaluator {
    */
   async evaluate(context: EvaluationContext): Promise<EvaluationResult> {
     const startedAt = new Date().toISOString();
+    
+    // Determine evaluator name (use custom ID if provided, otherwise default)
+    const evaluatorName = context.evaluatorId 
+      ? `${this.name}:${context.evaluatorId}`
+      : this.name;
 
     try {
       // Check preconditions
       const canRun = await this.checkPreconditions(context);
       if (!canRun) {
         return this.createSkippedResult(
+          evaluatorName,
           startedAt,
           'Agent not configured or not available - check agent.type in evaluator config and ensure agent is installed'
         );
@@ -96,6 +117,7 @@ export class AgenticJudgeEvaluator implements Evaluator {
       console.log('Agent type from config:', agentType);
       if (!agentType) {
         return this.createSkippedResult(
+          evaluatorName,
           startedAt,
           'Agent type not specified in evaluator config (config.type)'
         );
@@ -103,6 +125,7 @@ export class AgenticJudgeEvaluator implements Evaluator {
       const adapter = await this.getAdapter(agentType);
       if (!adapter) {
         return this.createSkippedResult(
+          evaluatorName,
           startedAt,
           `Unknown adapter type: ${agentType}`
         );
@@ -146,6 +169,7 @@ export class AgenticJudgeEvaluator implements Evaluator {
       // Handle agent execution failures
       if (agentResult.status === 'failed') {
         return this.createSkippedResult(
+          evaluatorName,
           startedAt,
           `Agent execution failed: ${agentResult.errors.map(e => e.message).join('; ')}`,
           agentResult.durationMs
@@ -154,6 +178,7 @@ export class AgenticJudgeEvaluator implements Evaluator {
 
       if (agentResult.status === 'timeout') {
         return this.createSkippedResult(
+          evaluatorName,
           startedAt,
           'Agent execution timed out',
           agentResult.durationMs
@@ -166,6 +191,7 @@ export class AgenticJudgeEvaluator implements Evaluator {
         // Provide detailed error message with output preview
         const outputPreview = agentResult.output.substring(0, 500).replace(/\n/g, ' ');
         return this.createSkippedResult(
+          evaluatorName,
           startedAt,
           `Agent output is not valid JSON or missing required fields (status, metrics, message). Output preview: "${outputPreview}..."`,
           agentResult.durationMs
@@ -176,7 +202,7 @@ export class AgenticJudgeEvaluator implements Evaluator {
       const durationMs = new Date(completedAt).getTime() - new Date(startedAt).getTime();
 
       return {
-        evaluator: this.name,
+        evaluator: evaluatorName,
         status: evaluationOutput.status,
         metrics: {
           ...evaluationOutput.metrics,
@@ -193,7 +219,7 @@ export class AgenticJudgeEvaluator implements Evaluator {
       const errorMessage = error instanceof Error ? error.message : String(error);
 
       return {
-        evaluator: this.name,
+        evaluator: evaluatorName,
         status: 'skipped',
         metrics: {},
         message: `Evaluation error: ${errorMessage}`,
@@ -235,7 +261,7 @@ export class AgenticJudgeEvaluator implements Evaluator {
       return `Evaluation Criteria:\n${criteriaList}`;
     }
     // Mode 2: Use default markdown template
-    const templatePath = join(__dirname, 'prompts', 'agentic-judge.template.md');
+    const templatePath = join(this.getTemplateBasePath(), 'prompts', 'agentic-judge.template.md');
     const template = readFileSync(templatePath, 'utf-8');
     
     // Format criteria list
@@ -366,6 +392,7 @@ export class AgenticJudgeEvaluator implements Evaluator {
    * Create a skipped evaluation result
    */
   private createSkippedResult(
+    evaluatorName: string,
     startedAt: string,
     message: string,
     agentDurationMs?: number
@@ -374,7 +401,7 @@ export class AgenticJudgeEvaluator implements Evaluator {
     const durationMs = new Date(completedAt).getTime() - new Date(startedAt).getTime();
 
     return {
-      evaluator: this.name,
+      evaluator: evaluatorName,
       status: 'skipped',
       metrics: agentDurationMs ? { agent_duration_ms: agentDurationMs } : {},
       message,

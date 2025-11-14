@@ -30,6 +30,9 @@ export interface EvaluationContext {
 
   /** Suite configuration for context */
   suiteConfig: SuiteConfig;
+
+  /** Optional custom identifier for this evaluator instance (for multiple instances of same evaluator) */
+  evaluatorId?: string;
 }
 
 /**

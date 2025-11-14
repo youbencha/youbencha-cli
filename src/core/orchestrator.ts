@@ -267,9 +267,15 @@ export class Orchestrator {
     const evaluatorPromises = suiteConfig.evaluators.map(async (evalConfig) => {
       try {
         const evaluator = this.getEvaluator(evalConfig.name);
+        
+        // Generate evaluator identifier (with custom ID if provided)
+        const evaluatorId = evalConfig.id 
+          ? `${evalConfig.name}:${evalConfig.id}`
+          : evalConfig.name;
+        
         if (!evaluator) {
           return {
-            evaluator: evalConfig.name,
+            evaluator: evaluatorId,
             status: 'skipped' as const,
             metrics: {},
             message: `Unknown evaluator: ${evalConfig.name}`,
@@ -289,6 +295,7 @@ export class Orchestrator {
           agentLog,
           config: evalConfig.config || {},
           suiteConfig,
+          evaluatorId: evalConfig.id, // Pass the custom ID if provided
         };
 
         // Run evaluator
@@ -296,8 +303,12 @@ export class Orchestrator {
         return result;
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
+        const evaluatorId = evalConfig.id 
+          ? `${evalConfig.name}:${evalConfig.id}`
+          : evalConfig.name;
+        
         return {
-          evaluator: evalConfig.name,
+          evaluator: evaluatorId,
           status: 'skipped' as const,
           metrics: {},
           message: `Evaluator error: ${errorMessage}`,

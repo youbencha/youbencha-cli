@@ -20,6 +20,9 @@ describe('AgenticJudgeEvaluator', () => {
   beforeEach(async () => {
     evaluator = new AgenticJudgeEvaluator();
     
+    // Set template base path to src directory for tests
+    (evaluator as any).templateBasePath = path.join(__dirname, '../../src/evaluators');
+    
     // Create temporary test directory
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'agentic-judge-test-'));
     

@@ -30,6 +30,7 @@ const agentConfigSchema = z.object({
  */
 const evaluatorConfigSchema = z.object({
   name: z.string(),
+  id: z.string().optional(), // Optional unique identifier for multiple instances of same evaluator
   config: z.record(z.any()).optional(), // Evaluator-specific configuration
 });
 
