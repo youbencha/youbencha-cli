@@ -43,7 +43,7 @@ const pullRequestConfigSchema = z.object({
     .refine(
       (url) => {
         // Must be a GitHub PR URL
-        const prRegex = /^https:\/\/github\.com\/([^\/]+)\/([^\/]+)\/pull\/(\d+)\/?$/;
+        const prRegex = /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/pull\/(\d+)\/?$/;
         return prRegex.test(url);
       },
       {

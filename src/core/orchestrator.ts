@@ -221,8 +221,8 @@ export class Orchestrator {
     }
 
     // Display agent context before execution
-    const prompt = suiteConfig.agent.config?.prompt as string | undefined;
-    if (prompt) {
+    const prompt = suiteConfig.agent.config?.prompt;
+    if (prompt && typeof prompt === 'string') {
       logger.info(`Agent prompt: "${prompt}"`);
     }
     logger.info(`Agent type: ${suiteConfig.agent.type}`);
