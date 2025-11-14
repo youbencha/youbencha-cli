@@ -1,0 +1,76 @@
+# Example Suite Configuration: Multiple Agentic-Judge Evaluators
+# 
+# This suite demonstrates using multiple agentic-judge evaluators with different
+# criteria sets to avoid context window pollution and improve evaluation focus.
+
+# Repository configuration
+repo: https://github.com/octocat/Hello-World.git
+branch: master
+
+# Agent configuration
+agent:
+  type: copilot-cli
+  config:
+    prompt: "Add comprehensive error handling and input validation to the codebase"
+
+# Evaluators
+evaluators:
+  # Git-diff: Track what changes the agent made
+  - name: git-diff
+    config: {}
+  
+  # Agentic-judge #1: Code Quality - Focused on structure and best practices
+  - name: agentic-judge
+    id: code-quality  # Custom ID to differentiate this instance
+    config:
+      type: copilot-cli
+      agent_name: agentic-judge
+      timeout: 300000  # 5 minutes
+      criteria:
+        code_structure: "Code follows proper modular structure. Score 1-10."
+        naming_conventions: "Variables and functions have clear, descriptive names. Score 1-10."
+        code_duplication: "Minimal code duplication. Score 1-10."
+  
+  # Agentic-judge #2: Error Handling - Focused on robustness
+  - name: agentic-judge
+    id: error-handling  # Different ID for different focus
+    config:
+      type: copilot-cli
+      agent_name: agentic-judge
+      timeout: 300000  # 5 minutes
+      criteria:
+        error_handling_coverage: "All error conditions are handled appropriately. Score 1-10."
+        validation_completeness: "Input validation is comprehensive. Score 1-10."
+        error_messages: "Error messages are clear and actionable. Score 1-10."
+  
+  # Agentic-judge #3: Documentation - Focused on clarity
+  - name: agentic-judge
+    id: documentation  # Third instance with documentation focus
+    config:
+      type: copilot-cli
+      agent_name: agentic-judge
+      timeout: 300000  # 5 minutes
+      criteria:
+        inline_comments: "Complex logic has helpful inline comments. Score 1-10."
+        function_documentation: "Functions have proper documentation comments. Score 1-10."
+        readme_updates: "README reflects code changes if applicable. Score 1-10."
+
+# Usage Examples:
+#
+# 1. Run evaluation with multiple focused judges:
+#    yb run -c examples/multi-judge-suite.yaml
+#
+# 2. View results with separate evaluations:
+#    yb report --from .youbencha-workspace/run-*/artifacts/results.json
+#
+# Results will show three separate evaluations:
+# - agentic-judge:code-quality
+# - agentic-judge:error-handling  
+# - agentic-judge:documentation
+#
+# Benefits:
+# - Each judge has focused criteria (3 items instead of 9)
+# - Smaller context window per evaluation
+# - More targeted feedback
+# - Easier to identify which aspect needs improvement
+# - Judges run in parallel for efficiency

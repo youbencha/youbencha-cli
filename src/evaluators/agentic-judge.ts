@@ -7,12 +7,14 @@
  */
 
 import { readFileSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { join } from 'path';
 import { Evaluator, EvaluationContext } from './base.js';
 import { EvaluationResult } from '../schemas/result.schema.js';
 import { AgentAdapter, AgentExecutionContext } from '../adapters/base.js';
 import { CopilotCLIAdapter } from '../adapters/copilot-cli.js';
+
+// Template directory relative to dist/evaluators/ after compilation
+const TEMPLATE_DIR = 'prompts';
 
 /**
  * Agent evaluation result from JSON output
@@ -31,24 +33,10 @@ export class AgenticJudgeEvaluator implements Evaluator {
   readonly description = 'Uses an AI agent to evaluate code quality based on your custom criteria. The agent reads files, searches for patterns, and makes judgments like a human reviewer would. Great for assessing things like: test coverage, error handling, documentation quality, and best practices. Note: Results may vary between runs due to AI behavior.';
   readonly requiresExpectedReference = false;
 
-  // Template path - can be overridden for testing
-  private templateBasePath: string | null = null;
-
-  /**
-   * Get the base path for templates (lazy evaluation to avoid import.meta issues in tests)
-   */
-  private getTemplateBasePath(): string {
-    if (this.templateBasePath) {
-      return this.templateBasePath;
-    }
-    // Fallback for test environment - use __dirname if available
-    if (typeof __dirname !== 'undefined') {
-      return __dirname;
-    }
-    // This will work at runtime in ES modules
-    const filename = fileURLToPath(import.meta.url);
-    return dirname(filename);
-  }
+  // Template base path - can be overridden for testing
+  // In production, templates are in dist/evaluators/prompts/
+  // In tests, this needs to point to src/evaluators/prompts/
+  private templateBasePath: string = __dirname;
 
   /**
    * Check if evaluator can run (agent configured and available)
@@ -261,7 +249,7 @@ export class AgenticJudgeEvaluator implements Evaluator {
       return `Evaluation Criteria:\n${criteriaList}`;
     }
     // Mode 2: Use default markdown template
-    const templatePath = join(this.getTemplateBasePath(), 'prompts', 'agentic-judge.template.md');
+    const templatePath = join(this.templateBasePath, TEMPLATE_DIR, 'agentic-judge.template.md');
     const template = readFileSync(templatePath, 'utf-8');
     
     // Format criteria list
