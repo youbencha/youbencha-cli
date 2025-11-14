@@ -84,6 +84,41 @@ yb report --from .youbencha-workspace/run-*/artifacts/results.json
 - **Flexible Evaluation**: Use built-in evaluators or create custom ones
 - **Developer-Friendly**: Clear error messages, helpful CLI, extensive examples
 - **Comprehensive Reports**: From metrics to human-readable insights
+- **PR Evaluation**: Evaluate existing pull requests without running agents
+
+## Evaluation Modes
+
+youBencha supports two evaluation modes:
+
+### 1. Agent Execution Mode (Default)
+
+Clone a repository, run an AI agent to make changes, then evaluate the results:
+
+```yaml
+repo: https://github.com/example/repo.git
+agent:
+  type: copilot-cli
+  config:
+    prompt: "Your task here"
+evaluators:
+  - name: git-diff
+  - name: agentic-judge
+```
+
+### 2. Pull Request Evaluation Mode
+
+Evaluate existing pull requests without running an agent (useful for CI/CD):
+
+```yaml
+repo: https://github.com/example/repo.git
+pull_request:
+  url: https://github.com/example/repo/pull/123
+evaluators:
+  - name: git-diff
+  - name: agentic-judge
+```
+
+See [PR Evaluation Guide](docs/pr-evaluation.md) for details.
 
 ## Commands
 
