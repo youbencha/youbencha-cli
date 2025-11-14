@@ -168,6 +168,185 @@ describe('GitDiffEvaluator', () => {
       expect(result.metrics.files_changed).toBeGreaterThanOrEqual(1);
     });
 
+    it('should pass when no thresholds are configured', async () => {
+      const context: EvaluationContext = {
+        modifiedDir: testRepoDir,
+        artifactsDir,
+        agentLog: mockYouBenchaLog,
+        config: {},
+        suiteConfig: mockSuiteConfig,
+      };
+
+      const result = await evaluator.evaluate(context);
+      
+      expect(result.status).toBe('passed');
+    });
+
+    it('should pass when metrics are within thresholds', async () => {
+      const context: EvaluationContext = {
+        modifiedDir: testRepoDir,
+        artifactsDir,
+        agentLog: mockYouBenchaLog,
+        config: {
+          assertions: {
+            max_files_changed: 100,
+            max_lines_added: 1000,
+            max_lines_removed: 1000,
+          },
+        },
+        suiteConfig: mockSuiteConfig,
+      };
+
+      const result = await evaluator.evaluate(context);
+      
+      expect(result.status).toBe('passed');
+      expect(result.metrics.violations).toBeUndefined();
+    });
+
+    it('should fail when files_changed exceeds threshold', async () => {
+      const context: EvaluationContext = {
+        modifiedDir: testRepoDir,
+        artifactsDir,
+        agentLog: mockYouBenchaLog,
+        config: {
+          assertions: {
+            max_files_changed: 0, // No files should be changed
+          },
+        },
+        suiteConfig: mockSuiteConfig,
+      };
+
+      const result = await evaluator.evaluate(context);
+      
+      if (result.metrics.files_changed > 0) {
+        expect(result.status).toBe('failed');
+        expect(result.metrics.violations).toBeDefined();
+        expect(result.metrics.violations).toContain(
+          expect.stringContaining('files_changed')
+        );
+      }
+    });
+
+    it('should fail when lines_added exceeds threshold', async () => {
+      // Add a file with many lines
+      const git = simpleGit(testRepoDir);
+      await fs.writeFile(
+        path.join(testRepoDir, 'large-file.ts'),
+        'console.log("line");\n'.repeat(100)
+      );
+      await git.add('large-file.ts');
+      await git.commit('Add large file');
+
+      const context: EvaluationContext = {
+        modifiedDir: testRepoDir,
+        artifactsDir,
+        agentLog: mockYouBenchaLog,
+        config: {
+          base_commit: 'HEAD~1',
+          assertions: {
+            max_lines_added: 10, // Only 10 lines allowed
+          },
+        },
+        suiteConfig: mockSuiteConfig,
+      };
+
+      const result = await evaluator.evaluate(context);
+      
+      expect(result.status).toBe('failed');
+      expect(result.metrics.violations).toBeDefined();
+      expect(result.metrics.violations.some((v: string) => v.includes('lines_added'))).toBe(true);
+    });
+
+    it('should fail when total_changes exceeds threshold', async () => {
+      const context: EvaluationContext = {
+        modifiedDir: testRepoDir,
+        artifactsDir,
+        agentLog: mockYouBenchaLog,
+        config: {
+          assertions: {
+            max_total_changes: 1, // Very restrictive
+          },
+        },
+        suiteConfig: mockSuiteConfig,
+      };
+
+      const result = await evaluator.evaluate(context);
+      
+      const totalChanges = result.metrics.lines_added + result.metrics.lines_removed;
+      if (totalChanges > 1) {
+        expect(result.status).toBe('failed');
+        expect(result.metrics.violations).toBeDefined();
+        expect(result.metrics.violations).toContain(
+          expect.stringContaining('total_changes')
+        );
+      }
+    });
+
+    it('should fail when change_entropy exceeds threshold', async () => {
+      const context: EvaluationContext = {
+        modifiedDir: testRepoDir,
+        artifactsDir,
+        agentLog: mockYouBenchaLog,
+        config: {
+          assertions: {
+            max_change_entropy: 0.1, // Very low - forces concentrated changes
+          },
+        },
+        suiteConfig: mockSuiteConfig,
+      };
+
+      const result = await evaluator.evaluate(context);
+      
+      if (result.metrics.change_entropy > 0.1) {
+        expect(result.status).toBe('failed');
+        expect(result.metrics.violations).toBeDefined();
+        expect(result.metrics.violations).toContain(
+          expect.stringContaining('change_entropy')
+        );
+      }
+    });
+
+    it('should include assertion values in metrics', async () => {
+      const context: EvaluationContext = {
+        modifiedDir: testRepoDir,
+        artifactsDir,
+        agentLog: mockYouBenchaLog,
+        config: {
+          assertions: {
+            max_files_changed: 5,
+            max_lines_added: 100,
+          },
+        },
+        suiteConfig: mockSuiteConfig,
+      };
+
+      const result = await evaluator.evaluate(context);
+      
+      expect(result.metrics.assertions).toBeDefined();
+      expect(result.metrics.assertions.max_files_changed).toBe(5);
+      expect(result.metrics.assertions.max_lines_added).toBe(100);
+    });
+
+    it('should include violations in message when failed', async () => {
+      const context: EvaluationContext = {
+        modifiedDir: testRepoDir,
+        artifactsDir,
+        agentLog: mockYouBenchaLog,
+        config: {
+          assertions: {
+            max_files_changed: 0,
+          },
+        },
+        suiteConfig: mockSuiteConfig,
+      };
+
+      const result = await evaluator.evaluate(context);
+      
+      if (result.status === 'failed') {
+        expect(result.message).toContain('Violations');
+      }
+    });
+
     it('should calculate lines added and removed', async () => {
       // Modify an existing file
       const git = simpleGit(testRepoDir);
