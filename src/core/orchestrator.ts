@@ -7,7 +7,7 @@
 
 import * as path from 'path';
 import { createHash } from 'crypto';
-import { SuiteConfig } from '../schemas/suite.schema.js';
+import { TestCaseConfig } from '../schemas/testcase.schema.js';
 import { ResultsBundle, EvaluationResult } from '../schemas/result.schema.js';
 import { YouBenchaLog } from '../schemas/youbenchalog.schema.js';
 import { WorkspaceManager, Workspace, WorkspaceConfig } from './workspace.js';
@@ -63,11 +63,11 @@ export class Orchestrator {
   /**
    * Run complete evaluation workflow
    * 
-   * @param suiteConfig - Suite configuration
+   * @param testCaseConfig - Test case configuration
    * @param configFile - Path to the config file used
    * @returns Results bundle with evaluation results
    */
-  async runEvaluation(suiteConfig: SuiteConfig, configFile: string): Promise<ResultsBundle> {
+  async runEvaluation(testCaseConfig: TestCaseConfig, configFile: string): Promise<ResultsBundle> {
     const startedAt = new Date().toISOString();
     logger.info('Starting evaluation workflow');
 
@@ -75,12 +75,12 @@ export class Orchestrator {
 
     try {
       // 1. Create workspace and clone repository
-      workspace = await this.setupWorkspace(suiteConfig);
+      workspace = await this.setupWorkspace(testCaseConfig);
       logger.info(`Workspace created: ${workspace.runId}`);
 
       // 2. Execute agent
       const { agentLog, agentExecution } = await this.executeAgent(
-        suiteConfig,
+        testCaseConfig,
         workspace
       );
       logger.info(`Agent execution completed: ${agentExecution.status}`);
@@ -92,22 +92,22 @@ export class Orchestrator {
       );
       logger.info(`youBencha log saved: ${agentLogPath}`);
 
-      // 4. Run evaluators
-      const evaluatorResults = await this.runEvaluators(
-        suiteConfig,
+      // 4. Run assertions
+      const assertionResults = await this.runAssertions(
+        testCaseConfig,
         workspace,
         agentLog
       );
-      logger.info(`Evaluators completed: ${evaluatorResults.length} results`);
+      logger.info(`Assertions completed: ${assertionResults.length} results`);
 
       // 5. Build results bundle
       const resultsBundle = await this.buildResultsBundle(
-        suiteConfig,
+        testCaseConfig,
         configFile,
         workspace,
         agentExecution,
         agentLogPath,
-        evaluatorResults,
+        assertionResults,
         startedAt
       );
 
@@ -142,16 +142,16 @@ export class Orchestrator {
   /**
    * Setup workspace and clone repository
    */
-  private async setupWorkspace(suiteConfig: SuiteConfig): Promise<Workspace> {
+  private async setupWorkspace(testCaseConfig: TestCaseConfig): Promise<Workspace> {
     logger.info('Setting up workspace...');
 
     const workspaceConfig: WorkspaceConfig = {
-      repo: suiteConfig.repo,
-      branch: suiteConfig.branch,
-      commit: suiteConfig.commit,
-      expectedBranch: suiteConfig.expected,
-      workspaceRoot: suiteConfig.workspace_dir,
-      timeout: suiteConfig.timeout,
+      repo: testCaseConfig.repo,
+      branch: testCaseConfig.branch,
+      commit: testCaseConfig.commit,
+      expectedBranch: testCaseConfig.expected,
+      workspaceRoot: testCaseConfig.workspace_dir,
+      timeout: testCaseConfig.timeout,
     };
 
     const workspace = await this.workspaceManager.createWorkspace(workspaceConfig);
@@ -166,15 +166,15 @@ export class Orchestrator {
    * Execute agent via adapter
    */
   private async executeAgent(
-    suiteConfig: SuiteConfig,
+    testCaseConfig: TestCaseConfig,
     workspace: Workspace
   ): Promise<{
     agentLog: YouBenchaLog;
     agentExecution: ResultsBundle['agent'];
   }> {
     // Copy agent files if agent name is specified and type is copilot-cli
-    if (suiteConfig.agent.type === 'copilot-cli' && suiteConfig.agent.agent_name) {
-      logger.info(`Copying agent definition for: ${suiteConfig.agent.agent_name}`);
+    if (testCaseConfig.agent.type === 'copilot-cli' && testCaseConfig.agent.agent_name) {
+      logger.info(`Copying agent definition for: ${testCaseConfig.agent.agent_name}`);
       const fs = await import('fs-extra');
       const sourceAgentsDir = path.join(process.cwd(), '.github', 'agents');
       const destAgentsDir = path.join(workspace.paths.modifiedDir, '.github', 'agents');
@@ -187,25 +187,25 @@ export class Orchestrator {
     }
 
     // Display agent context before execution
-    const prompt = suiteConfig.agent.config?.prompt as string | undefined;
+    const prompt = testCaseConfig.agent.config?.prompt as string | undefined;
     if (prompt) {
       logger.info(`Agent prompt: "${prompt}"`);
     }
-    logger.info(`Agent type: ${suiteConfig.agent.type}`);
-    if (suiteConfig.agent.agent_name) {
-      logger.info(`Agent name: ${suiteConfig.agent.agent_name}`);
+    logger.info(`Agent type: ${testCaseConfig.agent.type}`);
+    if (testCaseConfig.agent.agent_name) {
+      logger.info(`Agent name: ${testCaseConfig.agent.agent_name}`);
     }
     logger.info(`Working directory: ${workspace.paths.modifiedDir}`);
     logger.info('Starting agent execution...');
     console.log(''); // Add blank line for readability
 
     // Get agent adapter
-    const adapter = this.getAgentAdapter(suiteConfig.agent.type);
+    const adapter = this.getAgentAdapter(testCaseConfig.agent.type);
 
     // Check availability
     const isAvailable = await adapter.checkAvailability();
     if (!isAvailable) {
-      throw new Error(`Agent ${suiteConfig.agent.type} is not available or not authenticated`);
+      throw new Error(`Agent ${testCaseConfig.agent.type} is not available or not authenticated`);
     }
 
     // Execute agent
@@ -213,11 +213,11 @@ export class Orchestrator {
       workspaceDir: workspace.paths.modifiedDir,
       repoDir: workspace.paths.modifiedDir,
       config: {
-        ...(suiteConfig.agent.config || {}),
-        // Pass agent name if specified in suite config
-        agent: suiteConfig.agent.agent_name,
+        ...(testCaseConfig.agent.config || {}),
+        // Pass agent name if specified in test case config
+        agent: testCaseConfig.agent.agent_name,
       },
-      timeout: suiteConfig.timeout || 300000, // 5 min default
+      timeout: testCaseConfig.timeout || 300000, // 5 min default
       env: {},
     };
 
@@ -242,7 +242,7 @@ export class Orchestrator {
 
     // Build agent execution metadata
     const agentExecution = {
-      type: suiteConfig.agent.type,
+      type: testCaseConfig.agent.type,
       youbencha_log_path: 'youbencha.log.json',
       status: result.status,
       exit_code: result.exitCode,
@@ -252,31 +252,31 @@ export class Orchestrator {
   }
 
   /**
-   * Run all configured evaluators
+   * Run all configured assertions
    */
-  private async runEvaluators(
-    suiteConfig: SuiteConfig,
+  private async runAssertions(
+    testCaseConfig: TestCaseConfig,
     workspace: Workspace,
     agentLog: YouBenchaLog
   ): Promise<EvaluationResult[]> {
-    logger.info('Running evaluators...');
+    logger.info('Running assertions...');
 
     const results: EvaluationResult[] = [];
 
-    // Run evaluators in parallel using Promise.allSettled
-    const evaluatorPromises = suiteConfig.evaluators.map(async (evalConfig) => {
+    // Run assertions in parallel using Promise.allSettled
+    const assertionPromises = testCaseConfig.assertions.map(async (assertionConfig) => {
       try {
-        const evaluator = this.getEvaluator(evalConfig.name);
+        const evaluator = this.getEvaluator(assertionConfig.name);
         if (!evaluator) {
           return {
-            evaluator: evalConfig.name,
+            evaluator: assertionConfig.name,
             status: 'skipped' as const,
             metrics: {},
-            message: `Unknown evaluator: ${evalConfig.name}`,
+            message: `Unknown assertion: ${assertionConfig.name}`,
             duration_ms: 0,
             timestamp: new Date().toISOString(),
             error: {
-              message: `Evaluator '${evalConfig.name}' not found`,
+              message: `Assertion '${assertionConfig.name}' not found`,
             },
           };
         }
@@ -287,8 +287,8 @@ export class Orchestrator {
           expectedDir: workspace.paths.expectedDir,
           artifactsDir: workspace.paths.artifactsDir,
           agentLog,
-          config: evalConfig.config || {},
-          suiteConfig,
+          config: assertionConfig.config || {},
+          testCaseConfig,
         };
 
         // Run evaluator
@@ -297,10 +297,10 @@ export class Orchestrator {
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         return {
-          evaluator: evalConfig.name,
+          evaluator: assertionConfig.name,
           status: 'skipped' as const,
           metrics: {},
-          message: `Evaluator error: ${errorMessage}`,
+          message: `Assertion error: ${errorMessage}`,
           duration_ms: 0,
           timestamp: new Date().toISOString(),
           error: {
@@ -311,7 +311,7 @@ export class Orchestrator {
       }
     });
 
-    const settledResults = await Promise.allSettled(evaluatorPromises);
+    const settledResults = await Promise.allSettled(assertionPromises);
 
     // Collect results
     for (const settled of settledResults) {
@@ -319,12 +319,12 @@ export class Orchestrator {
         results.push(settled.value);
       } else {
         // Promise rejected (should not happen as we catch errors above)
-        logger.error('Evaluator promise rejected', settled.reason);
+        logger.error('Assertion promise rejected', settled.reason);
         results.push({
           evaluator: 'unknown',
           status: 'skipped',
           metrics: {},
-          message: `Evaluator failed: ${settled.reason}`,
+          message: `Assertion failed: ${settled.reason}`,
           duration_ms: 0,
           timestamp: new Date().toISOString(),
           error: {
@@ -341,12 +341,12 @@ export class Orchestrator {
    * Build complete results bundle
    */
   private async buildResultsBundle(
-    suiteConfig: SuiteConfig,
+    testCaseConfig: TestCaseConfig,
     configFile: string,
     workspace: Workspace,
     agentExecution: ResultsBundle['agent'],
     agentLogPath: string,
-    evaluatorResults: EvaluationResult[],
+    assertionResults: EvaluationResult[],
     startedAt: string
   ): Promise<ResultsBundle> {
     const completedAt = new Date().toISOString();
@@ -354,24 +354,26 @@ export class Orchestrator {
     const env = detectEnvironment();
 
     // Calculate summary statistics
-    const summary = this.calculateSummary(evaluatorResults);
+    const summary = this.calculateSummary(assertionResults);
 
     // Get artifacts manifest
     const allArtifacts = await getArtifactManifest(workspace.paths.artifactsDir);
-    const evaluatorArtifacts = allArtifacts.filter(
+    const assertionArtifacts = allArtifacts.filter(
       (f) => !f.includes('youbencha.log.json') && !f.includes('results.json')
     );
 
     // Generate config hash
-    const configHash = this.generateConfigHash(suiteConfig);
+    const configHash = this.generateConfigHash(testCaseConfig);
 
     return {
       version: '1.0.0',
-      suite: {
+      test_case: {
+        name: testCaseConfig.name,
+        description: testCaseConfig.description,
         config_file: configFile,
         config_hash: configHash,
-        repo: suiteConfig.repo,
-        branch: suiteConfig.branch || workspace.branch || 'unknown',
+        repo: testCaseConfig.repo,
+        branch: testCaseConfig.branch || workspace.branch || 'unknown',
         commit: workspace.modifiedCommit,
         expected_branch: workspace.expectedBranch,
       },
@@ -387,18 +389,18 @@ export class Orchestrator {
         },
       },
       agent: agentExecution,
-      evaluators: evaluatorResults,
+      assertions: assertionResults,
       summary,
       artifacts: {
         agent_log: path.basename(agentLogPath),
         reports: [], // Reports generated separately via yb report command
-        evaluator_artifacts: evaluatorArtifacts,
+        assertion_artifacts: assertionArtifacts,
       },
     };
   }
 
   /**
-   * Calculate summary statistics from evaluator results
+   * Calculate summary statistics from assertion results
    */
   private calculateSummary(results: EvaluationResult[]): ResultsBundle['summary'] {
     const total = results.length;
@@ -407,8 +409,8 @@ export class Orchestrator {
     const skipped = results.filter((r) => r.status === 'skipped').length;
 
     // Overall status logic:
-    // - passed: all evaluators passed
-    // - failed: any evaluator failed
+    // - passed: all assertions passed
+    // - failed: any assertion failed
     // - partial: some passed, some skipped, none failed
     let overallStatus: 'passed' | 'failed' | 'partial';
     if (failed > 0) {
@@ -420,7 +422,7 @@ export class Orchestrator {
     }
 
     return {
-      total_evaluators: total,
+      total_assertions: total,
       passed,
       failed,
       skipped,
@@ -429,10 +431,10 @@ export class Orchestrator {
   }
 
   /**
-   * Generate hash of suite configuration for reproducibility
+   * Generate hash of test case configuration for reproducibility
    */
-  private generateConfigHash(suiteConfig: SuiteConfig): string {
-    const configString = JSON.stringify(suiteConfig, null, 0);
+  private generateConfigHash(testCaseConfig: TestCaseConfig): string {
+    const configString = JSON.stringify(testCaseConfig, null, 0);
     return createHash('sha256').update(configString).digest('hex').substring(0, 16);
   }
 

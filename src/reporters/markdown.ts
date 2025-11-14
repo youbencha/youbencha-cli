@@ -81,7 +81,7 @@ export class MarkdownReporter implements Reporter {
     // Statistics table
     lines.push('| Metric | Value |');
     lines.push('|--------|-------|');
-    lines.push(`| Total Evaluators | ${bundle.summary.total_evaluators} |`);
+    lines.push(`| Total Assertions | ${bundle.summary.total_assertions} |`);
     lines.push(`| Passed | ${bundle.summary.passed} |`);
     lines.push(`| Failed | ${bundle.summary.failed} |`);
     lines.push(`| Skipped | ${bundle.summary.skipped} |`);
@@ -90,23 +90,26 @@ export class MarkdownReporter implements Reporter {
   }
 
   /**
-   * Generate suite configuration section
+   * Generate test case configuration section
    */
   private generateSuiteConfig(bundle: ResultsBundle): string {
     const lines: string[] = [];
     
-    lines.push('## Suite Configuration');
+    lines.push('## Test Case Configuration');
     lines.push('');
-    lines.push(`**Repository:** ${bundle.suite.repo}`);
-    lines.push(`**Branch:** ${bundle.suite.branch}`);
-    lines.push(`**Commit:** ${bundle.suite.commit}`);
+    lines.push(`**Name:** ${bundle.test_case.name}`);
+    lines.push(`**Description:** ${bundle.test_case.description}`);
+    lines.push('');
+    lines.push(`**Repository:** ${bundle.test_case.repo}`);
+    lines.push(`**Branch:** ${bundle.test_case.branch}`);
+    lines.push(`**Commit:** ${bundle.test_case.commit}`);
     
-    if (bundle.suite.expected_branch) {
-      lines.push(`**Expected Branch:** ${bundle.suite.expected_branch}`);
+    if (bundle.test_case.expected_branch) {
+      lines.push(`**Expected Branch:** ${bundle.test_case.expected_branch}`);
     }
     
-    lines.push(`**Config File:** ${bundle.suite.config_file}`);
-    lines.push(`**Config Hash:** ${bundle.suite.config_hash}`);
+    lines.push(`**Config File:** ${bundle.test_case.config_file}`);
+    lines.push(`**Config Hash:** ${bundle.test_case.config_hash}`);
     
     return lines.join('\n');
   }
@@ -156,21 +159,21 @@ export class MarkdownReporter implements Reporter {
   }
 
   /**
-   * Generate evaluator results section
+   * Generate assertion results section
    */
   private generateEvaluatorResults(bundle: ResultsBundle): string {
     const lines: string[] = [];
     
-    lines.push('## Evaluator Results');
+    lines.push('## Assertion Results');
     lines.push('');
     
-    if (bundle.evaluators.length === 0) {
-      lines.push('No evaluators were run.');
+    if (bundle.assertions.length === 0) {
+      lines.push('No assertions were run.');
       return lines.join('\n');
     }
     
-    for (const evaluator of bundle.evaluators) {
-      lines.push(this.generateEvaluatorSection(evaluator));
+    for (const assertion of bundle.assertions) {
+      lines.push(this.generateEvaluatorSection(assertion));
       lines.push('');
     }
     
@@ -334,9 +337,9 @@ export class MarkdownReporter implements Reporter {
       lines.push('');
     }
     
-    if (bundle.artifacts.evaluator_artifacts.length > 0) {
-      lines.push('**Evaluator Artifacts:**');
-      for (const artifact of bundle.artifacts.evaluator_artifacts) {
+    if (bundle.artifacts.assertion_artifacts.length > 0) {
+      lines.push('**Assertion Artifacts:**');
+      for (const artifact of bundle.artifacts.assertion_artifacts) {
         lines.push(`- \`${artifact}\``);
       }
       lines.push('');

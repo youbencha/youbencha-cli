@@ -13,13 +13,17 @@ export {
   type LogError,
 } from './youbenchalog.schema.js';
 
-// Suite Configuration schema and types
+// Test Case Configuration schema and types
 export {
+  testCaseConfigSchema,
+  type TestCaseConfig,
+  type AgentConfig,
+  type AssertionConfig,
+  // Legacy exports for backward compatibility
   suiteConfigSchema,
   type SuiteConfig,
-  type AgentConfig,
   type EvaluatorConfig,
-} from './suite.schema.js';
+} from './testcase.schema.js';
 
 // Results schema and types
 export {
@@ -28,9 +32,11 @@ export {
   type EvaluationResult,
   type ResultsBundle,
   type EvaluationArtifact,
-  type SuiteMetadata,
+  type TestCaseMetadata,
   type ExecutionMetadata,
   type AgentExecution,
   type Summary,
   type ArtifactsManifest,
+  // Legacy type for backward compatibility
+  type SuiteMetadata,
 } from './result.schema.js';

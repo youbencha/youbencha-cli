@@ -1,13 +1,13 @@
 /**
  * Run Command
  * 
- * Executes an evaluation suite from a configuration file.
+ * Executes a test case from a configuration file.
  */
 
 import * as fs from 'fs/promises';
 import * as yaml from 'yaml';
 import { Orchestrator } from '../../core/orchestrator.js';
-import { suiteConfigSchema, SuiteConfig } from '../../schemas/suite.schema.js';
+import { testCaseConfigSchema, TestCaseConfig } from '../../schemas/testcase.schema.js';
 import { createSpinner } from '../../lib/progress.js';
 import * as logger from '../../lib/logger.js';
 import { UserErrors, formatUserError } from '../../lib/user-errors.js';
@@ -23,12 +23,12 @@ interface RunCommandOptions {
 /**
  * Run command handler
  * 
- * Loads suite configuration, validates it, and orchestrates evaluation.
+ * Loads test case configuration, validates it, and orchestrates evaluation.
  */
 export async function runCommand(options: RunCommandOptions): Promise<void> {
   try {
     // Load configuration file
-    logger.info(`Loading suite configuration from ${options.config}`);
+    logger.info(`Loading test case configuration from ${options.config}`);
     
     // Validate file size before reading
     const configStats = await fs.stat(options.config);
@@ -60,11 +60,11 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
     }
     
     // Validate against schema
-    const spinner = createSpinner('Validating suite configuration...');
+    const spinner = createSpinner('Validating test case configuration...');
     spinner.start();
-    let suiteConfig: SuiteConfig;
+    let testCaseConfig: TestCaseConfig;
     try {
-      suiteConfig = suiteConfigSchema.parse(configData);
+      testCaseConfig = testCaseConfigSchema.parse(configData);
       spinner.succeed('Configuration validated ✓');
     } catch (error) {
       spinner.fail('Configuration validation failed');
@@ -95,7 +95,7 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
 
     // Run evaluation
     logger.info('Starting evaluation...');
-    const results = await orchestrator.runEvaluation(suiteConfig, options.config);
+    const results = await orchestrator.runEvaluation(testCaseConfig, options.config);
 
     // Report success
     logger.info('');
@@ -103,7 +103,7 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
     logger.info('');
     logger.info('📊 Results Summary:');
     logger.info(`   Status: ${results.summary.overall_status === 'passed' ? '✓ PASSED' : results.summary.overall_status === 'failed' ? '✗ FAILED' : '⊘ PARTIAL'}`);
-    logger.info(`   Evaluators: ${results.summary.passed} passed, ${results.summary.failed} failed, ${results.summary.skipped} skipped (${results.summary.total_evaluators} total)`);
+    logger.info(`   Assertions: ${results.summary.passed} passed, ${results.summary.failed} failed, ${results.summary.skipped} skipped (${results.summary.total_assertions} total)`);
     logger.info('');
     logger.info('📁 Results Location:');
     logger.info(`   ${results.execution.environment.workspace_dir}/artifacts/`);
@@ -112,7 +112,7 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
     logger.info('   1. Generate a readable report:');
     logger.info(`      yb report --from ${results.execution.environment.workspace_dir}/artifacts/results.json`);
     logger.info('');
-    logger.info('   2. Review individual evaluator outputs in the artifacts directory');
+    logger.info('   2. Review individual assertion outputs in the artifacts directory');
     logger.info('');
     if (results.summary.failed > 0) {
       logger.info('⚠️  Some evaluators failed. Check the report for details.');
