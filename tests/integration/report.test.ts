@@ -76,7 +76,7 @@ describe('Integration: Report Generation', () => {
         overall_status: 'passed' as const
       },
       artifacts: {
-        face_log: 'artifacts/youbencha-log.json',
+        agent_log: 'artifacts/youbencha-log.json',
         reports: ['artifacts/report.md'],
         evaluator_artifacts: []
       }

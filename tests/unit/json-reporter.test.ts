@@ -229,7 +229,7 @@ function createMockResultsBundle(): ResultsBundle {
     },
     agent: {
       type: 'copilot-cli',
-      youbencha_log_path: 'artifacts/face-log.json',
+      youbencha_log_path: 'artifacts/agent-log.json',
       status: 'success',
       exit_code: 0,
     },
@@ -265,7 +265,7 @@ function createMockResultsBundle(): ResultsBundle {
       overall_status: 'passed',
     },
     artifacts: {
-      face_log: 'artifacts/face-log.json',
+      agent_log: 'artifacts/agent-log.json',
       reports: ['artifacts/report.md'],
       evaluator_artifacts: [],
     },

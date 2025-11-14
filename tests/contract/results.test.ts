@@ -199,7 +199,7 @@ describe('Results Bundle Schema Contract', () => {
           overall_status: 'passed',
         },
         artifacts: {
-          face_log: 'artifacts/youbencha.log.json',
+          agent_log: 'artifacts/youbencha.log.json',
           reports: ['artifacts/report.md', 'artifacts/report.json'],
           evaluator_artifacts: [
             'artifacts/evaluators/git-diff.patch',
@@ -271,7 +271,7 @@ describe('Results Bundle Schema Contract', () => {
           overall_status: 'partial',
         },
         artifacts: {
-          face_log: 'artifacts/youbencha.log.json',
+          agent_log: 'artifacts/youbencha.log.json',
           reports: ['artifacts/report.md'],
           evaluator_artifacts: ['artifacts/evaluators/git-diff.patch'],
         },
@@ -326,7 +326,7 @@ describe('Results Bundle Schema Contract', () => {
           overall_status: 'failed',
         },
         artifacts: {
-          face_log: 'artifacts/youbencha.log.json',
+          agent_log: 'artifacts/youbencha.log.json',
           reports: ['artifacts/report.md'],
           evaluator_artifacts: [],
         },
@@ -373,7 +373,7 @@ describe('Results Bundle Schema Contract', () => {
           overall_status: 'passed',
         },
         artifacts: {
-          face_log: 'artifacts/youbencha.log.json',
+          agent_log: 'artifacts/youbencha.log.json',
           reports: [],
           evaluator_artifacts: [],
         },
@@ -419,7 +419,7 @@ describe('Results Bundle Schema Contract', () => {
           overall_status: 'passed',
         },
         artifacts: {
-          face_log: 'artifacts/youbencha.log.json',
+          agent_log: 'artifacts/youbencha.log.json',
           reports: [],
           evaluator_artifacts: [],
         },
@@ -465,7 +465,7 @@ describe('Results Bundle Schema Contract', () => {
           overall_status: 'invalid-status', // Invalid status
         },
         artifacts: {
-          face_log: 'artifacts/youbencha.log.json',
+          agent_log: 'artifacts/youbencha.log.json',
           reports: [],
           evaluator_artifacts: [],
         },

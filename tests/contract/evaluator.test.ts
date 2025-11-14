@@ -110,7 +110,7 @@ describe('Evaluator Contract', () => {
     const mockContext: EvaluationContext = {
       modifiedDir: '/tmp/src-modified',
       artifactsDir: '/tmp/artifacts',
-      faceLog: {} as YouBenchaLog,
+      agentLog: {} as YouBenchaLog,
       config: {},
       suiteConfig: {} as SuiteConfig,
     };
@@ -129,7 +129,7 @@ describe('Evaluator Contract', () => {
     const mockContext: EvaluationContext = {
       modifiedDir: '/tmp/src-modified',
       artifactsDir: '/tmp/artifacts',
-      faceLog: {} as YouBenchaLog,
+      agentLog: {} as YouBenchaLog,
       config: {},
       suiteConfig: {} as SuiteConfig,
     };
@@ -211,7 +211,7 @@ describe('Evaluator Contract', () => {
 
       const contextWithLog: EvaluationContext = {
         ...mockContext,
-        faceLog: mockLog,
+        agentLog: mockLog,
       };
 
       await expect(evaluator.evaluate(contextWithLog)).resolves.toBeDefined();
@@ -228,7 +228,7 @@ describe('Evaluator Contract', () => {
         modifiedDir: '/tmp/src-modified',
         // expectedDir intentionally omitted
         artifactsDir: '/tmp/artifacts',
-        faceLog: {} as YouBenchaLog,
+        agentLog: {} as YouBenchaLog,
         config: {},
         suiteConfig: {} as SuiteConfig,
       };
@@ -245,7 +245,7 @@ describe('Evaluator Contract', () => {
         modifiedDir: '/tmp/src-modified',
         expectedDir: '/tmp/src-expected',
         artifactsDir: '/tmp/artifacts',
-        faceLog: {} as YouBenchaLog,
+        agentLog: {} as YouBenchaLog,
         config: {},
         suiteConfig: {} as SuiteConfig,
       };
@@ -260,7 +260,7 @@ describe('Evaluator Contract', () => {
       const contextWithoutExpected: EvaluationContext = {
         modifiedDir: '/tmp/src-modified',
         artifactsDir: '/tmp/artifacts',
-        faceLog: {} as YouBenchaLog,
+        agentLog: {} as YouBenchaLog,
         config: {},
         suiteConfig: {} as SuiteConfig,
       };
@@ -275,7 +275,7 @@ describe('Evaluator Contract', () => {
       const context: EvaluationContext = {
         modifiedDir: '/tmp/src-modified',
         artifactsDir: '/tmp/artifacts/evaluators',
-        faceLog: {} as YouBenchaLog,
+        agentLog: {} as YouBenchaLog,
         config: {},
         suiteConfig: {} as SuiteConfig,
       };
@@ -297,7 +297,7 @@ describe('Evaluator Contract', () => {
       const context: EvaluationContext = {
         modifiedDir: '/tmp/src-modified',
         artifactsDir: '/tmp/artifacts',
-        faceLog: {} as YouBenchaLog,
+        agentLog: {} as YouBenchaLog,
         config: {},
         suiteConfig: {} as SuiteConfig,
       };
@@ -311,7 +311,7 @@ describe('Evaluator Contract', () => {
       const context: EvaluationContext = {
         modifiedDir: '/tmp/src-modified',
         artifactsDir: '/tmp/artifacts',
-        faceLog: {} as YouBenchaLog,
+        agentLog: {} as YouBenchaLog,
         config: {},
         suiteConfig: {} as SuiteConfig,
       };

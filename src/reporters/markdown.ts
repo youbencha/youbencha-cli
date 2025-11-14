@@ -323,7 +323,7 @@ export class MarkdownReporter implements Reporter {
     lines.push('');
     
     lines.push('**youBencha Log:**');
-    lines.push(`- \`${bundle.artifacts.face_log}\``);
+    lines.push(`- \`${bundle.artifacts.agent_log}\``);
     lines.push('');
     
     if (bundle.artifacts.reports.length > 0) {

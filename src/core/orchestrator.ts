@@ -79,24 +79,24 @@ export class Orchestrator {
       logger.info(`Workspace created: ${workspace.runId}`);
 
       // 2. Execute agent
-      const { faceLog, agentExecution } = await this.executeAgent(
+      const { agentLog, agentExecution } = await this.executeAgent(
         suiteConfig,
         workspace
       );
       logger.info(`Agent execution completed: ${agentExecution.status}`);
 
       // 3. Save youBencha log
-      const faceLogPath = await saveYouBenchaLog(
-        faceLog,
+      const agentLogPath = await saveYouBenchaLog(
+        agentLog,
         workspace.paths.artifactsDir
       );
-      logger.info(`youBencha log saved: ${faceLogPath}`);
+      logger.info(`youBencha log saved: ${agentLogPath}`);
 
       // 4. Run evaluators
       const evaluatorResults = await this.runEvaluators(
         suiteConfig,
         workspace,
-        faceLog
+        agentLog
       );
       logger.info(`Evaluators completed: ${evaluatorResults.length} results`);
 
@@ -106,7 +106,7 @@ export class Orchestrator {
         configFile,
         workspace,
         agentExecution,
-        faceLogPath,
+        agentLogPath,
         evaluatorResults,
         startedAt
       );
@@ -166,7 +166,7 @@ export class Orchestrator {
     suiteConfig: SuiteConfig,
     workspace: Workspace
   ): Promise<{
-    faceLog: YouBenchaLog;
+    agentLog: YouBenchaLog;
     agentExecution: ResultsBundle['agent'];
   }> {
     // Display agent context before execution
@@ -206,13 +206,13 @@ export class Orchestrator {
     logger.info(`Exit code: ${result.exitCode}`);
 
     // Normalize to youBencha log
-    const faceLog = adapter.normalizeLog(result.output, result);
+    const agentLog = adapter.normalizeLog(result.output, result);
 
     // Display usage metrics if available
-    if (faceLog.usage) {
-      logger.info(`Token usage: ${faceLog.usage.total_tokens} tokens (prompt: ${faceLog.usage.prompt_tokens}, completion: ${faceLog.usage.completion_tokens})`);
-      if (faceLog.usage.estimated_cost_usd) {
-        logger.info(`Estimated cost: $${faceLog.usage.estimated_cost_usd.toFixed(4)}`);
+    if (agentLog.usage) {
+      logger.info(`Token usage: ${agentLog.usage.total_tokens} tokens (prompt: ${agentLog.usage.prompt_tokens}, completion: ${agentLog.usage.completion_tokens})`);
+      if (agentLog.usage.estimated_cost_usd) {
+        logger.info(`Estimated cost: $${agentLog.usage.estimated_cost_usd.toFixed(4)}`);
       }
     }
 
@@ -224,7 +224,7 @@ export class Orchestrator {
       exit_code: result.exitCode,
     };
 
-    return { faceLog, agentExecution };
+    return { agentLog, agentExecution };
   }
 
   /**
@@ -233,7 +233,7 @@ export class Orchestrator {
   private async runEvaluators(
     suiteConfig: SuiteConfig,
     workspace: Workspace,
-    faceLog: YouBenchaLog
+    agentLog: YouBenchaLog
   ): Promise<EvaluationResult[]> {
     logger.info('Running evaluators...');
 
@@ -262,7 +262,7 @@ export class Orchestrator {
           modifiedDir: workspace.paths.modifiedDir,
           expectedDir: workspace.paths.expectedDir,
           artifactsDir: workspace.paths.artifactsDir,
-          faceLog,
+          agentLog,
           config: evalConfig.config || {},
           suiteConfig,
         };
@@ -321,7 +321,7 @@ export class Orchestrator {
     configFile: string,
     workspace: Workspace,
     agentExecution: ResultsBundle['agent'],
-    faceLogPath: string,
+    agentLogPath: string,
     evaluatorResults: EvaluationResult[],
     startedAt: string
   ): Promise<ResultsBundle> {
@@ -366,7 +366,7 @@ export class Orchestrator {
       evaluators: evaluatorResults,
       summary,
       artifacts: {
-        face_log: path.basename(faceLogPath),
+        agent_log: path.basename(agentLogPath),
         reports: [], // Reports generated separately via yb report command
         evaluator_artifacts: evaluatorArtifacts,
       },

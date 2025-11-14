@@ -26,7 +26,7 @@ describe('AgenticJudgeEvaluator', () => {
     mockContext = {
       modifiedDir: path.join(tempDir, 'src-modified'),
       artifactsDir: path.join(tempDir, 'artifacts'),
-      faceLog: {
+      agentLog: {
         version: '1.0.0',
         agent: { name: 'copilot-cli', version: '1.0.0', adapter_version: '1.0.0' },
         model: { name: 'gpt-4', provider: 'GitHub', parameters: {} },
