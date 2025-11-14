@@ -90,7 +90,7 @@ const summarySchema = z.object({
  * Artifacts manifest schema for results bundle
  */
 const artifactsManifestSchema = z.object({
-  face_log: z.string(),
+  agent_log: z.string(),
   reports: z.array(z.string()),
   evaluator_artifacts: z.array(z.string()),
 });

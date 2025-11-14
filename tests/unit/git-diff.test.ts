@@ -70,7 +70,7 @@ describe('GitDiffEvaluator', () => {
       const mockContext: EvaluationContext = {
         modifiedDir: testRepoDir,
         artifactsDir,
-        faceLog: {} as YouBenchaLog,
+        agentLog: {} as YouBenchaLog,
         config: {},
         suiteConfig: {} as SuiteConfig,
       };
@@ -86,7 +86,7 @@ describe('GitDiffEvaluator', () => {
       const invalidContext: EvaluationContext = {
         modifiedDir: nonGitDir,
         artifactsDir,
-        faceLog: {} as YouBenchaLog,
+        agentLog: {} as YouBenchaLog,
         config: {},
         suiteConfig: {} as SuiteConfig,
       };
@@ -99,7 +99,7 @@ describe('GitDiffEvaluator', () => {
       const invalidContext: EvaluationContext = {
         modifiedDir: '/nonexistent/path',
         artifactsDir,
-        faceLog: {} as YouBenchaLog,
+        agentLog: {} as YouBenchaLog,
         config: {},
         suiteConfig: {} as SuiteConfig,
       };
@@ -155,7 +155,7 @@ describe('GitDiffEvaluator', () => {
       const context: EvaluationContext = {
         modifiedDir: testRepoDir,
         artifactsDir,
-        faceLog: mockYouBenchaLog,
+        agentLog: mockYouBenchaLog,
         config: { base_commit: 'HEAD~1' },
         suiteConfig: mockSuiteConfig,
       };
@@ -180,7 +180,7 @@ describe('GitDiffEvaluator', () => {
       const context: EvaluationContext = {
         modifiedDir: testRepoDir,
         artifactsDir,
-        faceLog: mockYouBenchaLog,
+        agentLog: mockYouBenchaLog,
         config: {},
         suiteConfig: mockSuiteConfig,
       };
@@ -197,7 +197,7 @@ describe('GitDiffEvaluator', () => {
       const context: EvaluationContext = {
         modifiedDir: testRepoDir,
         artifactsDir,
-        faceLog: mockYouBenchaLog,
+        agentLog: mockYouBenchaLog,
         config: {},
         suiteConfig: mockSuiteConfig,
       };
@@ -213,7 +213,7 @@ describe('GitDiffEvaluator', () => {
       const context: EvaluationContext = {
         modifiedDir: testRepoDir,
         artifactsDir,
-        faceLog: mockYouBenchaLog,
+        agentLog: mockYouBenchaLog,
         config: {},
         suiteConfig: mockSuiteConfig,
       };
@@ -228,7 +228,7 @@ describe('GitDiffEvaluator', () => {
       const context: EvaluationContext = {
         modifiedDir: testRepoDir,
         artifactsDir,
-        faceLog: mockYouBenchaLog,
+        agentLog: mockYouBenchaLog,
         config: {},
         suiteConfig: mockSuiteConfig,
       };
@@ -247,7 +247,7 @@ describe('GitDiffEvaluator', () => {
       const context: EvaluationContext = {
         modifiedDir: testRepoDir,
         artifactsDir,
-        faceLog: mockYouBenchaLog,
+        agentLog: mockYouBenchaLog,
         config: {
           base_commit: 'HEAD~1',
         },
@@ -264,7 +264,7 @@ describe('GitDiffEvaluator', () => {
       const context: EvaluationContext = {
         modifiedDir: testRepoDir,
         artifactsDir,
-        faceLog: mockYouBenchaLog,
+        agentLog: mockYouBenchaLog,
         config: {},
         suiteConfig: mockSuiteConfig,
       };
@@ -303,7 +303,7 @@ describe('GitDiffEvaluator', () => {
       const context: EvaluationContext = {
         modifiedDir: cleanRepoDir,
         artifactsDir,
-        faceLog: mockYouBenchaLog,
+        agentLog: mockYouBenchaLog,
         config: {},
         suiteConfig: mockSuiteConfig,
       };
@@ -320,7 +320,7 @@ describe('GitDiffEvaluator', () => {
       const context: EvaluationContext = {
         modifiedDir: testRepoDir,
         artifactsDir,
-        faceLog: mockYouBenchaLog,
+        agentLog: mockYouBenchaLog,
         config: {},
         suiteConfig: mockSuiteConfig,
       };
@@ -337,7 +337,7 @@ describe('GitDiffEvaluator', () => {
       const invalidContext: EvaluationContext = {
         modifiedDir: '/nonexistent/path',
         artifactsDir,
-        faceLog: mockYouBenchaLog,
+        agentLog: mockYouBenchaLog,
         config: {},
         suiteConfig: mockSuiteConfig,
       };
@@ -388,7 +388,7 @@ describe('GitDiffEvaluator', () => {
       const context: EvaluationContext = {
         modifiedDir: multiFileRepoDir,
         artifactsDir,
-        faceLog: mockLog,
+        agentLog: mockLog,
         config: { base_commit: 'HEAD~1' },
         suiteConfig: mockSuite,
       };
@@ -430,7 +430,7 @@ describe('GitDiffEvaluator', () => {
       const context: EvaluationContext = {
         modifiedDir: singleFileRepoDir,
         artifactsDir,
-        faceLog: mockLog,
+        agentLog: mockLog,
         config: { base_commit: 'HEAD~1' },
         suiteConfig: mockSuite,
       };

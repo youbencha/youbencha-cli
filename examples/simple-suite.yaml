@@ -1,0 +1,29 @@
+# Simple youBencha Evaluation Suite
+# This is a minimal configuration to get started quickly
+
+# Repository to evaluate (use any public GitHub repo)
+repo: https://github.com/octocat/Hello-World.git
+branch: master
+
+# Agent configuration - what coding agent to use and what to ask it
+agent:
+  type: copilot-cli  # Currently the only supported agent
+  config:
+    prompt: "Add a friendly welcome message to the README file"
+
+# Evaluators - how to measure the agent's output quality
+evaluators:
+  # git-diff: Measures the scope of changes (files changed, lines added/removed)
+  - name: git-diff
+  
+  # agentic-judge: Uses AI to evaluate quality based on your criteria
+  - name: agentic-judge
+    config:
+      type: copilot-cli
+      agent_name: agentic-judge  # Uses the built-in evaluation agent
+      
+      # Define what makes a good outcome (keys become metric names in the report)
+      criteria:
+        readme_was_modified: "The README.md file was modified. Score 1 if true, 0 if false."
+        message_is_friendly: "A friendly welcome message was added. Score 1 if friendly, 0.5 if neutral, 0 if absent or unfriendly."
+        no_errors: "No syntax errors or broken markdown. Score 1 if valid, 0 if broken."

@@ -125,7 +125,7 @@
 **Contract Tests** (`tests/contract/`):
 - `adapter.test.ts`: Verify AgentAdapter interface implementation
 - `evaluator.test.ts`: Verify Evaluator interface implementation
-- `facelog.test.ts`: Verify youBencha Log schema compliance
+- `agentlog.test.ts`: Verify youBencha Log schema compliance
 
 **Integration Tests** (`tests/integration/`):
 - `run-command.test.ts`: End-to-end evaluation flow with real Git repos

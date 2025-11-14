@@ -8,6 +8,7 @@ import * as fs from 'fs/promises';
 import { spawn } from 'child_process';
 import logger from '../../lib/logger.js';
 import { createSpinner } from '../../lib/progress.js';
+import { UserErrors, formatUserError } from '../../lib/user-errors.js';
 
 /**
  * Register suggest-suite command
@@ -57,9 +58,10 @@ async function handleSuggestSuite(options: {
   agentSpinner.start();
   try {
     await validateAgentTool(options.agent);
-    agentSpinner.succeed(`${options.agent} is available`);
+    agentSpinner.succeed(`${options.agent} is available ✓`);
   } catch (error) {
-    agentSpinner.fail(`Agent validation failed: ${(error as Error).message}`);
+    agentSpinner.fail(`Agent validation failed`);
+    console.log(formatUserError(UserErrors.agentNotInstalled(options.agent)));
     throw error;
   }
 

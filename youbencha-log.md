@@ -200,12 +200,12 @@ export interface YouBenchaSummary {
 
 export interface YouBenchaProvenance {
   adapter: string;      // e.g., youbencha-adapter-copilot-cli@0.1.0
-  face_version: string; // e.g., 0.9.0
+  agent_version: string; // e.g., 0.9.0
   generator?: string;   // e.g., youbencha-cli@0.9.0
 }
 
 export interface YouBenchaLog {
-  schema_version: YouBenchaLogSchemaVersion; // "face-log-0.1"
+  schema_version: YouBenchaLogSchemaVersion; // "agent-log-0.1"
   session: YouBenchaSession;
   identity?: YouBenchaIdentity;
   environment: YouBenchaEnvironment;
@@ -237,7 +237,7 @@ export interface NewYouBenchaLogOpts {
 export function newYouBenchaLog(opts: NewYouBenchaLogOpts): YouBenchaLog {
   const now = new Date().toISOString();
   return {
-    schema_version: "face-log-0.1",
+    schema_version: "agent-log-0.1",
     session: {
       id: opts.sessionId,
       tool: opts.tool,
@@ -531,7 +531,7 @@ function basename(p: string): string {
 // 5) Example usage (pseudo)
 // =========================
 /*
-import { newYouBenchaLog, adaptCopilot } from "./face-log";
+import { newYouBenchaLog, adaptCopilot } from "./agent-log";
 
 const base = {
   tool: "copilot" as const,
@@ -541,10 +541,10 @@ const base = {
     repo: { url: "https://github.com/org/repo", branch: "main", commit: "abcdef1" },
   },
   model: { provider: "openai", name: "gpt-4.1-mini", params: { temperature: 0.2 } },
-  provenance: { adapter: "youbencha-adapter-copilot-cli@0.1.0", face_version: "0.9.0", generator: "youbencha-cli@0.9.0" },
+  provenance: { adapter: "youbencha-adapter-copilot-cli@0.1.0", agent_version: "0.9.0", generator: "youbencha-cli@0.9.0" },
 };
 
 const log = adaptCopilot({ chatSessions: [loadVSCodeChatSessionJSON()] }, base);
-writeFileSync("results/face-log-123.json", JSON.stringify(log, null, 2));
+writeFileSync("results/agent-log-123.json", JSON.stringify(log, null, 2));
 */
 

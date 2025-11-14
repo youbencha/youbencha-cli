@@ -143,7 +143,7 @@ evaluators:
 
 ---
 
-## 2. FACELog
+## 2. AgentLog
 
 **Purpose**: Normalized agent execution log in standard format
 
@@ -340,7 +340,7 @@ evaluators:
   
   // Artifacts Manifest
   artifacts: {
-    face_log: string;              // Path to youBencha Log
+    agent_log: string;              // Path to youBencha Log
     reports: string[];             // Paths to generated reports
     evaluator_artifacts: string[]; // Paths to evaluator outputs
   };

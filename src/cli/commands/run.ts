@@ -10,6 +10,7 @@ import { Orchestrator } from '../../core/orchestrator.js';
 import { suiteConfigSchema, SuiteConfig } from '../../schemas/suite.schema.js';
 import { createSpinner } from '../../lib/progress.js';
 import * as logger from '../../lib/logger.js';
+import { UserErrors, formatUserError } from '../../lib/user-errors.js';
 
 /**
  * Options for run command
@@ -35,13 +36,28 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
     
     if (configStats.size > maxConfigSize) {
       logger.error(`Configuration file too large: ${configStats.size} bytes (max: ${maxConfigSize})`);
+      logger.info('💡 Tip: Suite configuration files should typically be under 10KB');
       process.exit(1);
     }
     
     const configContent = await fs.readFile(options.config, 'utf-8');
     
     // Parse YAML
-    const configData = yaml.parse(configContent);
+    let configData;
+    try {
+      configData = yaml.parse(configContent);
+    } catch (error) {
+      logger.error('Failed to parse YAML configuration file');
+      if (error instanceof Error) {
+        logger.error(error.message);
+      }
+      logger.info('');
+      logger.info('💡 Common YAML mistakes:');
+      logger.info('   - Check indentation (use spaces, not tabs)');
+      logger.info('   - Ensure keys and values are properly formatted');
+      logger.info('   - Validate YAML syntax at https://yaml-online-parser.appspot.com');
+      process.exit(1);
+    }
     
     // Validate against schema
     const spinner = createSpinner('Validating suite configuration...');
@@ -49,13 +65,26 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
     let suiteConfig: SuiteConfig;
     try {
       suiteConfig = suiteConfigSchema.parse(configData);
-      spinner.succeed('Configuration validated');
+      spinner.succeed('Configuration validated ✓');
     } catch (error) {
       spinner.fail('Configuration validation failed');
-      if (error instanceof Error) {
-        logger.error('Configuration validation errors:');
-        logger.error(error.message);
+      
+      // Extract validation errors
+      const errors: string[] = [];
+      if (error instanceof Error && 'errors' in error) {
+        const zodError = error as any;
+        if (Array.isArray(zodError.errors)) {
+          zodError.errors.forEach((err: any) => {
+            const path = err.path.join('.');
+            errors.push(`${path}: ${err.message}`);
+          });
+        }
+      } else if (error instanceof Error) {
+        errors.push(error.message);
       }
+      
+      // Show user-friendly error
+      console.log(formatUserError(UserErrors.invalidConfig(errors)));
       process.exit(1);
     }
 
@@ -72,17 +101,23 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
     logger.info('');
     logger.info('✅ Evaluation completed successfully');
     logger.info('');
-    logger.info('Results Summary:');
-    logger.info(`  Overall Status: ${results.summary.overall_status}`);
-    logger.info(`  Total Evaluators: ${results.summary.total_evaluators}`);
-    logger.info(`  Passed: ${results.summary.passed}`);
-    logger.info(`  Failed: ${results.summary.failed}`);
-    logger.info(`  Skipped: ${results.summary.skipped}`);
+    logger.info('📊 Results Summary:');
+    logger.info(`   Status: ${results.summary.overall_status === 'passed' ? '✓ PASSED' : results.summary.overall_status === 'failed' ? '✗ FAILED' : '⊘ PARTIAL'}`);
+    logger.info(`   Evaluators: ${results.summary.passed} passed, ${results.summary.failed} failed, ${results.summary.skipped} skipped (${results.summary.total_evaluators} total)`);
     logger.info('');
-    logger.info(`Results saved to: ${results.execution.environment.workspace_dir}`);
+    logger.info('📁 Results Location:');
+    logger.info(`   ${results.execution.environment.workspace_dir}/artifacts/`);
     logger.info('');
-    logger.info('Generate report with:');
-    logger.info(`  yb report --from ${results.execution.environment.workspace_dir}/artifacts/results.json`);
+    logger.info('📝 Next Steps:');
+    logger.info('   1. Generate a readable report:');
+    logger.info(`      yb report --from ${results.execution.environment.workspace_dir}/artifacts/results.json`);
+    logger.info('');
+    logger.info('   2. Review individual evaluator outputs in the artifacts directory');
+    logger.info('');
+    if (results.summary.failed > 0) {
+      logger.info('⚠️  Some evaluators failed. Check the report for details.');
+      logger.info('');
+    }
 
     process.exit(0);
   } catch (error) {

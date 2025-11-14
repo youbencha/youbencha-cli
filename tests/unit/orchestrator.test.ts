@@ -118,7 +118,7 @@ describe('Orchestrator', () => {
     test('includes artifacts manifest', async () => {
       const result = await orchestrator.runEvaluation(mockSuiteConfig);
       
-      expect(result.artifacts.face_log).toBeDefined();
+      expect(result.artifacts.agent_log).toBeDefined();
       expect(Array.isArray(result.artifacts.reports)).toBe(true);
       expect(Array.isArray(result.artifacts.evaluator_artifacts)).toBe(true);
     }, 120000);
@@ -227,10 +227,10 @@ describe('Orchestrator', () => {
   });
 
   describe('Results Persistence', () => {
-    test('saves youBencha log to artifacts', async () => {
+    it('should save youBencha log to artifacts', async () => {
       const result = await orchestrator.runEvaluation(mockSuiteConfig);
       
-      expect(result.artifacts.face_log).toContain('youbencha.log.json');
+      expect(result.artifacts.agent_log).toContain('youbencha.log.json');
     }, 120000);
 
     test('saves results bundle to artifacts', async () => {

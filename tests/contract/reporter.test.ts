@@ -85,7 +85,7 @@ describe('Reporter Contract', () => {
       overall_status: 'passed',
     },
     artifacts: {
-      face_log: 'artifacts/youbencha.log.json',
+      agent_log: 'artifacts/youbencha.log.json',
       reports: ['artifacts/report.md'],
       evaluator_artifacts: [],
     },

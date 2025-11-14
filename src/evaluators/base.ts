@@ -23,7 +23,7 @@ export interface EvaluationContext {
   artifactsDir: string;
 
   /** youBencha Log from agent execution */
-  faceLog: YouBenchaLog;
+  agentLog: YouBenchaLog;
 
   /** Evaluator-specific configuration from suite config */
   config: Record<string, unknown>;

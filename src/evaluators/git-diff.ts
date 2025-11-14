@@ -26,7 +26,7 @@ interface FileDiffMetrics {
  */
 export class GitDiffEvaluator implements Evaluator {
   readonly name = 'git-diff';
-  readonly description = 'Analyzes code changes using git diff statistics (files changed, lines added/removed, change entropy)';
+  readonly description = 'Measures the scope of changes: how many files were modified, lines added/removed, and how changes are distributed. Useful for understanding what the agent touched and how much code changed.';
   readonly requiresExpectedReference = false;
 
   /**

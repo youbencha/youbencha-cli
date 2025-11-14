@@ -24,7 +24,7 @@ describe('ExpectedDiffEvaluator', () => {
   let modifiedDir: string;
   let expectedDir: string;
   let artifactsDir: string;
-  let mockFaceLog: YouBenchaLog;
+  let mockAgentLog: YouBenchaLog;
   let mockSuiteConfig: SuiteConfig;
 
   beforeAll(async () => {
@@ -38,7 +38,7 @@ describe('ExpectedDiffEvaluator', () => {
     await fs.mkdir(expectedDir, { recursive: true });
     await fs.mkdir(artifactsDir, { recursive: true });
 
-    mockFaceLog = {
+    mockAgentLog = {
       version: '1.0.0',
       agent: { name: 'test-agent', version: '1.0.0', adapter_version: '1.0.0' },
       model: { name: 'test-model', provider: 'test', parameters: {} },
@@ -94,7 +94,7 @@ describe('ExpectedDiffEvaluator', () => {
         modifiedDir,
         expectedDir,
         artifactsDir,
-        faceLog: mockFaceLog,
+        agentLog: mockAgentLog,
         config: {},
         suiteConfig: mockSuiteConfig,
       };
@@ -108,7 +108,7 @@ describe('ExpectedDiffEvaluator', () => {
         modifiedDir,
         expectedDir: undefined,
         artifactsDir,
-        faceLog: mockFaceLog,
+        agentLog: mockAgentLog,
         config: {},
         suiteConfig: mockSuiteConfig,
       };
@@ -122,7 +122,7 @@ describe('ExpectedDiffEvaluator', () => {
         modifiedDir: '/nonexistent/path',
         expectedDir,
         artifactsDir,
-        faceLog: mockFaceLog,
+        agentLog: mockAgentLog,
         config: {},
         suiteConfig: mockSuiteConfig,
       };
@@ -136,7 +136,7 @@ describe('ExpectedDiffEvaluator', () => {
         modifiedDir,
         expectedDir: '/nonexistent/path',
         artifactsDir,
-        faceLog: mockFaceLog,
+        agentLog: mockAgentLog,
         config: {},
         suiteConfig: mockSuiteConfig,
       };
@@ -165,7 +165,7 @@ describe('ExpectedDiffEvaluator', () => {
         modifiedDir,
         expectedDir,
         artifactsDir,
-        faceLog: mockFaceLog,
+        agentLog: mockAgentLog,
         config: {},
         suiteConfig: mockSuiteConfig,
       };
@@ -188,7 +188,7 @@ describe('ExpectedDiffEvaluator', () => {
         modifiedDir,
         expectedDir,
         artifactsDir,
-        faceLog: mockFaceLog,
+        agentLog: mockAgentLog,
         config: {},
         suiteConfig: mockSuiteConfig,
       };
@@ -209,7 +209,7 @@ describe('ExpectedDiffEvaluator', () => {
         modifiedDir,
         expectedDir,
         artifactsDir,
-        faceLog: mockFaceLog,
+        agentLog: mockAgentLog,
         config: {},
         suiteConfig: mockSuiteConfig,
       };
@@ -230,7 +230,7 @@ describe('ExpectedDiffEvaluator', () => {
         modifiedDir,
         expectedDir,
         artifactsDir,
-        faceLog: mockFaceLog,
+        agentLog: mockAgentLog,
         config: {},
         suiteConfig: mockSuiteConfig,
       };
@@ -253,7 +253,7 @@ describe('ExpectedDiffEvaluator', () => {
         modifiedDir,
         expectedDir,
         artifactsDir,
-        faceLog: mockFaceLog,
+        agentLog: mockAgentLog,
         config: {},
         suiteConfig: mockSuiteConfig,
       };
@@ -282,7 +282,7 @@ describe('ExpectedDiffEvaluator', () => {
         modifiedDir,
         expectedDir,
         artifactsDir,
-        faceLog: mockFaceLog,
+        agentLog: mockAgentLog,
         config: {},
         suiteConfig: mockSuiteConfig,
       };
@@ -313,7 +313,7 @@ describe('ExpectedDiffEvaluator', () => {
         modifiedDir,
         expectedDir,
         artifactsDir,
-        faceLog: mockFaceLog,
+        agentLog: mockAgentLog,
         config: {},
         suiteConfig: mockSuiteConfig,
       };
@@ -344,7 +344,7 @@ describe('ExpectedDiffEvaluator', () => {
         modifiedDir,
         expectedDir,
         artifactsDir,
-        faceLog: mockFaceLog,
+        agentLog: mockAgentLog,
         config: { threshold: 0.95 },
         suiteConfig: mockSuiteConfig,
       };
@@ -365,7 +365,7 @@ describe('ExpectedDiffEvaluator', () => {
         modifiedDir,
         expectedDir,
         artifactsDir,
-        faceLog: mockFaceLog,
+        agentLog: mockAgentLog,
         config: { threshold: 0.80 },
         suiteConfig: mockSuiteConfig,
       };
@@ -385,7 +385,7 @@ describe('ExpectedDiffEvaluator', () => {
         modifiedDir,
         expectedDir,
         artifactsDir,
-        faceLog: mockFaceLog,
+        agentLog: mockAgentLog,
         config: {}, // No threshold specified
         suiteConfig: mockSuiteConfig,
       };
@@ -414,7 +414,7 @@ describe('ExpectedDiffEvaluator', () => {
         modifiedDir,
         expectedDir,
         artifactsDir,
-        faceLog: mockFaceLog,
+        agentLog: mockAgentLog,
         config: {},
         suiteConfig: mockSuiteConfig,
       };
@@ -434,7 +434,7 @@ describe('ExpectedDiffEvaluator', () => {
         modifiedDir,
         expectedDir,
         artifactsDir,
-        faceLog: mockFaceLog,
+        agentLog: mockAgentLog,
         config: {},
         suiteConfig: mockSuiteConfig,
       };
@@ -461,7 +461,7 @@ describe('ExpectedDiffEvaluator', () => {
         modifiedDir,
         expectedDir,
         artifactsDir,
-        faceLog: mockFaceLog,
+        agentLog: mockAgentLog,
         config: {},
         suiteConfig: mockSuiteConfig,
       };
@@ -487,7 +487,7 @@ describe('ExpectedDiffEvaluator', () => {
         modifiedDir,
         expectedDir: undefined,
         artifactsDir,
-        faceLog: mockFaceLog,
+        agentLog: mockAgentLog,
         config: {},
         suiteConfig: mockSuiteConfig,
       };
@@ -505,7 +505,7 @@ describe('ExpectedDiffEvaluator', () => {
         modifiedDir: '/nonexistent',
         expectedDir: '/nonexistent',
         artifactsDir,
-        faceLog: mockFaceLog,
+        agentLog: mockAgentLog,
         config: {},
         suiteConfig: mockSuiteConfig,
       };
@@ -533,7 +533,7 @@ describe('ExpectedDiffEvaluator', () => {
         modifiedDir,
         expectedDir,
         artifactsDir,
-        faceLog: mockFaceLog,
+        agentLog: mockAgentLog,
         config: {},
         suiteConfig: mockSuiteConfig,
       };
@@ -557,7 +557,7 @@ describe('ExpectedDiffEvaluator', () => {
         modifiedDir,
         expectedDir,
         artifactsDir,
-        faceLog: mockFaceLog,
+        agentLog: mockAgentLog,
         config: {},
         suiteConfig: mockSuiteConfig,
       };

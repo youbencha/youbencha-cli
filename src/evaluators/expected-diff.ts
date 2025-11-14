@@ -25,7 +25,7 @@ interface FileSimilarity {
  */
 export class ExpectedDiffEvaluator implements Evaluator {
   readonly name = 'expected-diff';
-  readonly description = 'Compares agent output against expected reference branch to measure similarity';
+  readonly description = 'Compares the agent\'s output against a known-good reference (like an ideal implementation). Measures how similar the results are, file by file. Perfect for checking if the agent matched your expectations or followed a reference solution.';
   readonly requiresExpectedReference = true;
 
   /**

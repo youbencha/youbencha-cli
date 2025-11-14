@@ -15,6 +15,9 @@ import { dirname, join } from 'path';
 import { runCommand } from './commands/run.js';
 import { reportCommand } from './commands/report.js';
 import { registerSuggestSuiteCommand } from './commands/suggest-suite.js';
+import { listCommand } from './commands/list.js';
+import { initCommand } from './commands/init.js';
+import { validateCommand } from './commands/validate.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -32,27 +35,90 @@ async function main() {
 
   program
     .name('yb')
-    .description('youBencha - A friendly CLI framework for evaluating agentic coding tools')
+    .description('youBencha - Evaluate and compare AI coding agents with confidence\n\n' +
+      '  A developer-friendly framework for testing AI coding tools.\n' +
+      '  Run agents, measure their output, and get objective insights.\n\n' +
+      '  Quick start:\n' +
+      '    yb init              # Create a starter configuration\n' +
+      '    yb run -c suite.yaml # Run an evaluation')
     .version(packageJson.version);
+
+  // Register init command (create starter suite)
+  program
+    .command('init')
+    .description('Create a starter suite.yaml configuration')
+    .option('--force', 'Overwrite existing suite.yaml if present')
+    .addHelpText('after', `
+Examples:
+  $ yb init                    # Create suite.yaml in current directory
+  $ yb init --force            # Overwrite existing suite.yaml
+  
+  This creates a fully-commented starter configuration you can customize.
+    `)
+    .action(initCommand);
 
   // Register commands
   program
     .command('run')
-    .description('Run an evaluation suite')
-    .requiredOption('-c, --config <path>', 'Path to suite configuration file')
-    .option('--keep-workspace', 'Keep workspace directory after evaluation (for debugging)')
+    .description('Run an evaluation suite against an AI agent')
+    .requiredOption('-c, --config <path>', 'Path to suite configuration file (e.g., suite.yaml)')
+    .option('--keep-workspace', 'Keep workspace directory after evaluation (useful for debugging)')
+    .addHelpText('after', `
+Examples:
+  $ yb run -c suite.yaml                    # Run evaluation with default settings
+  $ yb run -c suite.yaml --keep-workspace   # Keep files for inspection
+  
+  See examples/basic-suite.yaml for a working configuration.
+    `)
     .action(runCommand);
 
   program
     .command('report')
-    .description('Generate a report from evaluation results')
-    .requiredOption('--from <path>', 'Path to results JSON file')
-    .option('--format <format>', 'Report format (json, markdown)', 'markdown')
+    .description('Generate a human-readable report from evaluation results')
+    .requiredOption('--from <path>', 'Path to results JSON file (e.g., .youbencha-workspace/run-*/artifacts/results.json)')
+    .option('--format <format>', 'Report format: json, markdown', 'markdown')
     .option('--output <path>', 'Output path for report (defaults to artifacts directory)')
+    .addHelpText('after', `
+Examples:
+  $ yb report --from .youbencha-workspace/run-abc123/artifacts/results.json
+  $ yb report --from results.json --format markdown --output report.md
+  
+  The report includes:
+  - Overall evaluation status
+  - Individual evaluator results with metrics
+  - Links to detailed artifacts
+    `)
     .action(reportCommand);
 
   // Register suggest-suite command (User Story 3)
   registerSuggestSuiteCommand(program);
+
+  // Register list command (show available evaluators)
+  program
+    .command('list')
+    .description('List available evaluators and their descriptions')
+    .addHelpText('after', `
+Examples:
+  $ yb list                           # Show all available evaluators
+  
+  Use this to discover which evaluators you can use in your suite.yaml
+    `)
+    .action(listCommand);
+
+  // Register validate command (check suite configuration)
+  program
+    .command('validate')
+    .description('Validate a suite configuration without running it')
+    .requiredOption('-c, --config <path>', 'Path to suite configuration file')
+    .option('-v, --verbose', 'Show detailed validation information')
+    .addHelpText('after', `
+Examples:
+  $ yb validate -c suite.yaml         # Quick validation check
+  $ yb validate -c suite.yaml -v      # Detailed validation with suggestions
+  
+  Use this to check your configuration before committing or running.
+    `)
+    .action(validateCommand);
 
   // Parse arguments
   await program.parseAsync(process.argv);
