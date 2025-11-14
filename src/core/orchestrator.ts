@@ -162,6 +162,9 @@ export class Orchestrator {
   /**
    * Execute agent via adapter
    */
+  /**
+   * Execute agent via adapter
+   */
   private async executeAgent(
     suiteConfig: SuiteConfig,
     workspace: Workspace
@@ -169,12 +172,29 @@ export class Orchestrator {
     agentLog: YouBenchaLog;
     agentExecution: ResultsBundle['agent'];
   }> {
+    // Copy agent files if agent name is specified and type is copilot-cli
+    if (suiteConfig.agent.type === 'copilot-cli' && suiteConfig.agent.agent_name) {
+      logger.info(`Copying agent definition for: ${suiteConfig.agent.agent_name}`);
+      const fs = await import('fs-extra');
+      const sourceAgentsDir = path.join(process.cwd(), '.github', 'agents');
+      const destAgentsDir = path.join(workspace.paths.modifiedDir, '.github', 'agents');
+      try {
+        await fs.default.copy(sourceAgentsDir, destAgentsDir);
+        logger.info('Agent files copied successfully');
+      } catch (error) {
+        logger.warn(`Failed to copy agent files: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+
     // Display agent context before execution
     const prompt = suiteConfig.agent.config?.prompt as string | undefined;
     if (prompt) {
       logger.info(`Agent prompt: "${prompt}"`);
     }
     logger.info(`Agent type: ${suiteConfig.agent.type}`);
+    if (suiteConfig.agent.agent_name) {
+      logger.info(`Agent name: ${suiteConfig.agent.agent_name}`);
+    }
     logger.info(`Working directory: ${workspace.paths.modifiedDir}`);
     logger.info('Starting agent execution...');
     console.log(''); // Add blank line for readability
@@ -192,7 +212,11 @@ export class Orchestrator {
     const executionContext: AgentExecutionContext = {
       workspaceDir: workspace.paths.modifiedDir,
       repoDir: workspace.paths.modifiedDir,
-      config: suiteConfig.agent.config || {},
+      config: {
+        ...(suiteConfig.agent.config || {}),
+        // Pass agent name if specified in suite config
+        agent: suiteConfig.agent.agent_name,
+      },
       timeout: suiteConfig.timeout || 300000, // 5 min default
       env: {},
     };

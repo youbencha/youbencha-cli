@@ -12,6 +12,7 @@ import { z } from 'zod';
  */
 const agentConfigSchema = z.object({
   type: z.literal('copilot-cli'), // MVP: only copilot-cli supported
+  agent_name: z.string().optional(), // Optional agent name (e.g., for copilot-cli agents in .github/agents/)
   config: z
     .object({
       prompt: z

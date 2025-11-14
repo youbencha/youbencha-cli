@@ -3,6 +3,8 @@ branch: master
 
 agent:
   type: copilot-cli
+  # Optional: Specify an agent name to use a custom agent from .github/agents/
+  # agent_name: my-custom-agent
   config:
     prompt: "Add a comment to README explaining what this repository is about"
 

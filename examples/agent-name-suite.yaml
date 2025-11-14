@@ -1,0 +1,11 @@
+repo: https://github.com/octocat/Hello-World.git
+branch: master
+
+agent:
+  type: copilot-cli
+  agent_name: test-agent  # Agent name to use from .github/agents/
+  config:
+    prompt: "Add a comment to README explaining what this repository is about"
+
+evaluators:
+  - name: git-diff

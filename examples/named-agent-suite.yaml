@@ -1,0 +1,31 @@
+# Example suite using a named agent
+# This demonstrates how to use a custom agent definition from .github/agents/
+
+repo: https://github.com/octocat/Hello-World.git
+branch: master
+
+agent:
+  type: copilot-cli
+  # Named agent from .github/agents/ directory
+  # The agent definition will be automatically copied to the workspace
+  agent_name: code-reviewer
+  config:
+    prompt: "Review the code and suggest improvements"
+
+evaluators:
+  - name: git-diff
+    config:
+      # Only fail if changes are excessive
+      max_lines_changed: 500
+  
+  - name: agentic-judge
+    config:
+      type: copilot-cli
+      # Use the same agent for evaluation
+      agent_name: code-reviewer
+      timeout: 600000  # 10 minutes for thorough evaluation
+      
+      criteria:
+        code_quality: "Code follows best practices and is well-structured. Score 1-10."
+        documentation: "Code is properly documented with clear comments. Score 1-10."
+        test_coverage: "Changes include appropriate tests. Score 1-10."
