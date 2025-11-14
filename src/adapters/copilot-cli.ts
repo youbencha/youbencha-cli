@@ -200,16 +200,23 @@ export class CopilotCLIAdapter implements AgentAdapter {
     // Add tool permissions
     baseArgs.push('--allow-all-tools', '--allow-all-paths');
 
-    // Use direct command execution without shell on all platforms
-    // On Windows, .bat/.cmd files need to be executed via cmd.exe
-    // spawn() will handle arguments correctly without shell parsing
+    // On Windows, use the & call operator to invoke copilot.cmd/.exe
+    // This properly handles the command execution in PowerShell
     if (process.platform === 'win32') {
-      // Use cmd.exe to execute .bat/.cmd files on Windows
-      // Arguments are passed as an array to prevent injection
-      // Use both --allow-all-paths (disable path verification) and --add-dir (explicit allow)
+      // Build the PowerShell command using the call operator (&)
+      // This allows PowerShell to properly execute the copilot command with arguments
+      const escapedArgs = baseArgs.map(arg => {
+        // Escape single quotes by doubling them for PowerShell
+        const escaped = arg.replace(/'/g, "''");
+        return `'${escaped}'`;
+      });
+      
+      // Use & operator to call copilot with arguments
+      const copilotCommand = `& copilot ${escapedArgs.join(' ')}`;
+      
       return {
-        command: 'cmd.exe',
-        args: ['/d', '/s', '/c', 'copilot', ...baseArgs],
+        command: 'powershell.exe',
+        args: ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', copilotCommand],
       };
     }
 

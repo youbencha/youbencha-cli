@@ -36,6 +36,16 @@ youBencha executes AI agents with file system access. This is intentional but re
 - **Suite configurations can execute code** via agent prompts
 - **Git operations** clone remote repositories
 
+### Windows PowerShell Execution Security
+
+On Windows systems, youBencha uses PowerShell to execute agent commands with the following security measures:
+
+- **`-NoProfile`**: Prevents loading user PowerShell profiles that could contain malicious scripts
+- **`-ExecutionPolicy Bypass`**: Allows execution for the current session only, without modifying system-wide settings
+- **Argument escaping**: All arguments are properly escaped using PowerShell single-quote syntax to prevent command injection
+- **Direct execution**: Commands are executed directly without shell interpretation to prevent shell injection attacks
+- **No shell mode**: The `spawn` function is called with `shell: false` to ensure arguments are passed safely
+
 ### Best Practices
 
 1. **Only run trusted configurations**
