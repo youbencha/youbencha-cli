@@ -260,9 +260,28 @@ Example report section:
 
 ### git-diff
 
-Analyzes Git changes made by the agent.
+Analyzes Git changes made by the agent with assertion-based pass/fail criteria.
 
-**Metrics:** files_changed, lines_added, lines_removed, change_entropy
+**Metrics:** files_changed, lines_added, lines_removed, total_changes, change_entropy
+
+**Supported Assertions:**
+- `max_files_changed` - Maximum number of files that can be changed
+- `max_lines_added` - Maximum number of lines that can be added
+- `max_lines_removed` - Maximum number of lines that can be removed
+- `max_total_changes` - Maximum total changes (additions + deletions)
+- `min_change_entropy` - Minimum entropy (enforces distributed changes)
+- `max_change_entropy` - Maximum entropy (enforces focused changes)
+
+**Example:**
+```yaml
+evaluators:
+  - name: git-diff
+    config:
+      assertions:
+        max_files_changed: 5
+        max_lines_added: 100
+        max_change_entropy: 2.0  # Keep changes focused
+```
 
 ### expected-diff
 

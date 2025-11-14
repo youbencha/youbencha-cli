@@ -1,0 +1,44 @@
+# Example suite demonstrating git-diff evaluator with threshold-based assertions
+# This ensures the agent's changes stay within acceptable bounds
+
+repo: https://github.com/octocat/Hello-World.git
+branch: master
+
+agent:
+  type: copilot-cli
+  config:
+    prompt: "Add a simple comment to the README file"
+
+evaluators:
+  - name: git-diff
+    config:
+      # Optional: Specify base commit to compare against
+      # Defaults to HEAD if not specified
+      # base_commit: HEAD~1
+      
+      assertions:
+        # Maximum number of files that can be changed
+        # Use this to ensure focused changes (e.g., for a bug fix)
+        max_files_changed: 2
+        
+        # Maximum number of lines added
+        # Prevents overly verbose or bloated changes
+        max_lines_added: 50
+        
+        # Maximum number of lines removed
+        # Ensures refactoring doesn't delete too much code
+        max_lines_removed: 20
+        
+        # Maximum total changes (additions + deletions)
+        # Alternative to separate add/remove limits
+        # max_total_changes: 100
+        
+        # Minimum change entropy (0.0 to log2(files_changed))
+        # Enforces that changes are NOT too concentrated
+        # Useful when you want changes distributed across files
+        # min_change_entropy: 1.0
+        
+        # Maximum change entropy
+        # Enforces that changes ARE concentrated in few files
+        # Useful when you want focused, single-purpose changes
+        max_change_entropy: 2.0
