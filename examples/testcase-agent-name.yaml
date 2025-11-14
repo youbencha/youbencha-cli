@@ -1,3 +1,7 @@
+# Test case metadata
+name: "Add README comment with custom agent"
+description: "Tests a custom agent's ability to add explanatory comments to README"
+
 repo: https://github.com/octocat/Hello-World.git
 branch: master
 
@@ -7,5 +11,5 @@ agent:
   config:
     prompt: "Add a comment to README explaining what this repository is about"
 
-evaluators:
+assertions:
   - name: git-diff

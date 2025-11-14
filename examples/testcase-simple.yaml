@@ -1,7 +1,11 @@
-# Simple youBencha Evaluation Suite
+# Simple youBencha Test Case
 # This is a minimal configuration to get started quickly
 
-# Repository to evaluate (use any public GitHub repo)
+# Test case metadata
+name: "Add friendly welcome message to README"
+description: "Tests the agent's ability to add a friendly welcome message to the README file with good formatting"
+
+# Repository configuration (test data)
 repo: https://github.com/octocat/Hello-World.git
 branch: master
 
@@ -11,19 +15,19 @@ agent:
   config:
     prompt: "Add a friendly welcome message to the README file"
 
-# Evaluators - how to measure the agent's output quality
-evaluators:
+# Assertions - how to measure the agent's output quality
+assertions:
   # git-diff: Measures the scope of changes (files changed, lines added/removed)
   - name: git-diff
   
-  # agentic-judge: Uses AI to evaluate quality based on your criteria
+  # agentic-judge: Uses AI to evaluate quality based on your assertions
   - name: agentic-judge
     config:
       type: copilot-cli
       agent_name: agentic-judge  # Uses the built-in evaluation agent
       
-      # Define what makes a good outcome (keys become metric names in the report)
-      criteria:
+      # Define explicit pass/fail assertions (keys become metric names in the report)
+      assertions:
         readme_was_modified: "The README.md file was modified. Score 1 if true, 0 if false."
         message_is_friendly: "A friendly welcome message was added. Score 1 if friendly, 0.5 if neutral, 0 if absent or unfriendly."
         no_errors: "No syntax errors or broken markdown. Score 1 if valid, 0 if broken."

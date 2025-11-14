@@ -1,5 +1,5 @@
 /**
- * suggest-suite command - Interactive suite generation using AI agents
+ * suggest-suite command - Interactive test case generation using AI agents
  */
 
 import { Command } from 'commander';
@@ -16,16 +16,16 @@ import { UserErrors, formatUserError } from '../../lib/user-errors.js';
 export function registerSuggestSuiteCommand(program: Command): void {
   program
     .command('suggest-suite')
-    .description('Generate evaluation suite suggestions using AI agent')
+    .description('Generate test case suggestions using AI agent')
     .requiredOption('--agent <type>', 'Agent tool to use (e.g., copilot-cli)')
     .requiredOption('--output-dir <path>', 'Path to successful agent output folder')
     .option('--agent-file <path>', 'Custom agent file path', 'agents/suggest-suite.agent.md')
-    .option('--save <path>', 'Path to save generated suite (default: suggested-suite.yaml)')
+    .option('--save <path>', 'Path to save generated test case (default: suggested-testcase.yaml)')
     .action(async (options) => {
       try {
         await handleSuggestSuite(options);
       } catch (error) {
-        logger.error('Suite suggestion failed:', error);
+        logger.error('Test case suggestion failed:', error);
         process.exit(1);
       }
     });
@@ -40,7 +40,7 @@ async function handleSuggestSuite(options: {
   agentFile: string;
   save?: string;
 }): Promise<void> {
-  logger.info('Starting suite suggestion workflow...');
+  logger.info('Starting test case suggestion workflow...');
 
   // Step 1: Validate output directory
   const spinner = createSpinner('Validating output directory...');
@@ -78,7 +78,7 @@ async function handleSuggestSuite(options: {
 
   // Step 4: Launch agent
   logger.info('\n🤖 Launching interactive agent session...\n');
-  logger.info('The agent will guide you through the suite generation process.');
+  logger.info('The agent will guide you through the test case generation process.');
   logger.info('Follow the prompts to provide context about your changes.\n');
 
   try {
@@ -91,9 +91,9 @@ async function handleSuggestSuite(options: {
 
   // Step 5: Provide next steps
   logger.info('\n📋 Next Steps:');
-  logger.info('1. Review the generated suite configuration');
-  logger.info('2. Save it as suite.yaml in your project');
-  logger.info('3. Run: yb run -c suite.yaml');
+  logger.info('1. Review the generated test case configuration');
+  logger.info('2. Save it as testcase-<description>.yaml in your project');
+  logger.info('3. Run: yb run -c testcase-<description>.yaml');
   logger.info('4. Review evaluation results\n');
 }
 
