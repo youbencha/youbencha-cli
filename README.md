@@ -274,9 +274,37 @@ Compares agent output against expected reference branch.
 
 ### agentic-judge
 
-Uses an agent to judge the quality of changes based on criteria.
+Uses an agent to judge the quality of changes based on criteria. You can have **multiple instances** of agentic-judge in a suite by providing custom `id` values to differentiate them.
 
-**Metrics:** score, criteria_met
+**Metrics:** Custom metrics based on your criteria definitions
+
+**Multiple Instances:** Use the `id` field to run multiple focused judges with different criteria sets. This helps avoid context window pollution by breaking down large evaluation tasks into smaller, focused evaluations.
+
+**Example:**
+```yaml
+evaluators:
+  - name: agentic-judge
+    id: code-quality  # First instance
+    config:
+      type: copilot-cli
+      agent_name: agentic-judge
+      criteria:
+        structure: "Code follows proper modular structure. Score 1-10."
+        naming: "Variables have clear names. Score 1-10."
+  
+  - name: agentic-judge
+    id: security  # Second instance  
+    config:
+      type: copilot-cli
+      agent_name: agentic-judge
+      criteria:
+        validation: "Input validation is comprehensive. Score 1-10."
+        error_handling: "Error conditions are handled. Score 1-10."
+```
+
+Results will show as `agentic-judge:code-quality` and `agentic-judge:security` in reports.
+
+See `examples/multi-judge-suite.yaml` for a complete example.
 
 ## Development
 
