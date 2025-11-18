@@ -1,0 +1,74 @@
+# CI-Optimized Suite
+# Purpose: Fast feedback for CI/CD pipelines
+# Analogy: Like parallel test execution with fail-fast - optimized for CI
+
+version: "1.0.0"
+repo: https://github.com/octocat/Hello-World.git
+branch: feature/api-endpoints
+
+agent:
+  type: copilot-cli
+  config:
+    prompt: "Add REST API endpoints for user management with validation"
+
+# Optimized evaluation strategy:
+# 1. Run git-diff (always fast, provides baseline)
+# 2. Run agentic-judge with focused criteria (< 2 min)
+# 3. Skip expensive evaluations in CI (run locally instead)
+
+evaluators:
+  # Always run - gives us basic metrics
+  - name: git-diff
+  
+  # Focused evaluation for CI
+  - name: agentic-judge
+    config:
+      type: copilot-cli
+      agent_name: agentic-judge
+      timeout: 120000  # 2 minutes max for CI
+      
+      # Only the most critical criteria for CI
+      criteria:
+        endpoints_implemented:
+          "All required REST endpoints are present.
+          CRUD operations implemented (Create, Read, Update, Delete).
+          Endpoints follow RESTful conventions."
+        
+        validation_present:
+          "Input validation on all endpoints.
+          Request body schemas defined.
+          Query parameter validation included."
+        
+        error_responses:
+          "HTTP status codes used correctly.
+          Error responses have consistent structure.
+          Include error messages and codes."
+        
+        no_security_issues:
+          "No hardcoded credentials or secrets.
+          Authentication/authorization patterns present.
+          Input sanitization to prevent injection."
+
+# CI Best Practices:
+# - Keep timeout under 2 minutes
+# - Focus on critical quality gates
+# - Use specific, measurable criteria
+# - Save comprehensive evaluation for merge time
+
+# Usage in CI:
+# yb run -c ci-optimized.yaml
+#
+# If this passes in CI:
+# ✅ Merge PR
+# ✅ Run comprehensive-suite.yaml locally for detailed review
+#
+# If this fails in CI:
+# ❌ Block merge
+# ❌ Review specific criteria that failed
+# ❌ Fix issues and re-run
+
+# Alternative CI Strategy:
+# Option 1: Run smoke tests on every commit
+# Option 2: Run CI-optimized on PR creation
+# Option 3: Run comprehensive before merge
+# Option 4: Run regression weekly on main branch

@@ -1,0 +1,44 @@
+# Quick Smoke Test Suite
+# Purpose: Fast sanity checks before running comprehensive evaluations
+# Analogy: Like pre-commit hooks or linting - catches obvious issues quickly
+
+version: "1.0.0"
+repo: https://github.com/octocat/Hello-World.git
+branch: master
+
+agent:
+  type: copilot-cli
+  config:
+    prompt: "Add error handling to the main function"
+
+# Basic checks that run quickly
+evaluators:
+  # Git diff gives us baseline metrics
+  - name: git-diff
+    # No config needed - just track the changes
+  
+  # Agentic judge for quick quality checks
+  - name: agentic-judge
+    config:
+      type: copilot-cli
+      agent_name: agentic-judge  # Use specialized evaluation agent
+      timeout: 60000  # 1 minute max - keep it fast
+      
+      # Criteria focused on "smoke test" concerns
+      criteria:
+        syntax_valid: "Code has no obvious syntax errors"
+        files_modified: "At least one file was modified"
+        no_todos: "No TODO comments left in production code"
+        basic_error_handling: "Basic error handling patterns present (try-catch or error returns)"
+
+# Expected outcomes:
+# - Runs in < 2 minutes
+# - Catches obvious problems (syntax errors, no changes made, etc.)
+# - Use this before expensive comprehensive evaluations
+# - Perfect for CI pipelines that need fast feedback
+
+# Usage:
+# yb run -c smoke-tests.yaml
+# 
+# If this passes, proceed to comprehensive-suite.yaml
+# If this fails, fix the obvious issues first

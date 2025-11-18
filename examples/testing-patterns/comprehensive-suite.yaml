@@ -1,0 +1,66 @@
+# Comprehensive Test Suite
+# Purpose: Deep quality evaluation with evidence trail
+# Analogy: Like full test suite with integration tests - thorough but slower
+
+version: "1.0.0"
+repo: https://github.com/octocat/Hello-World.git
+branch: master
+
+agent:
+  type: copilot-cli
+  config:
+    prompt: "Add comprehensive error handling with proper logging and user-friendly messages"
+
+evaluators:
+  # Track scope of changes
+  - name: git-diff
+  
+  # Deep quality evaluation with evidence
+  - name: agentic-judge
+    config:
+      type: copilot-cli
+      agent_name: agentic-judge
+      timeout: 300000  # 5 minutes - allow thorough analysis
+      
+      # Detailed criteria with specific requirements
+      criteria:
+        error_handling_comprehensive:
+          "All error scenarios are handled with try-catch blocks.
+          Every async function has error handling.
+          Errors are caught at appropriate levels (function vs module vs app)."
+        
+        error_messages_helpful:
+          "Error messages are user-friendly and actionable.
+          Messages don't expose sensitive information.
+          Include context about what went wrong and how to fix it."
+        
+        logging_implemented:
+          "Errors are logged with appropriate severity levels.
+          Logs include timestamp, error type, and stack trace.
+          Logging follows consistent format across the codebase."
+        
+        error_recovery:
+          "Code attempts graceful degradation where possible.
+          Critical errors fail fast with clear messages.
+          Non-critical errors allow continued execution."
+        
+        test_coverage:
+          "Error handling paths are covered by tests.
+          Tests verify error messages and status codes.
+          Edge cases and boundary conditions tested."
+
+# Expected outcomes:
+# - Detailed evaluation with evidence trail
+# - Confidence scores for each criterion
+# - List of files examined
+# - Specific patterns found (try-catch count, log statements, etc.)
+# - Takes 3-5 minutes but provides deep insights
+
+# Usage:
+# yb run -c comprehensive-suite.yaml
+#
+# Review the evidence trail in results to understand:
+# - Which files were examined
+# - What patterns were found
+# - Agent's confidence in the evaluation
+# - Specific reasoning for each criterion

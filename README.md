@@ -6,12 +6,15 @@ A friendly, developer-first CLI framework for evaluating agentic coding tools.
 
 ## What is youBencha?
 
-youBencha is a testing and benchmarking framework designed to help developers evaluate and compare AI-powered coding agents. It provides:
+youBencha is a testing and benchmarking framework designed to help developers evaluate and compare AI-powered coding agents. **If you write tests, you already understand youBencha** - it applies the same concepts to evaluating AI-generated code.
 
 - **Agent-agnostic architecture** - Test any agent through pluggable adapters
 - **Flexible evaluation** - Use built-in evaluators or create custom ones
 - **Reproducible results** - Standardized logging and comprehensive result bundles
 - **Developer-friendly CLI** - Simple commands for running evaluations and generating reports
+- **Testing mindset** - Familiar concepts: test suites → evaluation suites, assertions → criteria
+
+> **For Test-Driven Developers:** Check out our [Testing Mindset Guide](docs/TESTING_MINDSET.md) to see how Jest/Pytest concepts map to youBencha.
 
 ## Requirements
 
@@ -293,9 +296,28 @@ Compares agent output against expected reference branch.
 
 ### agentic-judge
 
-Uses an agent to judge the quality of changes based on criteria.
+Uses an agent to judge the quality of changes based on criteria. **Enhanced with evidence trail** for debugging and confidence scoring.
 
-**Metrics:** score, criteria_met
+**Metrics:** Custom metrics based on criteria, plus evaluation_confidence, files_examined_count
+
+**Output includes:**
+- Files examined
+- Patterns found
+- Reasoning for evaluation
+- Confidence score (0.0-1.0)
+
+## Testing Patterns & Examples
+
+youBencha applies software testing concepts to agent evaluation. Explore common patterns:
+
+- **[Smoke Tests](examples/testing-patterns/smoke-tests.yaml)** - Fast sanity checks (< 2 min)
+- **[Comprehensive Tests](examples/testing-patterns/comprehensive-suite.yaml)** - Deep quality review (3-5 min)
+- **[Regression Tests](examples/testing-patterns/regression-suite.yaml)** - Compare to baseline
+- **[CI-Optimized](examples/testing-patterns/ci-optimized.yaml)** - Fast CI/CD integration
+
+See [Testing Patterns README](examples/testing-patterns/README.md) for detailed guidance.
+
+> **New to youBencha?** Read our [Testing Mindset Guide](docs/TESTING_MINDSET.md) to see how Jest/Pytest concepts map to evaluations.
 
 ## Development
 
