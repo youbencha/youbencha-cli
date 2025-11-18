@@ -1,7 +1,7 @@
 # Example Test Case Configuration: Expected Reference Comparison
 # 
 # This test case demonstrates comparing agent output against an expected reference branch.
-# The expected-diff assertion compares files between the agent-modified code
+# The expected-diff evaluator compares files between the agent-modified code
 # and a reference branch to measure how similar the output is to the expected result.
 
 # Test case metadata
@@ -26,8 +26,8 @@ agent:
       - write
       - search
 
-# Assertions
-assertions:
+# Evaluators
+evaluators:
   # Git-diff: Track what changes the agent made
   - name: git-diff
     config: {}

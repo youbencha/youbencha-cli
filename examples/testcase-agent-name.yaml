@@ -11,5 +11,5 @@ agent:
   config:
     prompt: "Add a comment to README explaining what this repository is about"
 
-assertions:
+evaluators:
   - name: git-diff

@@ -16,7 +16,7 @@ agent:
   config:
     prompt: "Review the code and suggest improvements"
 
-assertions:
+evaluators:
   - name: git-diff
     config:
       # Only fail if changes are excessive

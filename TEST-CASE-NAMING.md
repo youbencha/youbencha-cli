@@ -40,7 +40,7 @@ Each test case file must include:
 - `description`: A detailed explanation of what is being tested
 - `repo`: The repository URL to test against
 - `agent`: Configuration for the coding agent
-- `assertions`: One or more assertions to validate the results
+- `evaluators`: One or more evaluators to run checks and validate the results
 
 ### Example
 
@@ -59,14 +59,14 @@ agent:
   config:
     prompt: "Add a comment to README explaining what this repository is about"
 
-# Assertions (evaluators)
-assertions:
+# Evaluators - things that run checks
+evaluators:
   - name: git-diff
   - name: agentic-judge
     config:
       type: copilot-cli
       agent_name: agentic-judge
-      # Define explicit pass/fail assertions
+      # Assertions - what this evaluator checks (pass/fail conditions)
       assertions:
         readme_modified: "README.md was modified. Score 1 if true, 0 if false."
         helpful_comment_added: "A helpful comment was added. Score 1 if true, 0 if false."
@@ -86,4 +86,4 @@ testcase-simple.yaml
 testcase-basic.yaml
 ```
 
-Update the content to include `name` and `description` fields, and rename `evaluators` to `assertions`.
+Update the content to include `name` and `description` fields. The top-level field should be `evaluators` (list of evaluators to run), and inside agentic-judge config use `assertions` (what to check).
