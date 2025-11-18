@@ -463,6 +463,11 @@ export class Orchestrator {
         return new AgenticJudgeEvaluator();
       // Add more evaluators here as they're implemented
       default:
+        // Support custom-named agentic-judge evaluators
+        // Names like 'agentic-judge-error-handling' or 'agentic-judge-docs'
+        if (evaluatorName.startsWith('agentic-judge-') || evaluatorName.startsWith('agentic-judge:')) {
+          return new AgenticJudgeEvaluator(evaluatorName);
+        }
         return null;
     }
   }

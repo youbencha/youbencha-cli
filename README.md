@@ -293,9 +293,40 @@ Compares agent output against expected reference branch.
 
 ### agentic-judge
 
-Uses an agent to judge the quality of changes based on criteria.
+Uses an AI agent to evaluate code quality based on custom assertions. The agent reads files, searches for patterns, and makes judgments like a human reviewer.
 
-**Metrics:** score, criteria_met
+**Features:**
+- Evaluable assertions as pass/fail
+- Supports multiple independent judges for different areas
+- Each judge maintains focused context (1-3 assertions recommended)
+
+**Metrics:** Custom metrics based on your assertions
+
+**Multiple Judges:** You can define multiple agentic-judge evaluators to break down evaluation into focused areas:
+
+```yaml
+evaluators:
+  # Judge 1: Error Handling
+  - name: agentic-judge-error-handling
+    config:
+      type: copilot-cli
+      agent_name: agentic-judge
+      assertions:
+        has_try_catch: "Code includes try-catch blocks. Score 1 if present, 0 if absent."
+        errors_logged: "Errors are properly logged. Score 1 if logged, 0 if not."
+  
+  # Judge 2: Documentation
+  - name: agentic-judge-documentation
+    config:
+      type: copilot-cli
+      agent_name: agentic-judge
+      assertions:
+        functions_documented: "Functions have JSDoc. Score 1 if documented, 0 if not."
+```
+
+**Naming Convention:** Use `agentic-judge-<focus-area>` or `agentic-judge:<focus-area>` to create specialized judges.
+
+**See:** [docs/multiple-agentic-judges.md](docs/multiple-agentic-judges.md) for detailed guide
 
 ## Development
 
