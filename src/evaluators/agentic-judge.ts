@@ -32,7 +32,7 @@ interface AgentEvaluationOutput {
  */
 export class AgenticJudgeEvaluator implements Evaluator {
   readonly name = 'agentic-judge';
-  readonly description = 'Uses an AI agent to evaluate code quality based on your custom criteria. The agent reads files, searches for patterns, and makes judgments like a human reviewer would. Great for assessing things like: test coverage, error handling, documentation quality, and best practices. Note: Results may vary between runs due to AI behavior.';
+  readonly description = 'Uses an AI agent to evaluate code quality based on your custom assertions. The agent reads files, searches for patterns, and makes judgments like a human reviewer would. Great for assessing things like: test coverage, error handling, documentation quality, and best practices. Each assertion should be explicit and evaluable as pass/fail. Note: Results may vary between runs due to AI behavior.';
   readonly requiresExpectedReference = false;
 
   /**
@@ -40,8 +40,8 @@ export class AgenticJudgeEvaluator implements Evaluator {
    */
   async checkPreconditions(context: EvaluationContext): Promise<boolean> {
     try {
-      // Check if agent configuration exists in suite config
-      const agentConfig = context.suiteConfig.agent;
+      // Check if agent configuration exists in test case config
+      const agentConfig = context.testCaseConfig.agent;
       if (!agentConfig || !agentConfig.type) {
         return false;
       }
@@ -49,15 +49,15 @@ export class AgenticJudgeEvaluator implements Evaluator {
       if (!agentType) {
         return false;
       }
-      // Validate criteria exists and is not empty
-      const criteria = context.config.criteria;
-      if (!criteria) {
+      // Validate assertions exists and is not empty
+      const assertions = context.config.assertions || context.config.criteria; // Support both for transition
+      if (!assertions) {
         return false;
       }
-      if (Array.isArray(criteria) && criteria.length === 0) {
+      if (Array.isArray(assertions) && assertions.length === 0) {
         return false;
       }
-      if (typeof criteria === 'object' && !Array.isArray(criteria) && Object.keys(criteria).length === 0) {
+      if (typeof assertions === 'object' && !Array.isArray(assertions) && Object.keys(assertions).length === 0) {
         return false;
       }
 
@@ -89,8 +89,8 @@ export class AgenticJudgeEvaluator implements Evaluator {
           'Agent not configured or not available - check agent.type in evaluator config and ensure agent is installed'
         );
       }
-      // Get adapter for configured agent type from suite config
-      const agentConfig = context.suiteConfig.agent;
+      // Get adapter for configured agent type from test case config
+      const agentConfig = context.testCaseConfig.agent;
       console.log('Agent config from suiteConfig:', agentConfig);
       const agentType = context.config?.type as string;
       console.log('Agent type from config:', agentType);
@@ -214,6 +214,9 @@ export class AgenticJudgeEvaluator implements Evaluator {
     const instructionsFile = context.config['instructions-file'] as string | undefined;
     const agentName = context.config['agent_name'] as string | undefined;
     
+    // Get assertions (support both new and legacy names)
+    const assertions = context.config.assertions || context.config.criteria;
+    
     // Mode 1: Load instructions from specified file
     if (instructionsFile) {
       // Support both absolute and relative paths
@@ -223,41 +226,41 @@ export class AgenticJudgeEvaluator implements Evaluator {
       
       const template = readFileSync(filePath, 'utf-8');
       
-      // Format criteria list
-      const criteriaList = this.formatCriteria(context.config.criteria);
+      // Format assertions list
+      const assertionsList = this.formatAssertions(assertions);
       
-      // Replace placeholders with actual values
-      return template.replace('{{CRITERIA}}', criteriaList);
+      // Replace placeholders with actual values (support both ASSERTIONS and CRITERIA)
+      return template.replace('{{ASSERTIONS}}', assertionsList).replace('{{CRITERIA}}', assertionsList);
     }
     if (agentName) {
-      //agent has instructions, just send criteria
-      const criteriaList = this.formatCriteria(context.config.criteria);
-      return `Evaluation Criteria:\n${criteriaList}`;
+      //agent has instructions, just send assertions
+      const assertionsList = this.formatAssertions(assertions);
+      return `Evaluation Assertions:\n${assertionsList}`;
     }
     // Mode 2: Use default markdown template
     const templatePath = join(__dirname, 'prompts', 'agentic-judge.template.md');
     const template = readFileSync(templatePath, 'utf-8');
     
-    // Format criteria list
-    const criteriaList = this.formatCriteria(context.config.criteria);
+    // Format assertions list
+    const assertionsList = this.formatAssertions(assertions);
     
-    // Replace placeholders with actual values
-    return template.replace('{{CRITERIA}}', criteriaList);
+    // Replace placeholders with actual values (support both ASSERTIONS and CRITERIA)
+    return template.replace('{{ASSERTIONS}}', assertionsList).replace('{{CRITERIA}}', assertionsList);
   }
 
   /**
-   * Format criteria list for prompt
+   * Format assertions list for prompt
    */
-  private formatCriteria(criteria: any): string {
-    if (Array.isArray(criteria)) {
-      // Legacy array format: ["criterion 1", "criterion 2"]
-      return criteria
-        .map((criterion, index) => `${index + 1}. ${criterion}`)
+  private formatAssertions(assertions: any): string {
+    if (Array.isArray(assertions)) {
+      // Legacy array format: ["assertion 1", "assertion 2"]
+      return assertions
+        .map((assertion, index) => `${index + 1}. ${assertion}`)
         .join('\n');
-    } else if (typeof criteria === 'object' && criteria !== null) {
-      // New object format: {"key1": "criterion 1", "key2": "criterion 2"}
+    } else if (typeof assertions === 'object' && assertions !== null) {
+      // New object format: {"key1": "assertion 1", "key2": "assertion 2"}
       // Use snake_case keys for consistency with youBencha Log format
-      return Object.entries(criteria)
+      return Object.entries(assertions)
         .map(([key, value]) => `- **${key}**: ${value}`)
         .join('\n');
     }

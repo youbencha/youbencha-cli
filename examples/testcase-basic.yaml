@@ -1,6 +1,12 @@
+# Test case metadata
+name: "Add README comment"
+description: "Tests the agent's ability to add a helpful comment explaining the repository's purpose to the README file"
+
+# Repository configuration
 repo: https://github.com/octocat/Hello-World.git
 branch: master
 
+# Agent configuration
 agent:
   type: copilot-cli
   # Optional: Specify an agent name to use a custom agent from .github/agents/
@@ -8,6 +14,7 @@ agent:
   config:
     prompt: "Add a comment to README explaining what this repository is about"
 
+# Evaluators
 evaluators:
   - name: git-diff
   - name: agentic-judge
@@ -21,14 +28,15 @@ evaluators:
       
       # MODE 2: Load instructions from a custom file
       # Specify a file path (relative to project root or absolute)
-      # The file should be a markdown template with {{CRITERIA}} placeholder
+      # The file should be a markdown template with {{ASSERTIONS}} placeholder
       # instructions-file: path/to/custom-instructions.md
       
       # If neither agent nor instructions-file is specified, uses the default
       # template from src/evaluators/prompts/agentic-judge.template.md
       
-      # Criteria keys become metric names in output (use snake_case for consistency)
-      criteria:
+      # Assertion keys become metric names in output (use snake_case for consistency)
+      # Each assertion should be explicit and evaluable as pass/fail
+      assertions:
         readme_modified: "README.md was modified. Score 1 if true, 0 if false."
         helpful_comment_added: "A helpful comment was added to README.md. Score 1 if true, 0 if false."
         grammatically_correct: "The comment added to README.md is grammatically correct. Score 1 if true, 0 if false."

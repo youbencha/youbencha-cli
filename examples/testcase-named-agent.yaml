@@ -1,5 +1,9 @@
-# Example suite using a named agent
+# Example test case using a named agent
 # This demonstrates how to use a custom agent definition from .github/agents/
+
+# Test case metadata
+name: "Code review with custom agent"
+description: "Tests a custom code-reviewer agent's ability to review code and suggest improvements"
 
 repo: https://github.com/octocat/Hello-World.git
 branch: master
@@ -25,7 +29,7 @@ evaluators:
       agent_name: code-reviewer
       timeout: 600000  # 10 minutes for thorough evaluation
       
-      criteria:
+      assertions:
         code_quality: "Code follows best practices and is well-structured. Score 1-10."
         documentation: "Code is properly documented with clear comments. Score 1-10."
         test_coverage: "Changes include appropriate tests. Score 1-10."

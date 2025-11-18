@@ -6,7 +6,7 @@
  */
 
 import { YouBenchaLog } from '../schemas/youbenchalog.schema.js';
-import { SuiteConfig } from '../schemas/suite.schema.js';
+import { TestCaseConfig } from '../schemas/testcase.schema.js';
 import { EvaluationResult } from '../schemas/result.schema.js';
 
 /**
@@ -25,11 +25,11 @@ export interface EvaluationContext {
   /** youBencha Log from agent execution */
   agentLog: YouBenchaLog;
 
-  /** Evaluator-specific configuration from suite config */
+  /** Assertion-specific configuration from test case config */
   config: Record<string, unknown>;
 
-  /** Suite configuration for context */
-  suiteConfig: SuiteConfig;
+  /** Test case configuration for context */
+  testCaseConfig: TestCaseConfig;
 }
 
 /**

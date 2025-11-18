@@ -31,7 +31,7 @@ export async function listCommand(): Promise<void> {
     logger.info('');
   });
 
-  logger.info('💡 Usage in suite.yaml:');
+  logger.info('💡 Usage in test case config (e.g., testcase-example.yaml):');
   logger.info('');
   logger.info('  evaluators:');
   logger.info('    - name: git-diff');
@@ -42,9 +42,9 @@ export async function listCommand(): Promise<void> {
   logger.info('      config:');
   logger.info('        type: copilot-cli');
   logger.info('        agent_name: agentic-judge');
-  logger.info('        criteria:');
+  logger.info('        assertions:');
   logger.info('          metric_name: "Description of what to check"');
   logger.info('');
-  logger.info('See examples/ directory for complete suite configurations.');
+  logger.info('See examples/ directory for complete test case configurations.');
   logger.info('');
 }

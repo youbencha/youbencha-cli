@@ -39,9 +39,11 @@ export const evaluationResultSchema = z.object({
 });
 
 /**
- * Suite metadata schema for results bundle
+ * Test case metadata schema for results bundle
  */
-const suiteMetadataSchema = z.object({
+const testCaseMetadataSchema = z.object({
+  name: z.string(),
+  description: z.string(),
   config_file: z.string(),
   config_hash: z.string(),
   repo: z.string(),
@@ -100,7 +102,7 @@ const artifactsManifestSchema = z.object({
  */
 export const resultsBundleSchema = z.object({
   version: z.literal('1.0.0'), // MVP version locked to 1.0.0
-  suite: suiteMetadataSchema,
+  test_case: testCaseMetadataSchema,
   execution: executionMetadataSchema,
   agent: agentExecutionSchema,
   evaluators: z.array(evaluationResultSchema),
@@ -114,8 +116,11 @@ export const resultsBundleSchema = z.object({
 export type EvaluationResult = z.infer<typeof evaluationResultSchema>;
 export type ResultsBundle = z.infer<typeof resultsBundleSchema>;
 export type EvaluationArtifact = z.infer<typeof artifactSchema>;
-export type SuiteMetadata = z.infer<typeof suiteMetadataSchema>;
+export type TestCaseMetadata = z.infer<typeof testCaseMetadataSchema>;
 export type ExecutionMetadata = z.infer<typeof executionMetadataSchema>;
 export type AgentExecution = z.infer<typeof agentExecutionSchema>;
 export type Summary = z.infer<typeof summarySchema>;
 export type ArtifactsManifest = z.infer<typeof artifactsManifestSchema>;
+
+// Legacy type exports for backward compatibility
+export type SuiteMetadata = TestCaseMetadata;

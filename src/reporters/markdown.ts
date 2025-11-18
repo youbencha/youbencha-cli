@@ -90,23 +90,26 @@ export class MarkdownReporter implements Reporter {
   }
 
   /**
-   * Generate suite configuration section
+   * Generate test case configuration section
    */
   private generateSuiteConfig(bundle: ResultsBundle): string {
     const lines: string[] = [];
     
-    lines.push('## Suite Configuration');
+    lines.push('## Test Case Configuration');
     lines.push('');
-    lines.push(`**Repository:** ${bundle.suite.repo}`);
-    lines.push(`**Branch:** ${bundle.suite.branch}`);
-    lines.push(`**Commit:** ${bundle.suite.commit}`);
+    lines.push(`**Name:** ${bundle.test_case.name}`);
+    lines.push(`**Description:** ${bundle.test_case.description}`);
+    lines.push('');
+    lines.push(`**Repository:** ${bundle.test_case.repo}`);
+    lines.push(`**Branch:** ${bundle.test_case.branch}`);
+    lines.push(`**Commit:** ${bundle.test_case.commit}`);
     
-    if (bundle.suite.expected_branch) {
-      lines.push(`**Expected Branch:** ${bundle.suite.expected_branch}`);
+    if (bundle.test_case.expected_branch) {
+      lines.push(`**Expected Branch:** ${bundle.test_case.expected_branch}`);
     }
     
-    lines.push(`**Config File:** ${bundle.suite.config_file}`);
-    lines.push(`**Config Hash:** ${bundle.suite.config_hash}`);
+    lines.push(`**Config File:** ${bundle.test_case.config_file}`);
+    lines.push(`**Config Hash:** ${bundle.test_case.config_hash}`);
     
     return lines.join('\n');
   }
