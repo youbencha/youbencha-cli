@@ -10,6 +10,7 @@ import { promisify } from 'util';
 import { exec } from 'child_process';
 import * as os from 'os';
 import * as path from 'path';
+import * as fs from 'fs/promises';
 import { 
   AgentAdapter, 
   AgentExecutionContext, 
@@ -58,6 +59,10 @@ export class CopilotCLIAdapter implements AgentAdapter {
     const errors: Array<{ message: string; timestamp: string; stackTrace?: string }> = [];
 
     try {
+      // Ensure copilot-logs directory exists
+      const copilotLogsDir = path.join(context.artifactsDir, 'copilot-logs');
+      await fs.mkdir(copilotLogsDir, { recursive: true });
+
       // Build copilot command
       const { command, args } = this.buildCopilotCommand(context);
       
@@ -199,6 +204,13 @@ export class CopilotCLIAdapter implements AgentAdapter {
     
     // Add tool permissions
     baseArgs.push('--allow-all-tools', '--allow-all-paths');
+
+    // Add logging configuration
+    baseArgs.push('--log-level', 'all');
+    
+    // Create copilot-logs subdirectory in artifacts for better organization
+    const copilotLogsDir = path.join(context.artifactsDir, 'copilot-logs');
+    baseArgs.push('--log-dir', copilotLogsDir);
 
     // On Windows, use the & call operator to invoke copilot.cmd/.exe
     // This properly handles the command execution in PowerShell
