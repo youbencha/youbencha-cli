@@ -212,6 +212,7 @@ export class Orchestrator {
     const executionContext: AgentExecutionContext = {
       workspaceDir: workspace.paths.modifiedDir,
       repoDir: workspace.paths.modifiedDir,
+      artifactsDir: workspace.paths.artifactsDir,
       config: {
         ...(testCaseConfig.agent.config || {}),
         // Pass agent name if specified in test case config

@@ -116,6 +116,7 @@ describe('AgentAdapter Contract', () => {
     const mockContext: AgentExecutionContext = {
       workspaceDir: '/tmp/test-workspace',
       repoDir: '/tmp/test-workspace/src-modified',
+      artifactsDir: '/tmp/test-workspace/artifacts',
       config: {},
       timeout: 60000,
       env: {},
@@ -265,6 +266,7 @@ describe('AgentAdapter Contract', () => {
       const contextWithConfig: AgentExecutionContext = {
         workspaceDir: '/tmp/workspace',
         repoDir: '/tmp/workspace/src-modified',
+        artifactsDir: '/tmp/workspace/artifacts',
         config: {
           temperature: 0.7,
           customOption: 'value',
@@ -280,6 +282,7 @@ describe('AgentAdapter Contract', () => {
       const contextWithEnv: AgentExecutionContext = {
         workspaceDir: '/tmp/workspace',
         repoDir: '/tmp/workspace/src-modified',
+        artifactsDir: '/tmp/workspace/artifacts',
         config: {},
         timeout: 60000,
         env: {
@@ -294,6 +297,7 @@ describe('AgentAdapter Contract', () => {
       const contextWithTimeout: AgentExecutionContext = {
         workspaceDir: '/tmp/workspace',
         repoDir: '/tmp/workspace/src-modified',
+        artifactsDir: '/tmp/workspace/artifacts',
         config: {},
         timeout: 1000, // 1 second
         env: {},

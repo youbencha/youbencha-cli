@@ -10,6 +10,8 @@ import { promisify } from 'util';
 import { exec } from 'child_process';
 import * as os from 'os';
 import * as path from 'path';
+import * as fs from 'fs/promises';
+import { createWriteStream } from 'fs';
 import { 
   AgentAdapter, 
   AgentExecutionContext, 
@@ -58,6 +60,14 @@ export class CopilotCLIAdapter implements AgentAdapter {
     const errors: Array<{ message: string; timestamp: string; stackTrace?: string }> = [];
 
     try {
+      // Ensure copilot-logs directory exists
+      const copilotLogsDir = path.join(context.artifactsDir, 'copilot-logs');
+      await fs.mkdir(copilotLogsDir, { recursive: true });
+
+      // Create a log file path for terminal output (cross-platform tee functionality)
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const terminalLogPath = path.join(copilotLogsDir, `terminal-output-${timestamp}.log`);
+
       // Build copilot command
       const { command, args } = this.buildCopilotCommand(context);
       
@@ -67,6 +77,7 @@ export class CopilotCLIAdapter implements AgentAdapter {
       console.log(`  Args: ${JSON.stringify(args)}`);
       console.log(`  CWD: ${context.workspaceDir}`);
       console.log(`  Prompt length: ${(context.config.prompt as string)?.length || 0} chars`);
+      console.log(`  Terminal output log: ${terminalLogPath}`);
       
       // Execute copilot with timeout
       const result = await this.executeWithTimeout(
@@ -74,7 +85,8 @@ export class CopilotCLIAdapter implements AgentAdapter {
         args,
         context.workspaceDir,
         context.env,
-        context.timeout
+        context.timeout,
+        terminalLogPath
       );
 
       output = result.output;
@@ -200,6 +212,13 @@ export class CopilotCLIAdapter implements AgentAdapter {
     // Add tool permissions
     baseArgs.push('--allow-all-tools', '--allow-all-paths');
 
+    // Add logging configuration
+    baseArgs.push('--log-level', 'all');
+    
+    // Create copilot-logs subdirectory in artifacts for better organization
+    const copilotLogsDir = path.join(context.artifactsDir, 'copilot-logs');
+    baseArgs.push('--log-dir', copilotLogsDir);
+
     // On Windows, use the & call operator to invoke copilot.cmd/.exe
     // This properly handles the command execution in PowerShell
     if (process.platform === 'win32') {
@@ -235,12 +254,16 @@ export class CopilotCLIAdapter implements AgentAdapter {
     args: string[],
     cwd: string,
     env: Record<string, string>,
-    timeout: number
+    timeout: number,
+    logFilePath?: string
   ): Promise<{ output: string; exitCode: number; timedOut: boolean }> {
     return new Promise((resolve) => {
       let output = '';
       let timedOut = false;
       let timeoutHandle: NodeJS.Timeout | null = null;
+
+      // Create write stream for terminal output log if path provided
+      const logStream = logFilePath ? createWriteStream(logFilePath, { encoding: 'utf8' }) : null;
 
       // Use direct command execution without shell
       // This ensures arguments are passed correctly without shell parsing
@@ -273,6 +296,10 @@ export class CopilotCLIAdapter implements AgentAdapter {
         output += text;
         // Stream to console in real-time
         process.stdout.write(text);
+        // Write to log file (cross-platform tee functionality)
+        if (logStream) {
+          logStream.write(text);
+        }
       });
 
       childProcess.stderr?.on('data', (data) => {
@@ -280,24 +307,48 @@ export class CopilotCLIAdapter implements AgentAdapter {
         output += text;
         // Stream to console in real-time
         process.stderr.write(text);
+        // Write to log file (cross-platform tee functionality)
+        if (logStream) {
+          logStream.write(text);
+        }
       });
 
       childProcess.on('error', (error) => {
         if (timeoutHandle) clearTimeout(timeoutHandle);
-        resolve({
-          output: output + '\n' + error.message,
-          exitCode: 1,
-          timedOut,
-        });
+        if (logStream) {
+          logStream.end(() => {
+            resolve({
+              output: output + '\n' + error.message,
+              exitCode: 1,
+              timedOut,
+            });
+          });
+        } else {
+          resolve({
+            output: output + '\n' + error.message,
+            exitCode: 1,
+            timedOut,
+          });
+        }
       });
 
       childProcess.on('close', (code) => {
         if (timeoutHandle) clearTimeout(timeoutHandle);
-        resolve({
-          output,
-          exitCode: code ?? 1,
-          timedOut,
-        });
+        if (logStream) {
+          logStream.end(() => {
+            resolve({
+              output,
+              exitCode: code ?? 1,
+              timedOut,
+            });
+          });
+        } else {
+          resolve({
+            output,
+            exitCode: code ?? 1,
+            timedOut,
+          });
+        }
       });
     });
   }

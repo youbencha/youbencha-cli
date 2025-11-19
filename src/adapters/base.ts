@@ -17,6 +17,9 @@ export interface AgentExecutionContext {
   /** Path to the cloned repository (src-modified/) */
   repoDir: string;
 
+  /** Path to artifacts directory for logs and outputs */
+  artifactsDir: string;
+
   /** Agent-specific configuration from suite config */
   config: Record<string, any>;
 

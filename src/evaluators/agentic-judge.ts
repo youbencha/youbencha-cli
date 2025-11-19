@@ -140,6 +140,7 @@ export class AgenticJudgeEvaluator implements Evaluator {
       const agentContext: AgentExecutionContext = {
         workspaceDir: context.modifiedDir,
         repoDir: context.modifiedDir,
+        artifactsDir: context.artifactsDir,
         config: {
           prompt: evaluationPrompt,
           // Pass through agent parameter if specified in evaluator config
