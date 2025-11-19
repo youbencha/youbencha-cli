@@ -437,4 +437,40 @@ describe('AgenticJudgeEvaluator', () => {
       expect(result.message).toContain('not configured');
     });
   });
+
+  describe('Custom Named Instances', () => {
+    test('accepts custom name in constructor', () => {
+      const customEvaluator = new AgenticJudgeEvaluator('agentic-judge-error-handling');
+      expect(customEvaluator.name).toBe('agentic-judge-error-handling');
+    });
+
+    test('uses default name when not provided', () => {
+      const defaultEvaluator = new AgenticJudgeEvaluator();
+      expect(defaultEvaluator.name).toBe('agentic-judge');
+    });
+
+    test('custom named instance has same description', () => {
+      const customEvaluator = new AgenticJudgeEvaluator('agentic-judge-docs');
+      expect(customEvaluator.description).toBe(evaluator.description);
+    });
+
+    test('custom named instance has same requiresExpectedReference', () => {
+      const customEvaluator = new AgenticJudgeEvaluator('agentic-judge-tests');
+      expect(customEvaluator.requiresExpectedReference).toBe(false);
+    });
+
+    test('multiple instances can have different names', () => {
+      const errorHandling = new AgenticJudgeEvaluator('agentic-judge-error-handling');
+      const documentation = new AgenticJudgeEvaluator('agentic-judge-documentation');
+      const bestPractices = new AgenticJudgeEvaluator('agentic-judge-best-practices');
+
+      expect(errorHandling.name).toBe('agentic-judge-error-handling');
+      expect(documentation.name).toBe('agentic-judge-documentation');
+      expect(bestPractices.name).toBe('agentic-judge-best-practices');
+
+      // Each should be independent
+      expect(errorHandling.name).not.toBe(documentation.name);
+      expect(documentation.name).not.toBe(bestPractices.name);
+    });
+  });
 });

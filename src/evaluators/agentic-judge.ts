@@ -31,9 +31,17 @@ interface AgentEvaluationOutput {
  * AgenticJudgeEvaluator uses a coding agent to perform code quality evaluation
  */
 export class AgenticJudgeEvaluator implements Evaluator {
-  readonly name = 'agentic-judge';
+  readonly name: string;
   readonly description = 'Uses an AI agent to evaluate code quality based on your custom assertions. The agent reads files, searches for patterns, and makes judgments like a human reviewer would. Great for assessing things like: test coverage, error handling, documentation quality, and best practices. Each assertion should be explicit and evaluable as pass/fail. Note: Results may vary between runs due to AI behavior.';
   readonly requiresExpectedReference = false;
+
+  /**
+   * Create a new agentic judge evaluator
+   * @param name - Custom name for this evaluator instance (default: 'agentic-judge')
+   */
+  constructor(name: string = 'agentic-judge') {
+    this.name = name;
+  }
 
   /**
    * Check if evaluator can run (agent configured and available)
