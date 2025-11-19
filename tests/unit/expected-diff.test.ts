@@ -352,7 +352,7 @@ describe('ExpectedDiffEvaluator', () => {
       const result = await evaluator.evaluate(context);
 
       expect(result.status).toBe('passed');
-      expect(result.metrics.threshold).toBe(0.95);
+      expect(result.assertions.threshold).toBe(0.95);
       expect(result.metrics.aggregate_similarity).toBeGreaterThanOrEqual(0.95);
     });
 
@@ -373,7 +373,7 @@ describe('ExpectedDiffEvaluator', () => {
       const result = await evaluator.evaluate(context);
 
       expect(result.status).toBe('failed');
-      expect(result.metrics.threshold).toBe(0.80);
+      expect(result.assertions.threshold).toBe(0.80);
       expect(result.metrics.aggregate_similarity).toBeLessThan(0.80);
     });
 
@@ -392,7 +392,7 @@ describe('ExpectedDiffEvaluator', () => {
 
       const result = await evaluator.evaluate(context);
 
-      expect(result.metrics.threshold).toBe(0.80);
+      expect(result.assertions.threshold).toBe(0.80);
     });
   });
 
@@ -541,7 +541,7 @@ describe('ExpectedDiffEvaluator', () => {
       const result = await evaluator.evaluate(context);
 
       expect(result.metrics).toHaveProperty('aggregate_similarity');
-      expect(result.metrics).toHaveProperty('threshold');
+      expect(result.assertions).toHaveProperty('threshold');
       expect(result.metrics).toHaveProperty('files_matched');
       expect(result.metrics).toHaveProperty('files_changed');
       expect(result.metrics).toHaveProperty('files_added');

@@ -34,6 +34,7 @@ export const evaluationResultSchema = z.object({
   message: z.string(),
   duration_ms: z.number().nonnegative(),
   timestamp: z.string(), // ISO 8601 format
+  assertions: z.record(z.any()).optional(), // Configured assertions/thresholds for this evaluator
   artifacts: z.array(artifactSchema).optional(),
   error: evaluationErrorSchema.optional(),
 });

@@ -144,20 +144,20 @@ export class GitDiffEvaluator implements Evaluator {
           changed_files: fileMetrics,
           base_commit: baseCommit,
           current_commit: currentCommit,
-          // Include assertions in metrics for transparency
-          assertions: config.assertions ? {
-            max_files_changed: config.assertions.max_files_changed,
-            max_lines_added: config.assertions.max_lines_added,
-            max_lines_removed: config.assertions.max_lines_removed,
-            max_total_changes: config.assertions.max_total_changes,
-            min_change_entropy: config.assertions.min_change_entropy,
-            max_change_entropy: config.assertions.max_change_entropy,
-          } : undefined,
           violations: violations.length > 0 ? violations : undefined,
         },
         message,
         duration_ms: durationMs,
         timestamp: completedAt,
+        // Include assertions at top level for transparency
+        assertions: config.assertions ? {
+          max_files_changed: config.assertions.max_files_changed,
+          max_lines_added: config.assertions.max_lines_added,
+          max_lines_removed: config.assertions.max_lines_removed,
+          max_total_changes: config.assertions.max_total_changes,
+          min_change_entropy: config.assertions.min_change_entropy,
+          max_change_entropy: config.assertions.max_change_entropy,
+        } : undefined,
         artifacts,
       };
     } catch (error) {

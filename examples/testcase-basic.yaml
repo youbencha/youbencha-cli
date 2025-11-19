@@ -49,7 +49,7 @@ evaluators:
         # Useful when you want focused, single-purpose changes
         max_change_entropy: 2.0
 
-  - name: agentic-judge
+  - name: agentic-judge:basic
     config:
       type: copilot-cli
       # Optional: Set timeout in milliseconds (default: 300000 = 5 minutes)

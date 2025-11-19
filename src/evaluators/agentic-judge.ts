@@ -184,17 +184,25 @@ export class AgenticJudgeEvaluator implements Evaluator {
       const completedAt = new Date().toISOString();
       const durationMs = new Date(completedAt).getTime() - new Date(startedAt).getTime();
 
+      // Separate assertion results from other metrics
+      // evaluationOutput.metrics contains the assertion scores (e.g., readme_modified: 1)
+      // We need to move those to the assertions field at top level
+      const assertionResults = { ...evaluationOutput.metrics };
+      
+      // Keep only non-assertion metadata in metrics
+      const metadataMetrics = {
+        agent_type: agentType,
+        agent_duration_ms: agentResult.durationMs,
+      };
+
       return {
         evaluator: this.name,
         status: evaluationOutput.status,
-        metrics: {
-          ...evaluationOutput.metrics,
-          agent_type: agentType,
-          agent_duration_ms: agentResult.durationMs,
-        },
+        metrics: metadataMetrics,
         message: evaluationOutput.message,
         duration_ms: durationMs,
         timestamp: completedAt,
+        assertions: assertionResults as Record<string, unknown>,
       };
     } catch (error) {
       const completedAt = new Date().toISOString();

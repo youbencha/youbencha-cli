@@ -148,7 +148,9 @@ describe('Results Bundle Schema Contract', () => {
     it('should validate a complete results bundle', () => {
       const validBundle: ResultsBundle = {
         version: '1.0.0',
-        suite: {
+        test_case: {
+          name: 'Test Case Name',
+          description: 'Test case description',
           config_file: 'suite.yaml',
           config_hash: 'abc123def456',
           repo: 'https://github.com/example/test-repo',
@@ -218,7 +220,9 @@ describe('Results Bundle Schema Contract', () => {
     it('should validate bundle with partial success', () => {
       const bundle: ResultsBundle = {
         version: '1.0.0',
-        suite: {
+        test_case: {
+          name: 'Partial Success Test',
+          description: 'Test with partial success',
           config_file: 'suite.yaml',
           config_hash: 'abc123',
           repo: 'https://github.com/example/test-repo',
@@ -284,7 +288,9 @@ describe('Results Bundle Schema Contract', () => {
     it('should validate bundle with failed evaluations', () => {
       const bundle: ResultsBundle = {
         version: '1.0.0',
-        suite: {
+        test_case: {
+          name: 'Failed Evaluation Test',
+          description: 'Test with failed evaluations',
           config_file: 'suite.yaml',
           config_hash: 'abc123',
           repo: 'https://github.com/example/test-repo',
@@ -340,7 +346,9 @@ describe('Results Bundle Schema Contract', () => {
   describe('Invalid Results Bundle', () => {
     it('should reject bundle without version', () => {
       const invalidBundle = {
-        suite: {
+        test_case: {
+          name: 'Test',
+          description: 'Test description',
           config_file: 'suite.yaml',
           config_hash: 'abc123',
           repo: 'https://github.com/example/test-repo',
@@ -386,7 +394,9 @@ describe('Results Bundle Schema Contract', () => {
     it('should reject bundle with invalid version', () => {
       const invalidBundle = {
         version: '2.0.0', // Invalid version
-        suite: {
+        test_case: {
+          name: 'Test',
+          description: 'Test description',
           config_file: 'suite.yaml',
           config_hash: 'abc123',
           repo: 'https://github.com/example/test-repo',
@@ -432,7 +442,9 @@ describe('Results Bundle Schema Contract', () => {
     it('should reject bundle with invalid overall_status', () => {
       const invalidBundle = {
         version: '1.0.0',
-        suite: {
+        test_case: {
+          name: 'Test',
+          description: 'Test description',
           config_file: 'suite.yaml',
           config_hash: 'abc123',
           repo: 'https://github.com/example/test-repo',
