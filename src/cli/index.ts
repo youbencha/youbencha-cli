@@ -30,17 +30,20 @@ async function main() {
   const packageJsonPath = join(__dirname, '..', '..', 'package.json');
   const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf-8'));
 
+  // Detect command name from how the CLI was invoked (supports both 'yb' and 'youbencha')
+  const commandName = process.argv[1]?.includes('youbencha') ? 'youbencha' : 'yb';
+
   // Create Commander program
   const program = new Command();
 
   program
-    .name('yb')
+    .name(commandName)
     .description('youBencha - Evaluate and compare AI coding agents with confidence\n\n' +
       '  A developer-friendly framework for testing AI coding tools.\n' +
       '  Run agents, measure their output, and get objective insights.\n\n' +
       '  Quick start:\n' +
-      '    yb init              # Create a starter configuration\n' +
-      '    yb run -c suite.yaml # Run an evaluation')
+      `    ${commandName} init              # Create a starter configuration\n` +
+      `    ${commandName} run -c suite.yaml # Run an evaluation`)
     .version(packageJson.version);
 
   // Register init command (create starter suite)
@@ -50,8 +53,8 @@ async function main() {
     .option('--force', 'Overwrite existing suite.yaml if present')
     .addHelpText('after', `
 Examples:
-  $ yb init                    # Create suite.yaml in current directory
-  $ yb init --force            # Overwrite existing suite.yaml
+  $ ${commandName} init                    # Create suite.yaml in current directory
+  $ ${commandName} init --force            # Overwrite existing suite.yaml
   
   This creates a fully-commented starter configuration you can customize.
     `)
@@ -65,8 +68,8 @@ Examples:
     .option('--keep-workspace', 'Keep workspace directory after evaluation (useful for debugging)')
     .addHelpText('after', `
 Examples:
-  $ yb run -c suite.yaml                    # Run evaluation with default settings
-  $ yb run -c suite.yaml --keep-workspace   # Keep files for inspection
+  $ ${commandName} run -c suite.yaml                    # Run evaluation with default settings
+  $ ${commandName} run -c suite.yaml --keep-workspace   # Keep files for inspection
   
   See examples/basic-suite.yaml for a working configuration.
     `)
@@ -80,8 +83,8 @@ Examples:
     .option('--output <path>', 'Output path for report (defaults to artifacts directory)')
     .addHelpText('after', `
 Examples:
-  $ yb report --from .youbencha-workspace/run-abc123/artifacts/results.json
-  $ yb report --from results.json --format markdown --output report.md
+  $ ${commandName} report --from .youbencha-workspace/run-abc123/artifacts/results.json
+  $ ${commandName} report --from results.json --format markdown --output report.md
   
   The report includes:
   - Overall evaluation status
@@ -99,7 +102,7 @@ Examples:
     .description('List available evaluators and their descriptions')
     .addHelpText('after', `
 Examples:
-  $ yb list                           # Show all available evaluators
+  $ ${commandName} list                           # Show all available evaluators
   
   Use this to discover which evaluators you can use in your suite.yaml
     `)
@@ -113,8 +116,8 @@ Examples:
     .option('-v, --verbose', 'Show detailed validation information')
     .addHelpText('after', `
 Examples:
-  $ yb validate -c suite.yaml         # Quick validation check
-  $ yb validate -c suite.yaml -v      # Detailed validation with suggestions
+  $ ${commandName} validate -c suite.yaml         # Quick validation check
+  $ ${commandName} validate -c suite.yaml -v      # Detailed validation with suggestions
   
   Use this to check your configuration before committing or running.
     `)
