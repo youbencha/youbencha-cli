@@ -29,6 +29,25 @@ npm install -g youbencha
 npm install --save-dev youbencha
 ```
 
+### Install from Local Build
+
+If you're developing youBencha locally:
+
+```bash
+# Build the project
+npm run build
+
+# Link globally to use the yb command
+npm link
+```
+
+This creates a global symlink to your local package, making the `yb` command available system-wide. Any changes you make require rebuilding (`npm run build`) to take effect.
+
+To unlink later:
+```bash
+npm unlink -g youbencha
+```
+
 ## Quick Start
 
 **New to youBencha?** Check out the [Getting Started Guide](GETTING-STARTED.md) for a detailed walkthrough.
@@ -64,7 +83,7 @@ evaluators:
 ### 3. Run the evaluation
 
 ```bash
-yb run -c suite.yaml
+yb run -c examples/testcase-basic.yaml --keep-workspace
 ```
 
 ### 4. View results
