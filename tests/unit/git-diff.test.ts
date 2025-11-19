@@ -322,9 +322,9 @@ describe('GitDiffEvaluator', () => {
 
       const result = await evaluator.evaluate(context);
       
-      expect(result.metrics.assertions).toBeDefined();
-      expect(result.metrics.assertions.max_files_changed).toBe(5);
-      expect(result.metrics.assertions.max_lines_added).toBe(100);
+      expect(result.assertions).toBeDefined();
+      expect(result.assertions.max_files_changed).toBe(5);
+      expect(result.assertions.max_lines_added).toBe(100);
     });
 
     it('should include violations in message when failed', async () => {

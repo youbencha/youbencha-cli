@@ -107,7 +107,6 @@ export class ExpectedDiffEvaluator implements Evaluator {
         status,
         metrics: {
           aggregate_similarity: metrics.aggregate_similarity,
-          threshold,
           files_matched: metrics.files_matched,
           files_changed: metrics.files_changed,
           files_added: metrics.files_added,
@@ -117,6 +116,9 @@ export class ExpectedDiffEvaluator implements Evaluator {
         message,
         duration_ms: durationMs,
         timestamp: completedAt,
+        assertions: {
+          threshold,
+        },
         artifacts,
       };
     } catch (error) {
