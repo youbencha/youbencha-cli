@@ -64,14 +64,15 @@ Examples:
   program
     .command('run')
     .description('Run an evaluation suite against an AI agent')
-    .requiredOption('-c, --config <path>', 'Path to suite configuration file (e.g., suite.yaml)')
+    .requiredOption('-c, --config <path>', 'Path to suite configuration file (YAML or JSON, e.g., suite.yaml or suite.json)')
     .option('--delete-workspace', 'Delete workspace directory after evaluation (by default, workspace is kept for inspection)')
     .addHelpText('after', `
 Examples:
   $ ${commandName} run -c suite.yaml                    # Run evaluation (workspace kept by default)
+  $ ${commandName} run -c suite.json                    # JSON format is also supported
   $ ${commandName} run -c suite.yaml --delete-workspace # Delete workspace after completion
   
-  See examples/basic-suite.yaml for a working configuration.
+  See examples/testcase-simple.yaml or examples/testcase-simple.json for working configurations.
     `)
     .action(runCommand);
 
@@ -104,7 +105,7 @@ Examples:
 Examples:
   $ ${commandName} list                           # Show all available evaluators
   
-  Use this to discover which evaluators you can use in your suite.yaml
+  Use this to discover which evaluators you can use in your suite.yaml or suite.json
     `)
     .action(listCommand);
 
@@ -112,11 +113,12 @@ Examples:
   program
     .command('validate')
     .description('Validate a suite configuration without running it')
-    .requiredOption('-c, --config <path>', 'Path to suite configuration file')
+    .requiredOption('-c, --config <path>', 'Path to suite configuration file (YAML or JSON)')
     .option('-v, --verbose', 'Show detailed validation information')
     .addHelpText('after', `
 Examples:
   $ ${commandName} validate -c suite.yaml         # Quick validation check
+  $ ${commandName} validate -c suite.json         # JSON format is also supported
   $ ${commandName} validate -c suite.yaml -v      # Detailed validation with suggestions
   
   Use this to check your configuration before committing or running.

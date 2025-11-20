@@ -1,0 +1,40 @@
+{
+  "name": "Implement Authentication Middleware",
+  "description": "Tests the agent's ability to implement a complete JWT authentication middleware with proper error handling and security practices",
+  "repo": "https://github.com/octocat/Hello-World.git",
+  "branch": "master",
+  "agent": {
+    "type": "copilot-cli",
+    "config": {
+      "prompt": "Create a new file `src/middleware/auth.ts` that implements JWT authentication middleware for Express.js. The middleware should:\n1. Extract the JWT token from the Authorization header\n2. Verify the token using a JWT_SECRET environment variable\n3. Attach the decoded user information to the request object\n4. Return 401 Unauthorized for missing or invalid tokens\n5. Include proper TypeScript types\n6. Handle edge cases like malformed tokens"
+    }
+  },
+  "evaluators": [
+    {
+      "name": "git-diff",
+      "config": {
+        "thresholds": {
+          "files_changed": 5,
+          "lines_added": 200,
+          "total_changes": 250
+        }
+      }
+    },
+    {
+      "name": "agentic-judge",
+      "config": {
+        "type": "copilot-cli",
+        "agent_name": "agentic-judge",
+        "assertions": {
+          "file_created": "The file src/middleware/auth.ts was created. Score 1 if exists, 0 if not.",
+          "jwt_verification": "The code includes JWT token verification logic. Score 1 if properly implemented, 0.5 if partial, 0 if missing.",
+          "error_handling": "Proper error handling for invalid/missing tokens with 401 responses. Score 1 if complete, 0.5 if partial, 0 if missing.",
+          "typescript_types": "Proper TypeScript types are used throughout. Score 1 if fully typed, 0.5 if partially typed, 0 if no types.",
+          "security_practices": "Follows security best practices (env variables, no hardcoded secrets). Score 1 if secure, 0.5 if mostly secure, 0 if insecure.",
+          "edge_cases": "Handles edge cases like malformed tokens, expired tokens. Score 1 if handles well, 0.5 if partially, 0 if not at all."
+        }
+      }
+    }
+  ],
+  "timeout": 300
+}

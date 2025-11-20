@@ -1,0 +1,29 @@
+{
+  "name": "Add friendly welcome message to README",
+  "description": "Tests the agent's ability to add a friendly welcome message to the README file with good formatting",
+  "repo": "https://github.com/octocat/Hello-World.git",
+  "branch": "master",
+  "agent": {
+    "type": "copilot-cli",
+    "config": {
+      "prompt": "Add a friendly welcome message to the README file"
+    }
+  },
+  "evaluators": [
+    {
+      "name": "git-diff"
+    },
+    {
+      "name": "agentic-judge",
+      "config": {
+        "type": "copilot-cli",
+        "agent_name": "agentic-judge",
+        "assertions": {
+          "readme_was_modified": "The README.md file was modified. Score 1 if true, 0 if false.",
+          "message_is_friendly": "A friendly welcome message was added. Score 1 if friendly, 0.5 if neutral, 0 if absent or unfriendly.",
+          "no_errors": "No syntax errors or broken markdown. Score 1 if valid, 0 if broken."
+        }
+      }
+    }
+  ]
+}

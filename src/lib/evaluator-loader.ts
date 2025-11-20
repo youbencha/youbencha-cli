@@ -1,15 +1,15 @@
 /**
  * Evaluator Loader
  * 
- * Utility for loading evaluator definitions from external YAML files.
+ * Utility for loading evaluator definitions from external YAML or JSON files.
  * Enables reusable evaluator configurations across multiple test cases.
  */
 
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
-import { parse as parseYaml } from 'yaml';
 import { evaluatorDefinitionSchema, type EvaluatorDefinition } from '../schemas/evaluator-definition.schema.js';
 import { type EvaluatorConfig } from '../schemas/testcase.schema.js';
+import { parseConfig } from './config-parser.js';
 
 /**
  * Resolved inline evaluator configuration (after file references have been loaded)
@@ -20,9 +20,9 @@ export interface ResolvedEvaluatorConfig {
 }
 
 /**
- * Load an evaluator definition from a YAML file
+ * Load an evaluator definition from a YAML or JSON file
  * 
- * @param filePath - Path to the evaluator definition YAML file (relative or absolute)
+ * @param filePath - Path to the evaluator definition file (relative or absolute)
  * @param baseDir - Base directory for resolving relative paths (typically the test case config file directory)
  * @returns Parsed and validated evaluator definition
  * @throws Error if file cannot be read or parsed
@@ -32,11 +32,11 @@ export function loadEvaluatorDefinition(filePath: string, baseDir: string): Eval
   const resolvedPath = resolve(baseDir, filePath);
   
   try {
-    // Read the YAML file
+    // Read the file
     const fileContent = readFileSync(resolvedPath, 'utf-8');
     
-    // Parse YAML
-    const parsed = parseYaml(fileContent);
+    // Parse (YAML or JSON)
+    const parsed = parseConfig(fileContent, resolvedPath);
     
     // Validate against schema
     const validationResult = evaluatorDefinitionSchema.safeParse(parsed);
