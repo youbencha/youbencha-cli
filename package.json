@@ -4,6 +4,7 @@
   "description": "A friendly, developer-first CLI framework for evaluating agentic coding tools",
   "main": "dist/cli/index.js",
   "bin": {
+    "youbencha": "dist/cli/index.js",
     "yb": "dist/cli/index.js"
   },
   "type": "module",
