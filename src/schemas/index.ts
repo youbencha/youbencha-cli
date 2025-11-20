@@ -25,6 +25,12 @@ export {
   type AssertionConfig,
 } from './testcase.schema.js';
 
+// Evaluator Definition schema and types
+export {
+  evaluatorDefinitionSchema,
+  type EvaluatorDefinition,
+} from './evaluator-definition.schema.js';
+
 // Results schema and types
 export {
   evaluationResultSchema,

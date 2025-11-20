@@ -6,8 +6,10 @@
  */
 
 import * as fs from 'fs/promises';
+import * as path from 'path';
 import * as yaml from 'yaml';
 import { testCaseConfigSchema, TestCaseConfig } from '../../schemas/testcase.schema.js';
+import { resolveEvaluatorConfigs } from '../../lib/evaluator-loader.js';
 import { createSpinner } from '../../lib/progress.js';
 import * as logger from '../../lib/logger.js';
 import { UserErrors, formatUserError } from '../../lib/user-errors.js';
@@ -149,7 +151,18 @@ export async function validateCommand(options: ValidateCommandOptions): Promise<
 
     // Check evaluators
     logger.info('📊 Evaluators:');
-    const evaluatorNames = testCaseConfig.evaluators.map(e => e.name);
+    
+    // Resolve evaluator file references first
+    const configFileDir = path.dirname(path.resolve(options.config));
+    let resolvedEvaluators;
+    try {
+      resolvedEvaluators = resolveEvaluatorConfigs(testCaseConfig.evaluators, configFileDir);
+    } catch (error) {
+      logger.error(`Failed to resolve evaluator file references: ${error instanceof Error ? error.message : String(error)}`);
+      process.exit(1);
+    }
+    
+    const evaluatorNames = resolvedEvaluators.map(e => e.name);
     const uniqueEvaluators = new Set(evaluatorNames);
     
     if (evaluatorNames.length !== uniqueEvaluators.size) {
@@ -157,7 +170,7 @@ export async function validateCommand(options: ValidateCommandOptions): Promise<
     }
     
     evaluatorNames.forEach((name, index) => {
-      const config = testCaseConfig.evaluators[index].config;
+      const config = resolvedEvaluators[index].config;
       const hasConfig = config && Object.keys(config).length > 0;
       logger.info(`   ${index + 1}. ${name}${hasConfig ? ' (configured)' : ''}`);
       
