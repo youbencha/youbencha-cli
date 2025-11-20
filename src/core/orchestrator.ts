@@ -19,6 +19,7 @@ import { Evaluator, EvaluationContext } from '../evaluators/base.js';
 import { GitDiffEvaluator } from '../evaluators/git-diff.js';
 import { ExpectedDiffEvaluator } from '../evaluators/expected-diff.js';
 import { AgenticJudgeEvaluator } from '../evaluators/agentic-judge.js';
+import { resolveEvaluatorConfigs, type ResolvedEvaluatorConfig } from '../lib/evaluator-loader.js';
 import * as logger from '../lib/logger.js';
 
 /**
@@ -39,6 +40,13 @@ export interface OrchestratorOptions {
   
   /** Maximum workspace size in bytes (default: 1GB) */
   maxWorkspaceSize?: number;
+}
+
+/**
+ * Internal test case config with resolved evaluators (no file references)
+ */
+interface ResolvedTestCaseConfig extends Omit<TestCaseConfig, 'evaluators'> {
+  evaluators: ResolvedEvaluatorConfig[];
 }
 
 /**
@@ -74,13 +82,26 @@ export class Orchestrator {
     let workspace: Workspace | null = null;
 
     try {
+      // 0. Resolve evaluator file references to inline configurations
+      const configFileDir = path.dirname(path.resolve(configFile));
+      const resolvedEvaluators = resolveEvaluatorConfigs(
+        testCaseConfig.evaluators,
+        configFileDir
+      );
+      
+      // Create a resolved test case config with inline evaluators
+      const resolvedTestCaseConfig: ResolvedTestCaseConfig = {
+        ...testCaseConfig,
+        evaluators: resolvedEvaluators,
+      };
+      
       // 1. Create workspace and clone repository
-      workspace = await this.setupWorkspace(testCaseConfig);
+      workspace = await this.setupWorkspace(resolvedTestCaseConfig);
       logger.info(`Workspace created: ${workspace.runId}`);
 
       // 2. Execute agent
       const { agentLog, agentExecution } = await this.executeAgent(
-        testCaseConfig,
+        resolvedTestCaseConfig,
         workspace
       );
       logger.info(`Agent execution completed: ${agentExecution.status}`);
@@ -94,7 +115,7 @@ export class Orchestrator {
 
       // 4. Run evaluators
       const evaluatorResults = await this.runEvaluators(
-        testCaseConfig,
+        resolvedTestCaseConfig,
         workspace,
         agentLog
       );
@@ -102,7 +123,7 @@ export class Orchestrator {
 
       // 5. Build results bundle
       const resultsBundle = await this.buildResultsBundle(
-        testCaseConfig,
+        resolvedTestCaseConfig,
         configFile,
         workspace,
         agentExecution,
@@ -142,7 +163,7 @@ export class Orchestrator {
   /**
    * Setup workspace and clone repository
    */
-  private async setupWorkspace(testCaseConfig: TestCaseConfig): Promise<Workspace> {
+  private async setupWorkspace(testCaseConfig: ResolvedTestCaseConfig): Promise<Workspace> {
     logger.info('Setting up workspace...');
 
     const workspaceConfig: WorkspaceConfig = {
@@ -166,7 +187,7 @@ export class Orchestrator {
    * Execute agent via adapter
    */
   private async executeAgent(
-    testCaseConfig: TestCaseConfig,
+    testCaseConfig: ResolvedTestCaseConfig,
     workspace: Workspace
   ): Promise<{
     agentLog: YouBenchaLog;
@@ -256,7 +277,7 @@ export class Orchestrator {
    * Run all configured evaluators
    */
   private async runEvaluators(
-    testCaseConfig: TestCaseConfig,
+    testCaseConfig: ResolvedTestCaseConfig,
     workspace: Workspace,
     agentLog: YouBenchaLog
   ): Promise<EvaluationResult[]> {
@@ -342,7 +363,7 @@ export class Orchestrator {
    * Build complete results bundle
    */
   private async buildResultsBundle(
-    testCaseConfig: TestCaseConfig,
+    testCaseConfig: ResolvedTestCaseConfig,
     configFile: string,
     workspace: Workspace,
     agentExecution: ResultsBundle['agent'],

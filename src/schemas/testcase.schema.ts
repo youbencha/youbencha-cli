@@ -28,11 +28,25 @@ const agentConfigSchema = z.object({
 /**
  * Evaluator configuration schema
  * Evaluators run checks and generate assertions about the code
+ * 
+ * Supports two modes:
+ * 1. Inline configuration: { name: 'evaluator-name', config: {...} }
+ * 2. File reference: { file: './path/to/evaluator.yaml' }
+ * 
+ * These modes are mutually exclusive - an evaluator config must have
+ * either 'name' or 'file', but not both.
  */
-const evaluatorConfigSchema = z.object({
-  name: z.string(),
-  config: z.record(z.any()).optional(), // Evaluator-specific configuration
-});
+const evaluatorConfigSchema = z.union([
+  // Mode 1: Inline evaluator configuration
+  z.object({
+    name: z.string(),
+    config: z.record(z.any()).optional(), // Evaluator-specific configuration
+  }).strict(), // Strict mode prevents extra fields like 'file'
+  // Mode 2: Reference to external evaluator definition file
+  z.object({
+    file: z.string().min(1, 'Evaluator file path is required'),
+  }).strict(), // Strict mode prevents extra fields like 'name'
+]);
 
 /**
  * Test Case Configuration schema with validation rules

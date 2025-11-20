@@ -1,0 +1,21 @@
+# Reusable Evaluator: README Grammar Check
+#
+# This evaluator checks that README.md has grammatically correct content
+# and no spelling errors. Can be reused across multiple test cases.
+#
+# Usage in test case:
+#   evaluators:
+#     - file: ./evaluators/readme-grammar-check.yaml
+
+name: agentic-judge:readme-grammar
+description: "Checks that README.md has grammatically correct content with no spelling errors"
+
+config:
+  type: copilot-cli
+  agent_name: agentic-judge
+  timeout: 300000  # 5 minutes
+  
+  assertions:
+    grammatically_correct: "README.md content is grammatically correct with proper sentence structure. Score 1 if true, 0 if false."
+    no_spelling_errors: "README.md has no spelling errors. Score 1 if true, 0 if false."
+    proper_punctuation: "README.md uses proper punctuation throughout. Score 1 if true, 0 if false."

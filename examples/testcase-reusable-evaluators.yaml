@@ -1,0 +1,50 @@
+# Test Case: Add README Comment with Reusable Evaluators
+#
+# This example demonstrates how to use reusable evaluator definitions
+# by referencing them from external YAML files.
+#
+# Benefits:
+# - Evaluator definitions can be shared across multiple test cases
+# - Changes to evaluator logic only need to be made in one place
+# - Test case files remain clean and focused on the specific task
+
+# Test case metadata
+name: "Add README comment with reusable evaluators"
+description: "Tests the agent's ability to add a helpful comment to README using reusable evaluator definitions"
+
+# Repository configuration
+repo: https://github.com/octocat/Hello-World.git
+branch: master
+
+# Agent configuration
+agent:
+  type: copilot-cli
+  config:
+    prompt: "Add a helpful comment to README.md explaining what this repository is about. Make sure the comment is grammatically correct."
+
+# Evaluators - using both inline and file-referenced evaluators
+evaluators:
+  # Inline evaluator for checking scope of changes
+  - name: git-diff
+    config:
+      assertions:
+        max_files_changed: 1
+        max_lines_added: 10
+        max_lines_removed: 0
+  
+  # Reusable evaluator from external file
+  # This evaluator checks README grammar and can be used across multiple test cases
+  - file: ./evaluators/readme-grammar-check.yaml
+  
+  # Another inline evaluator for basic checks
+  - name: agentic-judge:basic
+    config:
+      type: copilot-cli
+      agent_name: agentic-judge
+      assertions:
+        readme_modified: "README.md was modified. Score 1 if true, 0 if false."
+        helpful_comment_added: "A helpful comment was added to README.md. Score 1 if true, 0 if false."
+
+# Optional: Workspace configuration
+workspace_dir: .youbencha-workspace
+timeout: 300000  # 5 minutes

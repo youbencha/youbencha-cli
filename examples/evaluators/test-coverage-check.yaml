@@ -1,0 +1,22 @@
+# Reusable Evaluator: Test Coverage Check
+#
+# This evaluator ensures that code changes include appropriate test coverage
+# and follow testing best practices.
+#
+# Usage in test case:
+#   evaluators:
+#     - file: ./evaluators/test-coverage-check.yaml
+
+name: agentic-judge:test-coverage
+description: "Ensures code changes include appropriate test coverage and follow testing best practices"
+
+config:
+  type: copilot-cli
+  agent_name: agentic-judge
+  timeout: 300000  # 5 minutes
+  
+  assertions:
+    tests_added: "New tests were added for the code changes. Score 1 if tests exist, 0.5 if partial, 0 if none."
+    tests_pass: "All tests pass successfully. Score 1 if all pass, 0.5 if some pass, 0 if none pass or not run."
+    edge_cases_covered: "Tests cover edge cases and error scenarios. Score 1 if comprehensive, 0.5 if partial, 0 if none."
+    assertions_clear: "Test assertions are clear and meaningful. Score 1 if clear, 0.5 if somewhat clear, 0 if unclear."
