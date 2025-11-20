@@ -17,7 +17,7 @@ import { UserErrors, formatUserError } from '../../lib/user-errors.js';
  */
 interface RunCommandOptions {
   config: string;
-  keepWorkspace?: boolean;
+  deleteWorkspace?: boolean;
 }
 
 /**
@@ -90,7 +90,7 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
 
     // Create orchestrator
     const orchestrator = new Orchestrator({
-      keepWorkspace: options.keepWorkspace,
+      keepWorkspace: !options.deleteWorkspace, // Invert: keep by default, delete only if flag is set
     });
 
     // Run evaluation

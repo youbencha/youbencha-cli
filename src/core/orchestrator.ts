@@ -26,7 +26,7 @@ import * as logger from '../lib/logger.js';
  * Orchestrator options
  */
 export interface OrchestratorOptions {
-  /** Keep workspace after evaluation (for debugging) */
+  /** Keep workspace after evaluation (for debugging) - defaults to true */
   keepWorkspace?: boolean;
   
   /** Maximum number of concurrent evaluators (default: 4) */
@@ -58,7 +58,7 @@ export class Orchestrator {
 
   constructor(options: OrchestratorOptions = {}) {
     this.options = {
-      keepWorkspace: false,
+      keepWorkspace: true, // Changed default to true - keep workspace by default
       maxConcurrentEvaluators: 4,
       maxFileSize: 10 * 1024 * 1024,        // 10MB
       maxDirectoryDepth: 10,
