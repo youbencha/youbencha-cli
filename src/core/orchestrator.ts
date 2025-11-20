@@ -238,6 +238,8 @@ export class Orchestrator {
         ...(testCaseConfig.agent.config || {}),
         // Pass agent name if specified in test case config
         agent: testCaseConfig.agent.agent_name,
+        // Pass model if specified in test case config
+        model: testCaseConfig.agent.model,
       },
       timeout: testCaseConfig.timeout || 300000, // 5 min default
       env: {},

@@ -8,11 +8,26 @@
 import { z } from 'zod';
 
 /**
+ * Valid model names for copilot-cli
+ */
+const copilotModelSchema = z.enum([
+  'claude-sonnet-4.5',
+  'claude-sonnet-4',
+  'claude-haiku-4.5',
+  'gpt-5',
+  'gpt-5.1',
+  'gpt-5.1-codex-mini',
+  'gpt-5.1-codex',
+  'gemini-3-pro-preview',
+]);
+
+/**
  * Agent configuration schema
  */
 const agentConfigSchema = z.object({
   type: z.literal('copilot-cli'), // MVP: only copilot-cli supported
   agent_name: z.string().optional(), // Optional agent name (e.g., for copilot-cli agents in .github/agents/)
+  model: copilotModelSchema.optional(), // Optional model name (e.g., 'gpt-5.1', 'claude-sonnet-4.5')
   config: z
     .object({
       prompt: z

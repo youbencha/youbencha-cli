@@ -196,6 +196,7 @@ export class CopilotCLIAdapter implements AgentAdapter {
   ): { command: string; args: string[] } {
     const prompt = context.config.prompt as string | undefined;
     const agent = context.config.agent as string | undefined;
+    const model = context.config.model as string | undefined;
     
     if (!prompt) {
       throw new Error('Prompt is required in agent config');
@@ -203,6 +204,11 @@ export class CopilotCLIAdapter implements AgentAdapter {
 
     // Build base args
     const baseArgs = ['-p', prompt];
+    
+    // Add model if specified
+    if (model) {
+      baseArgs.push('--model', model);
+    }
     
     // Add agent if specified
     if (agent) {

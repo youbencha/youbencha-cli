@@ -145,6 +145,8 @@ export class AgenticJudgeEvaluator implements Evaluator {
           prompt: evaluationPrompt,
           // Pass through agent parameter if specified in evaluator config
           agent: context.config.agent_name,
+          // Pass through model parameter if specified in evaluator config
+          model: context.config.model,
         },
         timeout: (context.config.timeout as number) || 300000, // 5 min default
         env: {},
