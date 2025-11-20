@@ -126,13 +126,15 @@ evaluators:
 
 ## Common Tasks
 
-### Debugging: Keep the workspace
+### Workspace cleanup
+
+By default, youBencha keeps the workspace after evaluation so you can inspect what the agent did.
+
+To clean up the workspace after completion:
 
 ```bash
-yb run -c suite.yaml --keep-workspace
+yb run -c suite.yaml --delete-workspace
 ```
-
-This keeps all files so you can inspect what the agent did.
 
 ### Testing locally
 

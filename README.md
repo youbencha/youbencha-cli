@@ -83,8 +83,10 @@ evaluators:
 ### 3. Run the evaluation
 
 ```bash
-yb run -c examples/testcase-basic.yaml --keep-workspace
+yb run -c examples/testcase-basic.yaml
 ```
+
+The workspace is kept by default for inspection. Add `--delete-workspace` to clean up after completion.
 
 ### 4. View results
 

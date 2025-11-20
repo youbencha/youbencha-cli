@@ -550,7 +550,7 @@ const suiteConfig = suiteConfigSchema.parse(yaml.parse(suiteYaml));
 
 // Run evaluation
 const orchestrator = new Orchestrator({
-  keepWorkspace: false,
+  keepWorkspace: true,  // Default is true - workspace is kept for inspection
   maxConcurrentEvaluators: 4
 });
 

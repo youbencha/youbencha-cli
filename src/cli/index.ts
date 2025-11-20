@@ -65,11 +65,11 @@ Examples:
     .command('run')
     .description('Run an evaluation suite against an AI agent')
     .requiredOption('-c, --config <path>', 'Path to suite configuration file (e.g., suite.yaml)')
-    .option('--keep-workspace', 'Keep workspace directory after evaluation (useful for debugging)')
+    .option('--delete-workspace', 'Delete workspace directory after evaluation (by default, workspace is kept for inspection)')
     .addHelpText('after', `
 Examples:
-  $ ${commandName} run -c suite.yaml                    # Run evaluation with default settings
-  $ ${commandName} run -c suite.yaml --keep-workspace   # Keep files for inspection
+  $ ${commandName} run -c suite.yaml                    # Run evaluation (workspace kept by default)
+  $ ${commandName} run -c suite.yaml --delete-workspace # Delete workspace after completion
   
   See examples/basic-suite.yaml for a working configuration.
     `)
