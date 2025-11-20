@@ -1,0 +1,24 @@
+{
+  "name": "project-namer",
+  "version": "1.0.0",
+  "description": "A CLI tool that generates creative project names",
+  "main": "src/cli.js",
+  "bin": {
+    "project-namer": "./src/cli.js"
+  },
+  "scripts": {
+    "start": "node src/cli.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "cli",
+    "generator",
+    "naming"
+  ],
+  "author": "Example Author",
+  "license": "MIT",
+  "dependencies": {}
+}
