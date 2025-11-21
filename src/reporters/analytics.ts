@@ -255,6 +255,8 @@ export class AnalyticsReporter {
       // Extract key metrics
       const keyMetrics: string[] = [];
       if (evaluator.metrics.aggregate_similarity !== undefined) {
+        // Type assertion is safe here because we check for undefined first
+        // and the schema validates metrics as record<any>
         keyMetrics.push(`Similarity: ${(evaluator.metrics.aggregate_similarity as number * 100).toFixed(1)}%`);
       }
       if (evaluator.metrics.files_changed !== undefined) {

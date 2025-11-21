@@ -17,6 +17,18 @@ import {
 } from '../schemas/analytics.schema.js';
 
 /**
+ * Analysis thresholds and configuration
+ * These can be made configurable in future versions
+ */
+const ANALYSIS_CONFIG = {
+  SLOW_EVALUATOR_THRESHOLD_MS: 30000, // 30 seconds
+  SIMILARITY_MARGIN_WARNING: 0.05, // 5% margin
+  LARGE_CHANGE_FILE_COUNT: 20, // Files changed threshold
+  LONG_EXECUTION_MINUTES: 10, // Minutes
+  FAST_EXECUTION_SECONDS: 60, // 1 minute
+} as const;
+
+/**
  * Analyze a single evaluation run
  * 
  * @param bundle - Results bundle to analyze
@@ -104,7 +116,7 @@ function analyzeEvaluators(evaluators: EvaluationResult[]): PerformanceInsight[]
       current.duration_ms > prev.duration_ms ? current : prev
     );
     
-    if (slowest.duration_ms > 30000) { // More than 30 seconds
+    if (slowest.duration_ms > ANALYSIS_CONFIG.SLOW_EVALUATOR_THRESHOLD_MS) {
       insights.push({
         type: 'warning',
         category: 'Performance',
@@ -133,7 +145,7 @@ function analyzeEvaluators(evaluators: EvaluationResult[]): PerformanceInsight[]
       const threshold = expectedDiff.metrics.threshold as number;
       const margin = similarity - threshold;
       
-      if (margin < 0.05) { // Within 5% of threshold
+      if (margin < ANALYSIS_CONFIG.SIMILARITY_MARGIN_WARNING) {
         insights.push({
           type: 'warning',
           category: 'Quality',
@@ -160,7 +172,7 @@ function analyzeEvaluators(evaluators: EvaluationResult[]): PerformanceInsight[]
     const linesAdded = gitDiff.metrics.lines_added as number || 0;
     const linesRemoved = gitDiff.metrics.lines_removed as number || 0;
     
-    if (filesChanged > 20) {
+    if (filesChanged > ANALYSIS_CONFIG.LARGE_CHANGE_FILE_COUNT) {
       insights.push({
         type: 'info',
         category: 'Scope',
@@ -219,14 +231,14 @@ function analyzeExecutionTime(bundle: ResultsBundle): PerformanceInsight[] {
   const insights: PerformanceInsight[] = [];
   const durationMinutes = bundle.execution.duration_ms / 1000 / 60;
   
-  if (durationMinutes > 10) {
+  if (durationMinutes > ANALYSIS_CONFIG.LONG_EXECUTION_MINUTES) {
     insights.push({
       type: 'warning',
       category: 'Performance',
       message: `Long execution time: ${durationMinutes.toFixed(1)} minutes`,
       metric_value: bundle.execution.duration_ms,
     });
-  } else if (durationMinutes < 1) {
+  } else if (bundle.execution.duration_ms / 1000 < ANALYSIS_CONFIG.FAST_EXECUTION_SECONDS) {
     insights.push({
       type: 'success',
       category: 'Performance',
