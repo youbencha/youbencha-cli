@@ -40,5 +40,6 @@ Thumbs.db
 
 # youBencha specific
 .youbencha-workspace/
+.youbencha-eval/
 results/
 artifacts/
