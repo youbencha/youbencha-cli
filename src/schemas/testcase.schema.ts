@@ -7,6 +7,7 @@
 
 import { z } from 'zod';
 import { postEvaluationConfigSchema } from './post-evaluation.schema.js';
+import { preExecutionConfigSchema } from './pre-execution.schema.js';
 
 /**
  * Agent configuration schema
@@ -124,6 +125,9 @@ export const testCaseConfigSchema = z
     evaluators: z
       .array(evaluatorConfigSchema)
       .min(1, 'At least one evaluator is required'),
+
+    // Pre-executions configuration (optional)
+    pre_execution: z.array(preExecutionConfigSchema).optional(),
 
     // Post-evaluations configuration (optional)
     post_evaluation: z.array(postEvaluationConfigSchema).optional(),

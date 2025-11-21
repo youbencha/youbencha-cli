@@ -1,0 +1,48 @@
+# youBencha Test Case with Pre-Execution Hooks
+# Demonstrates using pre-execution hooks to modify code before agent execution
+
+name: "Add feature with environment setup"
+description: "Tests the agent's ability to add a feature with pre-execution code modifications"
+
+# Repository configuration
+repo: https://github.com/octocat/Hello-World.git
+branch: master
+
+# Agent configuration
+agent:
+  type: copilot-cli
+  config:
+    prompt: "Add a function called greet() that returns 'Hello, World!'"
+
+# Pre-execution hooks - run after workspace setup, before agent execution
+pre_execution:
+  # Example 1: Run a script to inject environment variables
+  - name: script
+    config:
+      command: echo
+      args:
+        - "Pre-execution setup complete. Workspace: ${WORKSPACE_DIR}"
+      timeout_ms: 10000
+
+  # Example 2: Run a more complex script to modify code
+  # - name: script
+  #   config:
+  #     command: ./examples/scripts/setup-env.sh
+  #     args:
+  #       - "${WORKSPACE_DIR}"
+  #     env:
+  #       API_KEY: "test-key-123"
+  #       ENV: "development"
+  #     working_dir: ${WORKSPACE_DIR}
+  #     timeout_ms: 30000
+
+# Evaluators
+evaluators:
+  - name: git-diff
+  - name: agentic-judge
+    config:
+      type: copilot-cli
+      agent_name: agentic-judge
+      assertions:
+        function_added: "A greet() function was added. Score 1 if true, 0 if false."
+        function_works: "The function returns the correct greeting. Score 1 if correct, 0 if not."

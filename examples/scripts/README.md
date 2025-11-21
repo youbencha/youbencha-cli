@@ -1,8 +1,50 @@
-# Example Post-Evaluation Scripts
+# Example Scripts for Pre-Execution and Post-Evaluation
 
-This directory contains example scripts for analyzing and processing youBencha results.
+This directory contains example scripts for youBencha pre-execution hooks and post-evaluation processing.
 
-## Scripts
+## Pre-Execution Scripts
+
+Pre-execution scripts run **after workspace setup but before agent execution**. They enable:
+
+### Use Cases
+- **Environment Variable Injection**: Inject API keys, secrets, or configuration
+- **Code Preprocessing**: Search and replace tokens, placeholders
+- **Code Generation**: Generate types, interfaces, or boilerplate
+- **Setup Tasks**: Initialize databases, create mock data
+- **File Manipulation**: Copy config files, create directories
+
+### Available Environment Variables
+Pre-execution scripts receive these environment variables:
+- `WORKSPACE_DIR`: Path to the workspace where agent will work
+- `REPO_DIR`: Path to repository (same as WORKSPACE_DIR)
+- `ARTIFACTS_DIR`: Path to artifacts directory
+- `TEST_CASE_NAME`: Name of the test case
+- `REPO_URL`: Repository URL being tested
+- `BRANCH`: Branch being tested
+
+### Example: `setup-env.sh`
+Demonstrates environment setup, config file creation, and variable injection.
+
+```yaml
+pre_execution:
+  - name: script
+    config:
+      command: ./examples/scripts/setup-env.sh
+      args:
+        - "${WORKSPACE_DIR}"
+      env:
+        API_KEY: "test-key-123"
+        ENV: "development"
+      timeout_ms: 30000
+```
+
+---
+
+## Post-Evaluation Scripts
+
+Post-evaluation scripts run **after evaluation completes**. They enable results analysis and export.
+
+### Scripts
 
 ### notify-slack.sh
 
