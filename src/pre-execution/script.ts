@@ -199,11 +199,17 @@ export class ScriptPreExecution implements PreExecution {
       }, timeoutMs);
 
       child.stdout.on('data', (data) => {
-        stdout += data.toString();
+        const text = data.toString();
+        stdout += text;
+        // Display stdout in real-time
+        process.stdout.write(text);
       });
 
       child.stderr.on('data', (data) => {
-        stderr += data.toString();
+        const text = data.toString();
+        stderr += text;
+        // Display stderr in real-time
+        process.stderr.write(text);
       });
 
       child.on('error', (error) => {
