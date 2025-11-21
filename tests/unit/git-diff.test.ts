@@ -168,6 +168,75 @@ describe('GitDiffEvaluator', () => {
       expect(result.metrics.files_changed).toBeGreaterThanOrEqual(1);
     });
 
+    it('should detect untracked new files', async () => {
+      // Create a test repo with an untracked file (simulating agent creating files without committing)
+      const untrackedRepoDir = path.join(tempDir, 'untracked-repo');
+      await fs.mkdir(untrackedRepoDir, { recursive: true });
+      
+      const git = simpleGit(untrackedRepoDir);
+      await git.init();
+      await git.addConfig('user.name', 'Test User');
+      await git.addConfig('user.email', 'test@example.com');
+      
+      // Create and commit initial file
+      await fs.writeFile(path.join(untrackedRepoDir, 'existing.txt'), 'existing content\n');
+      await git.add('existing.txt');
+      await git.commit('Initial commit');
+      
+      // Create a new file without staging or committing it (simulating agent behavior)
+      await fs.writeFile(path.join(untrackedRepoDir, 'untracked-new-file.ts'), 'console.log("new file");\n');
+
+      const context: EvaluationContext = {
+        modifiedDir: untrackedRepoDir,
+        artifactsDir,
+        agentLog: mockYouBenchaLog,
+        config: {},
+        suiteConfig: mockSuiteConfig,
+      };
+
+      const result = await evaluator.evaluate(context);
+      
+      // Should detect the untracked file
+      expect(result.status).toBe('passed');
+      expect(result.metrics.files_changed).toBeGreaterThanOrEqual(1);
+      expect(result.metrics.lines_added).toBeGreaterThanOrEqual(1);
+    });
+
+    it('should detect staged new files', async () => {
+      // Create a test repo with a staged but uncommitted file
+      const stagedRepoDir = path.join(tempDir, 'staged-repo');
+      await fs.mkdir(stagedRepoDir, { recursive: true });
+      
+      const git = simpleGit(stagedRepoDir);
+      await git.init();
+      await git.addConfig('user.name', 'Test User');
+      await git.addConfig('user.email', 'test@example.com');
+      
+      // Create and commit initial file
+      await fs.writeFile(path.join(stagedRepoDir, 'existing.txt'), 'existing content\n');
+      await git.add('existing.txt');
+      await git.commit('Initial commit');
+      
+      // Create and stage a new file without committing it
+      await fs.writeFile(path.join(stagedRepoDir, 'staged-new-file.ts'), 'console.log("staged");\n');
+      await git.add('staged-new-file.ts');
+
+      const context: EvaluationContext = {
+        modifiedDir: stagedRepoDir,
+        artifactsDir,
+        agentLog: mockYouBenchaLog,
+        config: {},
+        suiteConfig: mockSuiteConfig,
+      };
+
+      const result = await evaluator.evaluate(context);
+      
+      // Should detect the staged file
+      expect(result.status).toBe('passed');
+      expect(result.metrics.files_changed).toBeGreaterThanOrEqual(1);
+      expect(result.metrics.lines_added).toBeGreaterThanOrEqual(1);
+    });
+
     it('should pass when no thresholds are configured', async () => {
       const context: EvaluationContext = {
         modifiedDir: testRepoDir,
