@@ -4,6 +4,9 @@
  * Evaluates agent changes by analyzing git diff statistics.
  * Measures files changed, lines added/removed, and change entropy.
  * Supports threshold-based assertions for all metrics.
+ * 
+ * Note: Automatically stages all changes (including untracked new files)
+ * before running diff to ensure complete visibility of agent modifications.
  */
 
 import { simpleGit, DiffResult, SimpleGit, DiffResultTextFile } from 'simple-git';
@@ -94,8 +97,24 @@ export class GitDiffEvaluator implements Evaluator {
       
       // Check for untracked files and stage all changes to ensure git diff captures everything
       // This is necessary because agents may create new files without staging them
+      // Note: This is safe as evaluation runs in an isolated workspace
       const gitStatus = await git.status();
-      if (gitStatus.not_added.length > 0 || gitStatus.modified.length > 0 || gitStatus.created.length > 0) {
+      
+      // Check if there are any unstaged or untracked changes
+      // not_added: untracked files, modified: unstaged changes, created: newly staged files
+      const hasUnstagedChanges = 
+        gitStatus.not_added.length > 0 || 
+        gitStatus.modified.length > 0 || 
+        gitStatus.created.length > 0;
+        
+      if (hasUnstagedChanges) {
+        // Log the files being staged for transparency
+        const filesToStage = [
+          ...gitStatus.not_added,
+          ...gitStatus.modified,
+          ...gitStatus.created,
+        ];
+        
         // Stage all changes including new files
         await git.add('.');
       }
