@@ -32,8 +32,24 @@ const agentConfigSchema = z.object({
         .min(1, 'Prompt is required')
         .max(50000, 'Prompt exceeds maximum length of 50000 characters')
         .optional(),
+      prompt_file: z
+        .string()
+        .min(1, 'Prompt file path is required')
+        .optional(),
     })
     .catchall(z.any()) // Allow other agent-specific config
+    .refine(
+      (data) => {
+        // Ensure prompt and prompt_file are mutually exclusive
+        if (data.prompt && data.prompt_file) {
+          return false;
+        }
+        return true;
+      },
+      {
+        message: 'Cannot specify both "prompt" and "prompt_file". Please use only one.',
+      }
+    )
     .optional(),
 });
 

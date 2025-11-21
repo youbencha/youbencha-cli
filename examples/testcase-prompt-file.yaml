@@ -1,0 +1,31 @@
+# Example Test Case: Using prompt_file for Agent Execution
+# 
+# This demonstrates how to load the agent prompt from an external file
+# instead of specifying it inline in the configuration.
+
+# Test case metadata
+name: "Add README comment using prompt file"
+description: "Tests the agent's ability to add a comment to README using a prompt loaded from a file"
+
+# Repository configuration
+repo: https://github.com/octocat/Hello-World.git
+branch: master
+
+# Agent configuration with prompt_file
+agent:
+  type: copilot-cli
+  config:
+    prompt_file: ./prompts/add-readme-comment.md
+
+# Evaluators
+evaluators:
+  - name: git-diff
+    config:
+      max_files_changed: 1
+      max_lines_added: 5
+
+# Usage:
+# yb run -c examples/testcase-prompt-file.yaml
+# yb report --from .youbencha-workspace/run-*/artifacts/results.json --format markdown
+#
+# The prompt will be loaded from examples/prompts/add-readme-comment.md

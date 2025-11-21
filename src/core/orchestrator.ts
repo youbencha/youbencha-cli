@@ -28,6 +28,7 @@ import { WebhookPostEvaluation } from '../post-evaluation/webhook.js';
 import { DatabasePostEvaluation } from '../post-evaluation/database.js';
 import { ScriptPostEvaluation } from '../post-evaluation/script.js';
 import { resolveEvaluatorConfigs, type ResolvedEvaluatorConfig } from '../lib/evaluator-loader.js';
+import { resolvePromptValue } from '../lib/prompt-loader.js';
 import * as logger from '../lib/logger.js';
 
 /**
@@ -129,7 +130,8 @@ export class Orchestrator {
       // 3. Execute agent
       const { agentLog, agentExecution } = await this.executeAgent(
         resolvedTestCaseConfig,
-        workspace
+        workspace,
+        configFileDir
       );
       logger.info(`Agent execution completed: ${agentExecution.status}`);
 
@@ -144,7 +146,8 @@ export class Orchestrator {
       const evaluatorResults = await this.runEvaluators(
         resolvedTestCaseConfig,
         workspace,
-        agentLog
+        agentLog,
+        configFileDir
       );
       logger.info(`Evaluators completed: ${evaluatorResults.length} results`);
 
@@ -323,7 +326,8 @@ export class Orchestrator {
    */
   private async executeAgent(
     testCaseConfig: ResolvedTestCaseConfig,
-    workspace: Workspace
+    workspace: Workspace,
+    configFileDir: string
   ): Promise<{
     agentLog: YouBenchaLog;
     agentExecution: ResultsBundle['agent'];
@@ -342,10 +346,18 @@ export class Orchestrator {
       }
     }
 
+    // Resolve prompt from either inline prompt or prompt file
+    const promptFromConfig = testCaseConfig.agent.config?.prompt as string | undefined;
+    const promptFileFromConfig = testCaseConfig.agent.config?.prompt_file as string | undefined;
+    const resolvedPrompt = resolvePromptValue(promptFromConfig, promptFileFromConfig, configFileDir);
+
     // Display agent context before execution
-    const prompt = testCaseConfig.agent.config?.prompt as string | undefined;
-    if (prompt) {
-      logger.info(`Agent prompt: "${prompt}"`);
+    if (resolvedPrompt) {
+      if (promptFileFromConfig) {
+        logger.info(`Agent prompt loaded from file: "${promptFileFromConfig}"`);
+      } else {
+        logger.info(`Agent prompt: "${resolvedPrompt}"`);
+      }
     }
     logger.info(`Agent type: ${testCaseConfig.agent.type}`);
     if (testCaseConfig.agent.agent_name) {
@@ -371,6 +383,10 @@ export class Orchestrator {
       artifactsDir: workspace.paths.artifactsDir,
       config: {
         ...(testCaseConfig.agent.config || {}),
+        // Override with resolved prompt (replaces both prompt and prompt_file with the actual prompt content)
+        prompt: resolvedPrompt,
+        // Remove prompt_file from config since we've resolved it
+        prompt_file: undefined,
         // Pass agent name if specified in test case config
         agent: testCaseConfig.agent.agent_name,
         // Pass model if specified in test case config
@@ -416,7 +432,8 @@ export class Orchestrator {
   private async runEvaluators(
     testCaseConfig: ResolvedTestCaseConfig,
     workspace: Workspace,
-    agentLog: YouBenchaLog
+    agentLog: YouBenchaLog,
+    configFileDir: string
   ): Promise<EvaluationResult[]> {
     logger.info('Running evaluators...');
 
@@ -440,13 +457,27 @@ export class Orchestrator {
           };
         }
 
+        // Resolve prompt_file in evaluator config if present
+        const evaluatorConfigWithResolvedPrompt = { ...evaluatorConfig.config };
+        if (evaluatorConfigWithResolvedPrompt) {
+          const promptFromConfig = evaluatorConfigWithResolvedPrompt.prompt as string | undefined;
+          const promptFileFromConfig = evaluatorConfigWithResolvedPrompt.prompt_file as string | undefined;
+          
+          if (promptFileFromConfig || promptFromConfig) {
+            const resolvedPrompt = resolvePromptValue(promptFromConfig, promptFileFromConfig, configFileDir);
+            // Update config with resolved prompt, removing prompt_file
+            evaluatorConfigWithResolvedPrompt.prompt = resolvedPrompt;
+            delete evaluatorConfigWithResolvedPrompt.prompt_file;
+          }
+        }
+
         // Build evaluation context
         const context: EvaluationContext = {
           modifiedDir: workspace.paths.modifiedDir,
           expectedDir: workspace.paths.expectedDir,
           artifactsDir: workspace.paths.artifactsDir,
           agentLog,
-          config: evaluatorConfig.config || {},
+          config: evaluatorConfigWithResolvedPrompt || {},
           testCaseConfig,
         };
 
