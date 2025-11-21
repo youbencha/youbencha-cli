@@ -264,9 +264,9 @@ export class AgenticJudgeEvaluator implements Evaluator {
     if (agentName) {
       // Agent has instructions, just send assertions with proper structure
       if (prompt) {
-        return `${prompt}\n\nEvaluation Assertions:\n${assertionsList}`;
+        return `${prompt}\n\n# Evaluation Assertions:\n${assertionsList}`;
       }
-      return `Evaluation Assertions:\n${assertionsList}`;
+      return `# Evaluation Assertions:\n${assertionsList}`;
     }
     // Mode 2: Use default markdown template
     const templatePath = join(getModuleDirname(), 'prompts', 'agentic-judge.template.md');
