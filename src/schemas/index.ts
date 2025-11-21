@@ -46,3 +46,14 @@ export {
   // Legacy type for backward compatibility
   type SuiteMetadata,
 } from './result.schema.js';
+
+// Post-Evaluator schema and types
+export {
+  postEvaluationConfigSchema,
+  postEvaluationResultSchema,
+  type PostEvaluationConfig,
+  type WebhookConfig,
+  type DatabaseConfig,
+  type ScriptConfig,
+  type PostEvaluationResult,
+} from './post-evaluation.schema.js';
