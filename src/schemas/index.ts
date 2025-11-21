@@ -46,3 +46,27 @@ export {
   // Legacy type for backward compatibility
   type SuiteMetadata,
 } from './result.schema.js';
+
+// Analytics schema and types
+export {
+  recommendationSchema,
+  performanceInsightSchema,
+  costAnalysisSchema,
+  singleRunAnalysisSchema,
+  trendDataPointSchema,
+  trendAnalysisSchema,
+  comparisonEntrySchema,
+  comparisonAnalysisSchema,
+  aggregatedSummarySchema,
+  aggregatedResultsSchema,
+  type Recommendation,
+  type PerformanceInsight,
+  type CostAnalysis,
+  type SingleRunAnalysis,
+  type TrendDataPoint,
+  type TrendAnalysis,
+  type ComparisonEntry,
+  type ComparisonAnalysis,
+  type AggregatedSummary,
+  type AggregatedResults,
+} from './analytics.schema.js';

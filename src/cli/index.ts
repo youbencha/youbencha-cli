@@ -14,6 +14,7 @@ import { dirname, join } from 'path';
 // Import commands
 import { runCommand } from './commands/run.js';
 import { reportCommand } from './commands/report.js';
+import { analyzeCommand } from './commands/analyze.js';
 import { registerSuggestSuiteCommand } from './commands/suggest-suite.js';
 import { listCommand } from './commands/list.js';
 import { initCommand } from './commands/init.js';
@@ -92,6 +93,26 @@ Examples:
   - Links to detailed artifacts
     `)
     .action(reportCommand);
+
+  program
+    .command('analyze')
+    .description('Analyze evaluation results and generate insights with strategic recommendations')
+    .requiredOption('--from <path>', 'Path to results JSON file (e.g., .youbencha-workspace/run-*/artifacts/results.json)')
+    .option('--output <path>', 'Output path for analysis report (defaults to artifacts directory)')
+    .option('--format <format>', 'Report format: markdown', 'markdown')
+    .addHelpText('after', `
+Examples:
+  $ ${commandName} analyze --from .youbencha-workspace/run-abc123/artifacts/results.json
+  $ ${commandName} analyze --from results.json --output analysis.md
+  
+  The analysis report includes:
+  - Executive summary with key findings
+  - Performance insights (successes, issues, warnings)
+  - Strategic recommendations prioritized by impact
+  - Cost analysis and efficiency metrics
+  - Actionable next steps for improvement
+    `)
+    .action(analyzeCommand);
 
   // Register suggest-suite command (User Story 3)
   registerSuggestSuiteCommand(program);
