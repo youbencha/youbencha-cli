@@ -228,6 +228,92 @@ describe('AgenticJudgeEvaluator', () => {
       expect(prompt).toContain('Test coverage adequacy');
       expect(prompt).toContain('Documentation quality');
     });
+
+    test('includes prompt in evaluation prompt', async () => {
+      const promptText = 'Do not ask for clarification or additional information. Use only the files in the repository to evaluate the criteria.';
+      
+      const contextWithPrompt = {
+        ...mockContext,
+        config: {
+          ...mockContext.config,
+          type: 'copilot-cli',
+          prompt: promptText,
+        },
+      };
+
+      const mockAdapter: AgentAdapter = {
+        name: 'test-adapter',
+        version: '1.0.0',
+        checkAvailability: jest.fn().mockResolvedValue(true),
+        execute: jest.fn().mockResolvedValue({
+          exitCode: 0,
+          status: 'success',
+          output: JSON.stringify({ status: 'passed', metrics: {}, message: 'OK' }),
+          startedAt: new Date().toISOString(),
+          completedAt: new Date().toISOString(),
+          durationMs: 2000,
+          errors: [],
+        }),
+        normalizeLog: jest.fn(),
+      };
+
+      (evaluator as any).getAdapter = jest.fn().mockResolvedValue(mockAdapter);
+
+      await evaluator.evaluate(contextWithPrompt);
+
+      const executeCall = (mockAdapter.execute as jest.Mock).mock.calls[0][0];
+      const evaluationPrompt = executeCall.config.prompt;
+
+      // Should contain prompt text
+      expect(evaluationPrompt).toContain(promptText);
+      // Should still contain the criteria
+      expect(evaluationPrompt).toContain('Error handling completeness');
+      expect(evaluationPrompt).toContain('Test coverage adequacy');
+      expect(evaluationPrompt).toContain('Documentation quality');
+      // Prompt should appear before criteria
+      const promptIndex = evaluationPrompt.indexOf(promptText);
+      const criteriaIndex = evaluationPrompt.indexOf('Error handling completeness');
+      expect(promptIndex).toBeLessThan(criteriaIndex);
+    });
+
+    test('works without prompt (backward compatibility)', async () => {
+      const contextWithoutPrompt = {
+        ...mockContext,
+        config: {
+          ...mockContext.config,
+          type: 'copilot-cli',
+          // No prompt field
+        },
+      };
+
+      const mockAdapter: AgentAdapter = {
+        name: 'test-adapter',
+        version: '1.0.0',
+        checkAvailability: jest.fn().mockResolvedValue(true),
+        execute: jest.fn().mockResolvedValue({
+          exitCode: 0,
+          status: 'success',
+          output: JSON.stringify({ status: 'passed', metrics: {}, message: 'OK' }),
+          startedAt: new Date().toISOString(),
+          completedAt: new Date().toISOString(),
+          durationMs: 2000,
+          errors: [],
+        }),
+        normalizeLog: jest.fn(),
+      };
+
+      (evaluator as any).getAdapter = jest.fn().mockResolvedValue(mockAdapter);
+
+      await evaluator.evaluate(contextWithoutPrompt);
+
+      const executeCall = (mockAdapter.execute as jest.Mock).mock.calls[0][0];
+      const evaluationPrompt = executeCall.config.prompt;
+
+      // Should still contain criteria without prompt
+      expect(evaluationPrompt).toContain('Error handling completeness');
+      expect(evaluationPrompt).toContain('Test coverage adequacy');
+      expect(evaluationPrompt).toContain('Documentation quality');
+    });
   });
 
   describe('evaluate - Error Handling', () => {

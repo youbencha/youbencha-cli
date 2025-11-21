@@ -58,6 +58,7 @@ export const evaluatorDefinitionSchema = z.object({
    * - type: 'copilot-cli'
    * - agent_name: 'agentic-judge'
    * - timeout: number (optional)
+   * - prompt: string (optional) - Additional instructions prepended to assertions
    * - assertions: Record<string, string>
    * 
    * For git-diff evaluators, typically includes:

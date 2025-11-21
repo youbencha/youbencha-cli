@@ -1,0 +1,52 @@
+# Example Test Case: Using prompt with agentic-judge
+# 
+# This demonstrates how to use the prompt field in the agentic-judge
+# evaluator configuration to provide additional context or constraints for the evaluation.
+#
+# The prompt is prepended to the assertions in the evaluation prompt,
+# allowing you to guide the AI agent's evaluation behavior without modifying the
+# built-in template.
+
+# Test case metadata
+name: "Add README comment with custom evaluation instructions"
+description: "Tests the agent's ability to add a comment to README, with custom evaluation instructions to constrain AI behavior"
+
+# Repository configuration
+repo: https://github.com/octocat/Hello-World.git
+branch: master
+
+# Agent configuration
+agent:
+  type: copilot-cli
+  config:
+    prompt: "Add a comment to README explaining what this repository is about"
+
+# Evaluators
+evaluators:
+  - name: git-diff
+    config:
+      max_files_changed: 1
+      max_lines_added: 5
+
+  # agentic-judge: Uses AI to evaluate quality based on assertions
+  - name: agentic-judge
+    config:
+      type: copilot-cli
+      agent_name: agentic-judge  # Uses the built-in evaluation agent
+      
+      # Prompt is prepended to the assertions
+      # Use this to provide additional context, constraints, or guidance for the evaluation
+      prompt: "Do not ask for clarification or additional information. Use only the files in the repository to evaluate the criteria."
+      
+      # Define explicit pass/fail assertions (keys become metric names in the report)
+      assertions:
+        readme_was_modified: "The README.md file was modified. Score 1 if true, 0 if false."
+        message_is_friendly: "A friendly welcome message was added. Score 1 if friendly, 0.5 if neutral, 0 if absent or unfriendly."
+        no_errors: "No syntax errors or broken markdown. Score 1 if valid, 0 if broken."
+
+# Usage:
+# yb run -c examples/testcase-custom-instructions.yaml
+# yb report --from .youbencha-workspace/run-*/artifacts/results.json --format markdown
+#
+# The prompt field is optional. If omitted, only the assertions will be used.
+# The prompt will appear in the evaluation prompt before the assertions.

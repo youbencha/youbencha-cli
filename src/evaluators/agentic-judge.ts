@@ -14,9 +14,13 @@ import { EvaluationResult } from '../schemas/result.schema.js';
 import { AgentAdapter, AgentExecutionContext } from '../adapters/base.js';
 import { CopilotCLIAdapter } from '../adapters/copilot-cli.js';
 
-// Get __dirname equivalent in ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+/**
+ * Get the directory path for this module (ES module equivalent of __dirname)
+ */
+function getModuleDirname(): string {
+  const _filename = fileURLToPath(import.meta.url);
+  return dirname(_filename);
+}
 
 /**
  * Agent evaluation result from JSON output
@@ -232,9 +236,13 @@ export class AgenticJudgeEvaluator implements Evaluator {
   private buildEvaluationPrompt(context: EvaluationContext): string {
     const instructionsFile = context.config['instructions-file'] as string | undefined;
     const agentName = context.config['agent_name'] as string | undefined;
+    const prompt = context.config['prompt'] as string | undefined;
     
     // Get assertions (support both new and legacy names)
     const assertions = context.config.assertions || context.config.criteria;
+    
+    // Format assertions list
+    const assertionsList = this.formatAssertions(assertions);
     
     // Mode 1: Load instructions from specified file
     if (instructionsFile) {
@@ -245,26 +253,32 @@ export class AgenticJudgeEvaluator implements Evaluator {
       
       const template = readFileSync(filePath, 'utf-8');
       
-      // Format assertions list
-      const assertionsList = this.formatAssertions(assertions);
+      // Build combined content with prompt prepended to assertions
+      const combinedContent = prompt 
+        ? `${prompt}\n\n${assertionsList}`
+        : assertionsList;
       
       // Replace placeholders with actual values (support both ASSERTIONS and CRITERIA)
-      return template.replace('{{ASSERTIONS}}', assertionsList).replace('{{CRITERIA}}', assertionsList);
+      return template.replace('{{ASSERTIONS}}', combinedContent).replace('{{CRITERIA}}', combinedContent);
     }
     if (agentName) {
-      //agent has instructions, just send assertions
-      const assertionsList = this.formatAssertions(assertions);
-      return `Evaluation Assertions:\n${assertionsList}`;
+      // Agent has instructions, just send assertions with proper structure
+      if (prompt) {
+        return `${prompt}\n\n# Evaluation Assertions:\n${assertionsList}`;
+      }
+      return `# Evaluation Assertions:\n${assertionsList}`;
     }
     // Mode 2: Use default markdown template
-    const templatePath = join(__dirname, 'prompts', 'agentic-judge.template.md');
+    const templatePath = join(getModuleDirname(), 'prompts', 'agentic-judge.template.md');
     const template = readFileSync(templatePath, 'utf-8');
     
-    // Format assertions list
-    const assertionsList = this.formatAssertions(assertions);
+    // Build combined content with prompt prepended to assertions
+    const combinedContent = prompt 
+      ? `${prompt}\n\n${assertionsList}`
+      : assertionsList;
     
     // Replace placeholders with actual values (support both ASSERTIONS and CRITERIA)
-    return template.replace('{{ASSERTIONS}}', assertionsList).replace('{{CRITERIA}}', assertionsList);
+    return template.replace('{{ASSERTIONS}}', combinedContent).replace('{{CRITERIA}}', combinedContent);
   }
 
   /**
