@@ -1,5 +1,5 @@
 /**
- * Script Post-Evaluator
+ * Script Post-Evaluation
  * 
  * Executes a custom script with access to evaluation results.
  * Useful for custom analysis, integrations, or post-processing.
@@ -7,14 +7,14 @@
 
 import { spawn } from 'child_process';
 import * as path from 'path';
-import { PostEvaluator, PostEvaluationContext } from './base.js';
-import { PostEvaluationResult, ScriptConfig } from '../schemas/post-evaluator.schema.js';
+import { PostEvaluation, PostEvaluationContext } from './base.js';
+import { PostEvaluationResult, ScriptConfig } from '../schemas/post-evaluation.schema.js';
 import * as logger from '../lib/logger.js';
 
 /**
- * Script Post-Evaluator implementation
+ * Script Post-Evaluation implementation
  */
-export class ScriptPostEvaluator implements PostEvaluator {
+export class ScriptPostEvaluation implements PostEvaluation {
   readonly name = 'script';
   readonly description = 'Executes a custom script with access to evaluation results';
 

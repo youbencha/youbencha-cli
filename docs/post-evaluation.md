@@ -1,8 +1,8 @@
-# Post-Evaluators: Exporting and Analyzing youBencha Results
+# Post-Evaluation: Exporting and Analyzing youBencha Results
 
 ## Overview
 
-Post-evaluators are optional pipeline steps that run after evaluation completes, enabling you to:
+Post-evaluations are optional pipeline steps that run after evaluation completes, enabling you to:
 - Export results to external systems (databases, APIs, webhooks)
 - Run custom analysis scripts
 - Aggregate results across multiple test runs
@@ -129,21 +129,21 @@ post_evaluators:
 
 ## Design Principles
 
-1. **Optional and Non-Blocking**: Post-evaluators never fail the main evaluation
-2. **Isolated Execution**: Errors in one post-evaluator don't affect others
-3. **Immutable Results**: Post-evaluators receive read-only access to results
-4. **Parallel Execution**: Multiple post-evaluators run concurrently
+1. **Optional and Non-Blocking**: Post-evaluations never fail the main evaluation
+2. **Isolated Execution**: Errors in one post-evaluation don't affect others
+3. **Immutable Results**: Post-evaluations receive read-only access to results
+4. **Parallel Execution**: Multiple post-evaluations run concurrently
 5. **Secure by Default**: No credentials stored in configs, use environment variables
 
 ## Implementation Architecture
 
 ### Post-Evaluator Interface
 ```typescript
-interface PostEvaluator {
+interface PostEvaluation {
   readonly name: string;
   readonly description: string;
   
-  // Check if post-evaluator can run (API keys present, tools installed, etc.)
+  // Check if post-evaluation can run (API keys present, tools installed, etc.)
   checkPreconditions(context: PostEvaluationContext): Promise<boolean>;
   
   // Execute the post-evaluation action
@@ -158,19 +158,19 @@ interface PostEvaluationContext {
   resultsBundlePath: string;             // Path to results.json
   artifactsDir: string;                  // Path to artifacts directory
   workspaceDir: string;                  // Path to workspace root
-  config: Record<string, unknown>;       // Post-evaluator specific config
+  config: Record<string, unknown>;       // Post-evaluation specific config
 }
 ```
 
 ### Post-Evaluation Result
 ```typescript
 interface PostEvaluationResult {
-  post_evaluator: string;                // Name of post-evaluator
+  post_evaluator: string;                // Name of post-evaluation
   status: 'success' | 'failed' | 'skipped';
   message: string;                       // Human-readable result
   duration_ms: number;
   timestamp: string;
-  metadata: Record<string, unknown>;     // Post-evaluator specific data
+  metadata: Record<string, unknown>;     // Post-evaluation specific data
   error?: {
     message: string;
     stack_trace?: string;

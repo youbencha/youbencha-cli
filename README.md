@@ -373,7 +373,7 @@ npm test -- --coverage
 
 ## Post-Evaluators: Exporting and Analyzing Results
 
-Post-evaluators run after evaluation completes, enabling you to export results to external systems, run custom analysis, or trigger downstream workflows.
+Post-evaluations run after evaluation completes, enabling you to export results to external systems, run custom analysis, or trigger downstream workflows.
 
 ### Available Post-Evaluators
 
@@ -443,7 +443,7 @@ See `examples/scripts/` for ready-to-use scripts:
 
 ### Documentation
 
-- [Post-Evaluators Guide](docs/post-evaluators.md) - Complete reference
+- [Post-Evaluation Guide](docs/post-evaluation.md) - Complete reference
 - [Analyzing Results Guide](docs/analyzing-results.md) - Analysis patterns and best practices
 
 ### Project Structure
@@ -454,7 +454,7 @@ src/
   cli/           - CLI commands
   core/          - Core orchestration logic
   evaluators/    - Built-in evaluators
-  post-evaluators/ - Post-evaluation exporters
+  post-evaluations/ - Post-evaluation exporters
   lib/           - Utility libraries
   reporters/     - Report generators
   schemas/       - Zod schemas for validation

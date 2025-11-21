@@ -49,11 +49,11 @@ export {
 
 // Post-Evaluator schema and types
 export {
-  postEvaluatorConfigSchema,
+  postEvaluationConfigSchema,
   postEvaluationResultSchema,
-  type PostEvaluatorConfig,
+  type PostEvaluationConfig,
   type WebhookConfig,
   type DatabaseConfig,
   type ScriptConfig,
   type PostEvaluationResult,
-} from './post-evaluator.schema.js';
+} from './post-evaluation.schema.js';

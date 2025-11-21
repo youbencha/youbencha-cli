@@ -1,15 +1,15 @@
 /**
- * Base Post-Evaluator Interface
+ * Base Post-Evaluation Interface
  * 
- * Defines the contract that all post-evaluators must implement.
- * Post-evaluators run after evaluation completes to export or process results.
+ * Defines the contract that all post-evaluations must implement.
+ * Post-evaluations run after evaluation completes to export or process results.
  */
 
 import { ResultsBundle } from '../schemas/result.schema.js';
-import { PostEvaluationResult } from '../schemas/post-evaluator.schema.js';
+import { PostEvaluationResult } from '../schemas/post-evaluation.schema.js';
 
 /**
- * Context provided to post-evaluator for execution
+ * Context provided to post-evaluation for execution
  */
 export interface PostEvaluationContext {
   /** Complete evaluation results bundle */
@@ -24,19 +24,19 @@ export interface PostEvaluationContext {
   /** Path to workspace root directory */
   workspaceDir: string;
 
-  /** Post-evaluator specific configuration */
+  /** Post-evaluation specific configuration */
   config: Record<string, unknown>;
 }
 
 /**
  * Post-Evaluator interface for exporting/processing results
  * 
- * Each post-evaluator (webhook, database, script, etc.) implements
+ * Each post-evaluation (webhook, database, script, etc.) implements
  * this interface to enable pluggable post-evaluation actions.
  */
-export interface PostEvaluator {
+export interface PostEvaluation {
   /**
-   * Unique identifier for this post-evaluator
+   * Unique identifier for this post-evaluation
    * Example: 'webhook', 'database', 'script'
    */
   readonly name: string;
@@ -47,10 +47,10 @@ export interface PostEvaluator {
   readonly description: string;
 
   /**
-   * Check if post-evaluator can run in current environment
+   * Check if post-evaluation can run in current environment
    * Example: checking for API keys, required tools, network connectivity, etc.
    * 
-   * @returns Promise resolving to true if post-evaluator can run
+   * @returns Promise resolving to true if post-evaluation can run
    */
   checkPreconditions(context: PostEvaluationContext): Promise<boolean>;
 

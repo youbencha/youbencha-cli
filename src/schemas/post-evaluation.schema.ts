@@ -1,14 +1,14 @@
 /**
- * Post-Evaluator Schema
+ * Post-Evaluation Schema
  * 
- * Zod schemas for post-evaluator configuration and results.
- * Post-evaluators run after evaluation completes to export/process results.
+ * Zod schemas for post-evaluation configuration and results.
+ * Post-evaluations run after evaluation completes to export/process results.
  */
 
 import { z } from 'zod';
 
 /**
- * Webhook post-evaluator configuration schema
+ * Webhook post-evaluation configuration schema
  */
 const webhookConfigSchema = z.object({
   url: z.string().url(),
@@ -20,7 +20,7 @@ const webhookConfigSchema = z.object({
 });
 
 /**
- * Database post-evaluator configuration schema
+ * Database post-evaluation configuration schema
  */
 const databaseConfigSchema = z.object({
   type: z.enum(['json-file']), // MVP: only JSON file export
@@ -30,7 +30,7 @@ const databaseConfigSchema = z.object({
 });
 
 /**
- * Script post-evaluator configuration schema
+ * Script post-evaluation configuration schema
  */
 const scriptConfigSchema = z.object({
   command: z.string(),
@@ -41,10 +41,10 @@ const scriptConfigSchema = z.object({
 });
 
 /**
- * Post-evaluator configuration schema
+ * Post-evaluation configuration schema
  * Supports webhook, database, and script types
  */
-export const postEvaluatorConfigSchema = z.object({
+export const postEvaluationConfigSchema = z.object({
   name: z.enum(['webhook', 'database', 'script']),
   config: z.union([webhookConfigSchema, databaseConfigSchema, scriptConfigSchema]),
 });
@@ -68,7 +68,7 @@ export const postEvaluationResultSchema = z.object({
 /**
  * Inferred TypeScript types
  */
-export type PostEvaluatorConfig = z.infer<typeof postEvaluatorConfigSchema>;
+export type PostEvaluationConfig = z.infer<typeof postEvaluationConfigSchema>;
 export type WebhookConfig = z.infer<typeof webhookConfigSchema>;
 export type DatabaseConfig = z.infer<typeof databaseConfigSchema>;
 export type ScriptConfig = z.infer<typeof scriptConfigSchema>;

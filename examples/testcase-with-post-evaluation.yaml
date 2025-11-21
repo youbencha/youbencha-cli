@@ -25,7 +25,7 @@ evaluators:
         readme_was_modified: "The README.md file was modified. Score 1 if true, 0 if false."
         message_is_friendly: "A friendly welcome message was added. Score 1 if friendly, 0.5 if neutral, 0 if absent."
 
-# Post-evaluators - run after evaluation completes
+# Post-evaluations - run after evaluation completes
 post_evaluators:
   # Export to JSON Lines file for historical tracking
   - name: database

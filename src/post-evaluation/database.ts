@@ -1,5 +1,5 @@
 /**
- * Database Post-Evaluator
+ * Database Post-Evaluation
  * 
  * Exports evaluation results to a database or file.
  * MVP: Appends results to a JSON Lines (JSONL) file for time-series analysis.
@@ -7,15 +7,15 @@
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { PostEvaluator, PostEvaluationContext } from './base.js';
-import { PostEvaluationResult, DatabaseConfig } from '../schemas/post-evaluator.schema.js';
+import { PostEvaluation, PostEvaluationContext } from './base.js';
+import { PostEvaluationResult, DatabaseConfig } from '../schemas/post-evaluation.schema.js';
 import { ResultsBundle } from '../schemas/result.schema.js';
 import * as logger from '../lib/logger.js';
 
 /**
- * Database Post-Evaluator implementation
+ * Database Post-Evaluation implementation
  */
-export class DatabasePostEvaluator implements PostEvaluator {
+export class DatabasePostEvaluation implements PostEvaluation {
   readonly name = 'database';
   readonly description = 'Exports evaluation results to a database or file';
 

@@ -1,5 +1,5 @@
 /**
- * Webhook Post-Evaluator
+ * Webhook Post-Evaluation
  * 
  * Posts evaluation results to an HTTP endpoint.
  * Useful for integrating with external systems, notifications, or dashboards.
@@ -8,17 +8,17 @@
 import * as https from 'https';
 import * as http from 'http';
 import { URL } from 'url';
-import { PostEvaluator, PostEvaluationContext } from './base.js';
-import { PostEvaluationResult, WebhookConfig } from '../schemas/post-evaluator.schema.js';
+import { PostEvaluation, PostEvaluationContext } from './base.js';
+import { PostEvaluationResult, WebhookConfig } from '../schemas/post-evaluation.schema.js';
 import * as logger from '../lib/logger.js';
 
 // User-Agent version - update this when releasing new versions
 const YOUBENCHA_VERSION = '0.1.0';
 
 /**
- * Webhook Post-Evaluator implementation
+ * Webhook Post-Evaluation implementation
  */
-export class WebhookPostEvaluator implements PostEvaluator {
+export class WebhookPostEvaluation implements PostEvaluation {
   readonly name = 'webhook';
   readonly description = 'Posts evaluation results to an HTTP webhook endpoint';
 

@@ -1,8 +1,8 @@
-# Post-Evaluators Feature Implementation Summary
+# Post-Evaluation Feature Implementation Summary
 
 ## Overview
 
-This document summarizes the post-evaluators feature implementation, providing context for future maintainers and contributors.
+This document summarizes the post-evaluations feature implementation, providing context for future maintainers and contributors.
 
 ## Problem Statement
 
@@ -15,21 +15,21 @@ The original problem statement requested:
 
 ### Core Design Principles
 
-1. **Non-Blocking Execution**: Post-evaluators never fail the main evaluation
-2. **Parallel Execution**: Multiple post-evaluators run concurrently via `Promise.allSettled()`
-3. **Pluggable Architecture**: New post-evaluators can be added without modifying core code
-4. **Configuration-Driven**: Post-evaluators configured in test case YAML
-5. **Isolated Failures**: Errors in one post-evaluator don't affect others
+1. **Non-Blocking Execution**: Post-evaluations never fail the main evaluation
+2. **Parallel Execution**: Multiple post-evaluations run concurrently via `Promise.allSettled()`
+3. **Pluggable Architecture**: New post-evaluations can be added without modifying core code
+4. **Configuration-Driven**: Post-evaluations configured in test case YAML
+5. **Isolated Failures**: Errors in one post-evaluation don't affect others
 
 ### Implementation Components
 
-#### 1. Schema Layer (`src/schemas/post-evaluator.schema.ts`)
+#### 1. Schema Layer (`src/schemas/post-evaluation.schema.ts`)
 - Zod schemas for webhook, database, and script configurations
 - Type-safe configuration validation
-- Extensible union type for future post-evaluator types
+- Extensible union type for future post-evaluation types
 
-#### 2. Base Interface (`src/post-evaluators/base.ts`)
-- `PostEvaluator` interface defining the contract
+#### 2. Base Interface (`src/post-evaluations/base.ts`)
+- `PostEvaluation` interface defining the contract
 - `PostEvaluationContext` providing access to results and workspace
 - `PostEvaluationResult` standardizing output format
 
@@ -40,8 +40,8 @@ The original problem statement requested:
 
 #### 4. Orchestrator Integration (`src/core/orchestrator.ts`)
 - Step 7 in evaluation pipeline (after saving results bundle)
-- `runPostEvaluators()` method for parallel execution
-- `getPostEvaluator()` factory method for instantiation
+- `runPostEvaluations()` method for parallel execution
+- `getPostEvaluation()` factory method for instantiation
 
 ### Configuration Examples
 
@@ -136,8 +136,8 @@ post_evaluators:
 
 ## Testing
 
-### Unit Tests (`tests/unit/post-evaluators.test.ts`)
-- 16 tests covering all three post-evaluators
+### Unit Tests (`tests/unit/post-evaluations.test.ts`)
+- 16 tests covering all three post-evaluations
 - Mock fixtures for ResultsBundle
 - File system and HTTP interaction tests
 - Error handling and edge cases
@@ -200,17 +200,17 @@ All scripts use `jq` for JSON processing and include usage documentation.
 
 ### Extension Points
 
-Adding a new post-evaluator requires:
+Adding a new post-evaluation requires:
 
-1. Create class implementing `PostEvaluator` interface
-2. Add to `getPostEvaluator()` switch in orchestrator
-3. Add schema to `post-evaluator.schema.ts` if new config type
+1. Create class implementing `PostEvaluation` interface
+2. Add to `getPostEvaluation()` switch in orchestrator
+3. Add schema to `post-evaluation.schema.ts` if new config type
 4. Write unit tests following existing patterns
-5. Document in `docs/post-evaluators.md`
+5. Document in `docs/post-evaluation.md`
 
 ## Related Documentation
 
-- [Post-Evaluators Guide](./post-evaluators.md) - User-facing documentation
+- [Post-Evaluation Guide](./post-evaluation.md) - User-facing documentation
 - [Analyzing Results Guide](./analyzing-results.md) - Analysis patterns and examples
 - [Example Scripts README](../examples/scripts/README.md) - Script usage documentation
 
@@ -220,11 +220,11 @@ Adding a new post-evaluator requires:
 - Update `YOUBENCHA_VERSION` constant in `webhook.ts` when releasing
 
 ### Schema Changes
-- Post-evaluator configs are validated via Zod
+- Post-evaluation configs are validated via Zod
 - Breaking changes require version bump and migration guide
 
 ### Testing
-- Run `npm test -- post-evaluators` to test all post-evaluators
+- Run `npm test -- post-evaluations` to test all post-evaluations
 - Integration tests in CI validate real webhook/file operations
 
 ## Implementation Metrics

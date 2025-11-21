@@ -180,7 +180,7 @@ jq -n '[
 
 ### Exporting Results Over Time
 
-Use the database post-evaluator to append results to a JSONL file:
+Use the database post-evaluation to append results to a JSONL file:
 
 ```yaml
 post_evaluators:
@@ -336,7 +336,7 @@ post_evaluators:
       retry_on_failure: true
 ```
 
-**Custom webhook payload transformations** (use script post-evaluator):
+**Custom webhook payload transformations** (use script post-evaluation):
 
 ```yaml
 post_evaluators:
@@ -488,4 +488,4 @@ youBencha results provide value at every scale:
 - **Suites**: Cross-comparison and capability assessment
 - **Time-series**: Regression detection and trend analysis
 
-By leveraging post-evaluators to export results to databases, webhooks, or custom scripts, you can build a comprehensive evaluation and monitoring system for your AI agents.
+By leveraging post-evaluations to export results to databases, webhooks, or custom scripts, you can build a comprehensive evaluation and monitoring system for your AI agents.

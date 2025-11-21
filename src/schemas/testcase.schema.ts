@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { postEvaluatorConfigSchema } from './post-evaluator.schema.js';
+import { postEvaluationConfigSchema } from './post-evaluation.schema.js';
 
 /**
  * Agent configuration schema
@@ -125,8 +125,8 @@ export const testCaseConfigSchema = z
       .array(evaluatorConfigSchema)
       .min(1, 'At least one evaluator is required'),
 
-    // Post-evaluators configuration (optional)
-    post_evaluators: z.array(postEvaluatorConfigSchema).optional(),
+    // Post-evaluations configuration (optional)
+    post_evaluators: z.array(postEvaluationConfigSchema).optional(),
 
     // Execution configuration (optional)
     workspace_dir: z.string().optional(),

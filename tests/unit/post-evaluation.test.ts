@@ -1,13 +1,13 @@
 /**
- * Post-Evaluators Unit Tests
+ * Post-Evaluation Unit Tests
  * 
- * Tests for webhook, database, and script post-evaluators.
+ * Tests for webhook, database, and script post-evaluations.
  */
 
-import { WebhookPostEvaluator } from '../../src/post-evaluators/webhook';
-import { DatabasePostEvaluator } from '../../src/post-evaluators/database';
-import { ScriptPostEvaluator } from '../../src/post-evaluators/script';
-import { PostEvaluationContext } from '../../src/post-evaluators/base';
+import { WebhookPostEvaluation } from '../../src/post-evaluation/webhook';
+import { DatabasePostEvaluation } from '../../src/post-evaluation/database';
+import { ScriptPostEvaluation } from '../../src/post-evaluation/script';
+import { PostEvaluationContext } from '../../src/post-evaluation/base';
 import { ResultsBundle } from '../../src/schemas/result.schema';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -61,12 +61,12 @@ function createMockResultsBundle(): ResultsBundle {
   };
 }
 
-describe('WebhookPostEvaluator', () => {
-  let evaluator: WebhookPostEvaluator;
+describe('WebhookPostEvaluation', () => {
+  let evaluator: WebhookPostEvaluation;
   let mockContext: PostEvaluationContext;
 
   beforeEach(() => {
-    evaluator = new WebhookPostEvaluator();
+    evaluator = new WebhookPostEvaluation();
     
     const mockBundle = createMockResultsBundle();
 
@@ -121,14 +121,14 @@ describe('WebhookPostEvaluator', () => {
   });
 });
 
-describe('DatabasePostEvaluator', () => {
-  let evaluator: DatabasePostEvaluator;
+describe('DatabasePostEvaluation', () => {
+  let evaluator: DatabasePostEvaluation;
   let mockContext: PostEvaluationContext;
   let tempDir: string;
   let outputPath: string;
 
   beforeEach(async () => {
-    evaluator = new DatabasePostEvaluator();
+    evaluator = new DatabasePostEvaluation();
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'youbencha-test-'));
     outputPath = path.join(tempDir, 'results.jsonl');
     
@@ -204,12 +204,12 @@ describe('DatabasePostEvaluator', () => {
   });
 });
 
-describe('ScriptPostEvaluator', () => {
-  let evaluator: ScriptPostEvaluator;
+describe('ScriptPostEvaluation', () => {
+  let evaluator: ScriptPostEvaluation;
   let mockContext: PostEvaluationContext;
 
   beforeEach(() => {
-    evaluator = new ScriptPostEvaluator();
+    evaluator = new ScriptPostEvaluation();
     
     const mockBundle = createMockResultsBundle();
 

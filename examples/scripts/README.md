@@ -104,5 +104,5 @@ These scripts are templates - feel free to modify them for your needs:
 ## More Examples
 
 See the main documentation for more analysis patterns:
-- [Post-Evaluators Guide](../../docs/post-evaluators.md)
+- [Post-Evaluation Guide](../../docs/post-evaluation.md)
 - [Analyzing Results Guide](../../docs/analyzing-results.md)
