@@ -9,6 +9,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { PostEvaluator, PostEvaluationContext } from './base.js';
 import { PostEvaluationResult, DatabaseConfig } from '../schemas/post-evaluator.schema.js';
+import { ResultsBundle } from '../schemas/result.schema.js';
 import * as logger from '../lib/logger.js';
 
 /**
@@ -109,7 +110,7 @@ export class DatabasePostEvaluator implements PostEvaluator {
   /**
    * Extract summary from results bundle
    */
-  private extractSummary(bundle: any): any {
+  private extractSummary(bundle: ResultsBundle): Partial<ResultsBundle> {
     return {
       version: bundle.version,
       test_case: {
@@ -118,23 +119,32 @@ export class DatabasePostEvaluator implements PostEvaluator {
         repo: bundle.test_case.repo,
         branch: bundle.test_case.branch,
         commit: bundle.test_case.commit,
+        config_file: bundle.test_case.config_file,
+        config_hash: bundle.test_case.config_hash,
       },
       execution: {
         started_at: bundle.execution.started_at,
         completed_at: bundle.execution.completed_at,
         duration_ms: bundle.execution.duration_ms,
         youbencha_version: bundle.execution.youbencha_version,
+        environment: bundle.execution.environment,
       },
       agent: {
         type: bundle.agent.type,
+        youbencha_log_path: bundle.agent.youbencha_log_path,
         status: bundle.agent.status,
+        exit_code: bundle.agent.exit_code,
       },
       summary: bundle.summary,
-      evaluators: bundle.evaluators.map((e: any) => ({
+      evaluators: bundle.evaluators.map((e) => ({
         evaluator: e.evaluator,
         status: e.status,
         metrics: e.metrics,
+        message: e.message,
+        duration_ms: e.duration_ms,
+        timestamp: e.timestamp,
       })),
+      artifacts: bundle.artifacts,
     };
   }
 }

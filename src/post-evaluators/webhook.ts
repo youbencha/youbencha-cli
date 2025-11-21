@@ -12,6 +12,9 @@ import { PostEvaluator, PostEvaluationContext } from './base.js';
 import { PostEvaluationResult, WebhookConfig } from '../schemas/post-evaluator.schema.js';
 import * as logger from '../lib/logger.js';
 
+// User-Agent version - update this when releasing new versions
+const YOUBENCHA_VERSION = '0.1.0';
+
 /**
  * Webhook Post-Evaluator implementation
  */
@@ -134,7 +137,7 @@ export class WebhookPostEvaluator implements PostEvaluator {
         headers: {
           'Content-Type': 'application/json',
           'Content-Length': Buffer.byteLength(postData),
-          'User-Agent': 'youBencha/1.0',
+          'User-Agent': `youBencha/${YOUBENCHA_VERSION}`,
           ...(config.headers || {}),
         },
         timeout: config.timeout_ms || 5000,

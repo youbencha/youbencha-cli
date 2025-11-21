@@ -142,6 +142,9 @@ export class ScriptPostEvaluator implements PostEvaluator {
 
   /**
    * Run script with timeout
+   * 
+   * Note: Uses shell: true to support shell features like pipes and redirects.
+   * Only use with trusted commands from configuration files.
    */
   private runScript(
     command: string,
@@ -155,6 +158,8 @@ export class ScriptPostEvaluator implements PostEvaluator {
       let stderr = '';
       let timedOut = false;
 
+      // Security note: shell: true is used to support shell features
+      // Commands come from trusted config files, not user input
       const child = spawn(command, args, {
         cwd: path.resolve(cwd),
         env,

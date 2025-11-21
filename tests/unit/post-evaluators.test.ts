@@ -13,6 +13,54 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
 
+/**
+ * Create a mock ResultsBundle for testing
+ */
+function createMockResultsBundle(): ResultsBundle {
+  return {
+    version: '1.0.0',
+    test_case: {
+      name: 'test',
+      description: 'test case',
+      config_file: 'test.yaml',
+      config_hash: 'abc123',
+      repo: 'https://github.com/test/test.git',
+      branch: 'main',
+      commit: 'abc123',
+    },
+    execution: {
+      started_at: '2025-01-01T00:00:00Z',
+      completed_at: '2025-01-01T00:05:00Z',
+      duration_ms: 300000,
+      youbencha_version: '1.0.0',
+      environment: {
+        os: 'Linux',
+        node_version: '20.0.0',
+        workspace_dir: '/tmp/workspace',
+      },
+    },
+    agent: {
+      type: 'copilot-cli',
+      youbencha_log_path: 'youbencha.log.json',
+      status: 'success',
+      exit_code: 0,
+    },
+    evaluators: [],
+    summary: {
+      total_evaluators: 0,
+      passed: 0,
+      failed: 0,
+      skipped: 0,
+      overall_status: 'passed',
+    },
+    artifacts: {
+      agent_log: 'youbencha.log.json',
+      reports: [],
+      evaluator_artifacts: [],
+    },
+  };
+}
+
 describe('WebhookPostEvaluator', () => {
   let evaluator: WebhookPostEvaluator;
   let mockContext: PostEvaluationContext;
@@ -20,49 +68,7 @@ describe('WebhookPostEvaluator', () => {
   beforeEach(() => {
     evaluator = new WebhookPostEvaluator();
     
-    // Create mock results bundle
-    const mockBundle: ResultsBundle = {
-      version: '1.0.0',
-      test_case: {
-        name: 'test',
-        description: 'test case',
-        config_file: 'test.yaml',
-        config_hash: 'abc123',
-        repo: 'https://github.com/test/test.git',
-        branch: 'main',
-        commit: 'abc123',
-      },
-      execution: {
-        started_at: '2025-01-01T00:00:00Z',
-        completed_at: '2025-01-01T00:05:00Z',
-        duration_ms: 300000,
-        youbencha_version: '1.0.0',
-        environment: {
-          os: 'Linux',
-          node_version: '20.0.0',
-          workspace_dir: '/tmp/workspace',
-        },
-      },
-      agent: {
-        type: 'copilot-cli',
-        youbencha_log_path: 'youbencha.log.json',
-        status: 'success',
-        exit_code: 0,
-      },
-      evaluators: [],
-      summary: {
-        total_evaluators: 0,
-        passed: 0,
-        failed: 0,
-        skipped: 0,
-        overall_status: 'passed',
-      },
-      artifacts: {
-        agent_log: 'youbencha.log.json',
-        reports: [],
-        evaluator_artifacts: [],
-      },
-    };
+    const mockBundle = createMockResultsBundle();
 
     mockContext = {
       resultsBundle: mockBundle,
@@ -126,48 +132,7 @@ describe('DatabasePostEvaluator', () => {
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'youbencha-test-'));
     outputPath = path.join(tempDir, 'results.jsonl');
     
-    const mockBundle: ResultsBundle = {
-      version: '1.0.0',
-      test_case: {
-        name: 'test',
-        description: 'test case',
-        config_file: 'test.yaml',
-        config_hash: 'abc123',
-        repo: 'https://github.com/test/test.git',
-        branch: 'main',
-        commit: 'abc123',
-      },
-      execution: {
-        started_at: '2025-01-01T00:00:00Z',
-        completed_at: '2025-01-01T00:05:00Z',
-        duration_ms: 300000,
-        youbencha_version: '1.0.0',
-        environment: {
-          os: 'Linux',
-          node_version: '20.0.0',
-          workspace_dir: '/tmp/workspace',
-        },
-      },
-      agent: {
-        type: 'copilot-cli',
-        youbencha_log_path: 'youbencha.log.json',
-        status: 'success',
-        exit_code: 0,
-      },
-      evaluators: [],
-      summary: {
-        total_evaluators: 0,
-        passed: 0,
-        failed: 0,
-        skipped: 0,
-        overall_status: 'passed',
-      },
-      artifacts: {
-        agent_log: 'youbencha.log.json',
-        reports: [],
-        evaluator_artifacts: [],
-      },
-    };
+    const mockBundle = createMockResultsBundle();
 
     mockContext = {
       resultsBundle: mockBundle,
@@ -246,48 +211,7 @@ describe('ScriptPostEvaluator', () => {
   beforeEach(() => {
     evaluator = new ScriptPostEvaluator();
     
-    const mockBundle: ResultsBundle = {
-      version: '1.0.0',
-      test_case: {
-        name: 'test',
-        description: 'test case',
-        config_file: 'test.yaml',
-        config_hash: 'abc123',
-        repo: 'https://github.com/test/test.git',
-        branch: 'main',
-        commit: 'abc123',
-      },
-      execution: {
-        started_at: '2025-01-01T00:00:00Z',
-        completed_at: '2025-01-01T00:05:00Z',
-        duration_ms: 300000,
-        youbencha_version: '1.0.0',
-        environment: {
-          os: 'Linux',
-          node_version: '20.0.0',
-          workspace_dir: '/tmp/workspace',
-        },
-      },
-      agent: {
-        type: 'copilot-cli',
-        youbencha_log_path: 'youbencha.log.json',
-        status: 'success',
-        exit_code: 0,
-      },
-      evaluators: [],
-      summary: {
-        total_evaluators: 0,
-        passed: 0,
-        failed: 0,
-        skipped: 0,
-        overall_status: 'passed',
-      },
-      artifacts: {
-        agent_log: 'youbencha.log.json',
-        reports: [],
-        evaluator_artifacts: [],
-      },
-    };
+    const mockBundle = createMockResultsBundle();
 
     mockContext = {
       resultsBundle: mockBundle,
