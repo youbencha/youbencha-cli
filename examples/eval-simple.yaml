@@ -1,0 +1,36 @@
+# Eval-only Configuration Example
+# Use this when you've already run an agent manually and just want to evaluate the changes
+
+# Eval metadata
+name: "Evaluate existing code changes"
+description: "Run evaluations on code that has already been modified"
+
+# Directory configuration
+directory: "."  # Directory containing code to evaluate (defaults to current directory)
+
+# Optional: Expected reference directory for comparison
+# expected_directory: "/path/to/expected/code"
+
+# Evaluators - run checks and generate assertions about the code
+evaluators:
+  # git-diff: Measures the scope of changes (files changed, lines added/removed)
+  - name: git-diff
+    config:
+      assertions:
+        max_files_changed: 10
+        max_lines_added: 500
+  
+  # agentic-judge: Uses AI to evaluate quality based on assertions
+  - name: agentic-judge
+    config:
+      type: copilot-cli
+      agent_name: agentic-judge
+      assertions:
+        code_quality: "Code follows best practices and is well-structured. Score 1 if excellent, 0.5 if acceptable, 0 if poor."
+        no_errors: "No syntax errors or build failures. Score 1 if valid, 0 if broken."
+
+# Optional: Output directory for results (defaults to .youbencha-eval in current directory)
+# output_dir: ".youbencha-eval"
+
+# Optional: Timeout in milliseconds (default: 300000 = 5 minutes)
+# timeout: 300000

@@ -13,6 +13,7 @@ import { dirname, join } from 'path';
 
 // Import commands
 import { runCommand } from './commands/run.js';
+import { evalCommand } from './commands/eval.js';
 import { reportCommand } from './commands/report.js';
 import { registerSuggestSuiteCommand } from './commands/suggest-suite.js';
 import { listCommand } from './commands/list.js';
@@ -75,6 +76,23 @@ Examples:
   See examples/testcase-simple.yaml or examples/testcase-simple.json for working configurations.
     `)
     .action(runCommand);
+
+  program
+    .command('eval')
+    .description('Run evaluations on an existing directory (without running an agent)')
+    .requiredOption('-c, --config <path>', 'Path to eval configuration file (YAML or JSON)')
+    .option('-d, --directory <path>', 'Directory to evaluate (overrides config file, defaults to current directory)')
+    .option('-e, --expected-directory <path>', 'Expected reference directory for comparison (overrides config file)')
+    .addHelpText('after', `
+Examples:
+  $ ${commandName} eval -c eval.yaml                              # Evaluate current directory
+  $ ${commandName} eval -c eval.yaml -d /path/to/code             # Evaluate specific directory
+  $ ${commandName} eval -c eval.yaml -e /path/to/expected         # With expected reference
+  
+  Use this when you've already run an agent manually and just want to run evaluations.
+  The eval config is simpler than a full test case - no agent or repository configuration needed.
+    `)
+    .action(evalCommand);
 
   program
     .command('report')
