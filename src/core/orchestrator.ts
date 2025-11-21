@@ -10,6 +10,7 @@ import { createHash } from 'crypto';
 import { TestCaseConfig } from '../schemas/testcase.schema.js';
 import { ResultsBundle, EvaluationResult } from '../schemas/result.schema.js';
 import { PostEvaluationResult } from '../schemas/post-evaluation.schema.js';
+import { PreExecutionResult } from '../schemas/pre-execution.schema.js';
 import { YouBenchaLog } from '../schemas/youbenchalog.schema.js';
 import { WorkspaceManager, Workspace, WorkspaceConfig } from './workspace.js';
 import { detectEnvironment } from './env.js';
@@ -20,6 +21,8 @@ import { Evaluator, EvaluationContext } from '../evaluators/base.js';
 import { GitDiffEvaluator } from '../evaluators/git-diff.js';
 import { ExpectedDiffEvaluator } from '../evaluators/expected-diff.js';
 import { AgenticJudgeEvaluator } from '../evaluators/agentic-judge.js';
+import { PreExecution, PreExecutionContext } from '../pre-execution/base.js';
+import { ScriptPreExecution } from '../pre-execution/script.js';
 import { PostEvaluation, PostEvaluationContext } from '../post-evaluation/base.js';
 import { WebhookPostEvaluation } from '../post-evaluation/webhook.js';
 import { DatabasePostEvaluation } from '../post-evaluation/database.js';
@@ -104,21 +107,40 @@ export class Orchestrator {
       workspace = await this.setupWorkspace(resolvedTestCaseConfig);
       logger.info(`Workspace created: ${workspace.runId}`);
 
-      // 2. Execute agent
+      // 2. Run pre-execution hooks (if configured)
+      if (resolvedTestCaseConfig.pre_execution && resolvedTestCaseConfig.pre_execution.length > 0) {
+        logger.info(`Running ${resolvedTestCaseConfig.pre_execution.length} pre-execution hook(s)...`);
+        const preExecutionResults = await this.runPreExecutions(
+          resolvedTestCaseConfig,
+          workspace
+        );
+        
+        // Check if any pre-execution failed
+        const failedPreExecutions = preExecutionResults.filter(r => r.status === 'failed');
+        if (failedPreExecutions.length > 0) {
+          const errorMsg = `Pre-execution failed: ${failedPreExecutions.map(r => r.message).join(', ')}`;
+          logger.error(errorMsg);
+          throw new Error(errorMsg);
+        }
+        
+        logger.info('Pre-execution completed successfully');
+      }
+
+      // 3. Execute agent
       const { agentLog, agentExecution } = await this.executeAgent(
         resolvedTestCaseConfig,
         workspace
       );
       logger.info(`Agent execution completed: ${agentExecution.status}`);
 
-      // 3. Save youBencha log
+      // 4. Save youBencha log
       const agentLogPath = await saveYouBenchaLog(
         agentLog,
         workspace.paths.artifactsDir
       );
       logger.info(`youBencha log saved: ${agentLogPath}`);
 
-      // 4. Run evaluators
+      // 5. Run evaluators
       const evaluatorResults = await this.runEvaluators(
         resolvedTestCaseConfig,
         workspace,
@@ -126,7 +148,7 @@ export class Orchestrator {
       );
       logger.info(`Evaluators completed: ${evaluatorResults.length} results`);
 
-      // 5. Build results bundle
+      // 6. Build results bundle
       const resultsBundle = await this.buildResultsBundle(
         resolvedTestCaseConfig,
         configFile,
@@ -137,14 +159,14 @@ export class Orchestrator {
         startedAt
       );
 
-      // 6. Save results bundle
+      // 7. Save results bundle
       const resultsBundlePath = await saveResultsBundle(
         resultsBundle,
         workspace.paths.artifactsDir
       );
       logger.info(`Results bundle saved: ${resultsBundlePath}`);
 
-      // 7. Run post-evaluations (if configured)
+      // 8. Run post-evaluations (if configured)
       if (resolvedTestCaseConfig.post_evaluation && resolvedTestCaseConfig.post_evaluation.length > 0) {
         logger.info(`Running ${resolvedTestCaseConfig.post_evaluation.length} post-evaluation(s)...`);
         const postEvaluationResults = await this.runPostEvaluations(
@@ -195,6 +217,102 @@ export class Orchestrator {
     const workspace = await this.workspaceManager.createWorkspace(workspaceConfig);
 
     return workspace;
+  }
+
+  /**
+   * Run pre-execution hooks in sequence
+   * Pre-executions run after workspace setup but before agent execution
+   */
+  private async runPreExecutions(
+    testCaseConfig: ResolvedTestCaseConfig,
+    workspace: Workspace
+  ): Promise<PreExecutionResult[]> {
+    if (!testCaseConfig.pre_execution || testCaseConfig.pre_execution.length === 0) {
+      return [];
+    }
+
+    logger.info('Running pre-executions...');
+
+    const results: PreExecutionResult[] = [];
+
+    // Run pre-executions in sequence (not parallel) to maintain order
+    for (const config of testCaseConfig.pre_execution) {
+      const startTime = Date.now();
+      
+      try {
+        const preExecution = this.getPreExecution(config.name);
+        if (!preExecution) {
+          const result: PreExecutionResult = {
+            pre_executor: config.name,
+            status: 'skipped',
+            message: `Unknown pre-execution: ${config.name}`,
+            duration_ms: 0,
+            timestamp: new Date().toISOString(),
+            error: {
+              message: `Pre-execution '${config.name}' not found`,
+            },
+          };
+          results.push(result);
+          logger.warn(result.message);
+          continue;
+        }
+
+        // Build pre-execution context
+        const context: PreExecutionContext = {
+          workspaceDir: workspace.paths.modifiedDir,
+          repoDir: workspace.paths.modifiedDir,
+          artifactsDir: workspace.paths.artifactsDir,
+          testCaseName: testCaseConfig.name,
+          repoUrl: testCaseConfig.repo,
+          branch: testCaseConfig.branch || workspace.branch,
+          config: config.config || {},
+        };
+
+        // Check preconditions
+        const canRun = await preExecution.checkPreconditions(context);
+        if (!canRun) {
+          const result: PreExecutionResult = {
+            pre_executor: config.name,
+            status: 'skipped',
+            message: 'Pre-execution preconditions not met',
+            duration_ms: Date.now() - startTime,
+            timestamp: new Date().toISOString(),
+          };
+          results.push(result);
+          logger.warn(`Pre-execution ${config.name} skipped: preconditions not met`);
+          continue;
+        }
+
+        // Execute pre-execution
+        const result = await preExecution.execute(context);
+        results.push(result);
+        
+        if (result.status === 'success') {
+          logger.info(`Pre-execution ${config.name} completed successfully`);
+        } else if (result.status === 'failed') {
+          logger.error(`Pre-execution ${config.name} failed: ${result.message}`);
+        } else {
+          logger.warn(`Pre-execution ${config.name} skipped: ${result.message}`);
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const result: PreExecutionResult = {
+          pre_executor: config.name,
+          status: 'failed',
+          message: `Pre-execution error: ${errorMessage}`,
+          duration_ms: Date.now() - startTime,
+          timestamp: new Date().toISOString(),
+          error: {
+            message: errorMessage,
+            stack_trace: error instanceof Error ? error.stack : undefined,
+          },
+        };
+        results.push(result);
+        logger.error(`Pre-execution ${config.name} threw error: ${errorMessage}`);
+      }
+    }
+
+    return results;
   }
 
   /**
@@ -509,6 +627,18 @@ export class Orchestrator {
         if (evaluatorName.startsWith('agentic-judge-') || evaluatorName.startsWith('agentic-judge:')) {
           return new AgenticJudgeEvaluator(evaluatorName);
         }
+        return null;
+    }
+  }
+
+  /**
+   * Get pre-execution instance
+   */
+  private getPreExecution(name: string): PreExecution | null {
+    switch (name) {
+      case 'script':
+        return new ScriptPreExecution();
+      default:
         return null;
     }
   }

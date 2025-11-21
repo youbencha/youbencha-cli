@@ -1,0 +1,62 @@
+# youBencha Test Case with Advanced Pre-Execution
+# Demonstrates real-world use cases for pre-execution hooks
+
+name: "Add authentication middleware with environment setup"
+description: "Tests agent's ability to add authentication while using pre-execution to inject API keys and configuration"
+
+# Repository configuration
+repo: https://github.com/octocat/Hello-World.git
+branch: master
+
+# Pre-execution hooks - run BEFORE agent execution
+# Use cases:
+# 1. Environment variable injection (API keys, configs)
+# 2. Code preprocessing (search/replace tokens)
+# 3. Code generation (generate types, interfaces)
+# 4. Setup scripts (database initialization, mock data)
+# 5. File manipulation (copy config files, create directories)
+pre_execution:
+  # Inject environment variables and create config files
+  - name: script
+    config:
+      command: bash
+      args:
+        - "-c"
+        - |
+          echo "Injecting environment configuration..."
+          mkdir -p ${WORKSPACE_DIR}/config
+          cat > ${WORKSPACE_DIR}/config/auth.json << 'JSON'
+          {
+            "jwtSecret": "test-secret-key-12345",
+            "tokenExpiry": "1h",
+            "issuer": "youbencha-test"
+          }
+          JSON
+          echo "Configuration files created successfully"
+      env:
+        NODE_ENV: "test"
+      timeout_ms: 10000
+
+# Agent configuration
+agent:
+  type: copilot-cli
+  config:
+    prompt: |
+      Add JWT authentication middleware that:
+      1. Reads the JWT secret from config/auth.json
+      2. Validates incoming JWT tokens
+      3. Returns 401 for invalid tokens
+      4. Adds user info to the request object
+
+# Evaluators
+evaluators:
+  - name: git-diff
+  - name: agentic-judge
+    config:
+      type: copilot-cli
+      agent_name: agentic-judge
+      assertions:
+        middleware_created: "Authentication middleware was created. Score 1 if present, 0 if not."
+        reads_config: "The middleware reads from config/auth.json. Score 1 if yes, 0 if no."
+        validates_tokens: "The middleware validates JWT tokens. Score 1 if yes, 0.5 if partial, 0 if no."
+        handles_errors: "The middleware properly handles errors and returns 401. Score 1 if yes, 0 if no."

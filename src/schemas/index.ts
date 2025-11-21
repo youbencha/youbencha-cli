@@ -57,3 +57,11 @@ export {
   type ScriptConfig,
   type PostEvaluationResult,
 } from './post-evaluation.schema.js';
+
+// Pre-Execution schema and types
+export {
+  preExecutionConfigSchema,
+  preExecutionResultSchema,
+  type PreExecutionConfig,
+  type PreExecutionResult,
+} from './pre-execution.schema.js';
