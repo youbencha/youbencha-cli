@@ -16,7 +16,7 @@ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
 
 **Integration with youBencha:**
 ```yaml
-post_evaluators:
+post_evaluation:
   - name: script
     config:
       command: ./examples/scripts/notify-slack.sh

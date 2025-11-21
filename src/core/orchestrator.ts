@@ -145,8 +145,8 @@ export class Orchestrator {
       logger.info(`Results bundle saved: ${resultsBundlePath}`);
 
       // 7. Run post-evaluations (if configured)
-      if (resolvedTestCaseConfig.post_evaluators && resolvedTestCaseConfig.post_evaluators.length > 0) {
-        logger.info(`Running ${resolvedTestCaseConfig.post_evaluators.length} post-evaluation(s)...`);
+      if (resolvedTestCaseConfig.post_evaluation && resolvedTestCaseConfig.post_evaluation.length > 0) {
+        logger.info(`Running ${resolvedTestCaseConfig.post_evaluation.length} post-evaluation(s)...`);
         const postEvaluationResults = await this.runPostEvaluations(
           resolvedTestCaseConfig,
           resultsBundle,
@@ -539,14 +539,14 @@ export class Orchestrator {
     resultsBundlePath: string,
     workspace: Workspace
   ): Promise<PostEvaluationResult[]> {
-    if (!testCaseConfig.post_evaluators || testCaseConfig.post_evaluators.length === 0) {
+    if (!testCaseConfig.post_evaluation || testCaseConfig.post_evaluation.length === 0) {
       return [];
     }
 
     logger.info('Running post-evaluations...');
 
     // Run all post-evaluations in parallel using Promise.allSettled
-    const postEvaluationPromises = testCaseConfig.post_evaluators.map(async (config) => {
+    const postEvaluationPromises = testCaseConfig.post_evaluation.map(async (config) => {
       const startTime = Date.now();
       
       try {
@@ -624,7 +624,7 @@ export class Orchestrator {
         return result.value;
       } else {
         // Should not happen since we catch all errors above, but handle it anyway
-        const config = testCaseConfig.post_evaluators![index];
+        const config = testCaseConfig.post_evaluation![index];
         logger.error(`Post-evaluation ${config.name} promise rejected:`, result.reason);
         return {
           post_evaluator: config.name,

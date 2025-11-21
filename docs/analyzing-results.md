@@ -183,7 +183,7 @@ jq -n '[
 Use the database post-evaluation to append results to a JSONL file:
 
 ```yaml
-post_evaluators:
+post_evaluation:
   - name: database
     config:
       type: json-file
@@ -326,7 +326,7 @@ jq -s '
 Post results to Slack/Teams/Discord on completion:
 
 ```yaml
-post_evaluators:
+post_evaluation:
   - name: webhook
     config:
       url: ${SLACK_WEBHOOK_URL}
@@ -339,7 +339,7 @@ post_evaluators:
 **Custom webhook payload transformations** (use script post-evaluation):
 
 ```yaml
-post_evaluators:
+post_evaluation:
   - name: script
     config:
       command: ./scripts/notify-slack.sh
@@ -375,7 +375,7 @@ For production-grade time-series analysis, export to a proper database:
 
 ```yaml
 # Future: direct database export
-post_evaluators:
+post_evaluation:
   - name: script
     config:
       command: python3

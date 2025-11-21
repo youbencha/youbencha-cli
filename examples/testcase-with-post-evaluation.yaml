@@ -26,7 +26,7 @@ evaluators:
         message_is_friendly: "A friendly welcome message was added. Score 1 if friendly, 0.5 if neutral, 0 if absent."
 
 # Post-evaluations - run after evaluation completes
-post_evaluators:
+post_evaluation:
   # Export to JSON Lines file for historical tracking
   - name: database
     config:

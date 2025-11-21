@@ -47,7 +47,7 @@ The original problem statement requested:
 
 #### Export to JSONL for Historical Tracking
 ```yaml
-post_evaluators:
+post_evaluation:
   - name: database
     config:
       type: json-file
@@ -58,7 +58,7 @@ post_evaluators:
 
 #### Post to Webhook
 ```yaml
-post_evaluators:
+post_evaluation:
   - name: webhook
     config:
       url: ${SLACK_WEBHOOK_URL}
@@ -69,7 +69,7 @@ post_evaluators:
 
 #### Run Custom Script
 ```yaml
-post_evaluators:
+post_evaluation:
   - name: script
     config:
       command: ./scripts/notify-slack.sh
@@ -127,7 +127,7 @@ jq -s 'map(.summary.overall_status == "passed") | ...' results/*.json
 **Integration Pattern**:
 ```yaml
 # Append results to time-series file
-post_evaluators:
+post_evaluation:
   - name: database
     config:
       output_path: ./history/results.jsonl

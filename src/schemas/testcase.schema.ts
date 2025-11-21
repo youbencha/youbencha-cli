@@ -126,7 +126,7 @@ export const testCaseConfigSchema = z
       .min(1, 'At least one evaluator is required'),
 
     // Post-evaluations configuration (optional)
-    post_evaluators: z.array(postEvaluationConfigSchema).optional(),
+    post_evaluation: z.array(postEvaluationConfigSchema).optional(),
 
     // Execution configuration (optional)
     workspace_dir: z.string().optional(),

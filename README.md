@@ -380,7 +380,7 @@ Post-evaluations run after evaluation completes, enabling you to export results 
 **1. Database Export** - Append results to JSONL file for time-series analysis
 
 ```yaml
-post_evaluators:
+post_evaluation:
   - name: database
     config:
       type: json-file
@@ -392,7 +392,7 @@ post_evaluators:
 **2. Webhook** - POST results to HTTP endpoint
 
 ```yaml
-post_evaluators:
+post_evaluation:
   - name: webhook
     config:
       url: ${SLACK_WEBHOOK_URL}
@@ -406,7 +406,7 @@ post_evaluators:
 **3. Custom Script** - Execute custom analysis or integration
 
 ```yaml
-post_evaluators:
+post_evaluation:
   - name: script
     config:
       command: ./scripts/notify-slack.sh

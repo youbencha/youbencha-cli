@@ -62,7 +62,7 @@ Posts results to an HTTP endpoint for real-time processing.
 
 **Configuration:**
 ```yaml
-post_evaluators:
+post_evaluation:
   - name: webhook
     config:
       url: https://api.example.com/youbencha/results
@@ -86,7 +86,7 @@ Stores results in a structured database for historical analysis.
 
 **Configuration:**
 ```yaml
-post_evaluators:
+post_evaluation:
   - name: database
     config:
       type: json-file  # MVP: append to JSON file
@@ -112,7 +112,7 @@ Runs user-provided scripts with access to results.
 
 **Configuration:**
 ```yaml
-post_evaluators:
+post_evaluation:
   - name: script
     config:
       command: ./scripts/analyze-results.sh
