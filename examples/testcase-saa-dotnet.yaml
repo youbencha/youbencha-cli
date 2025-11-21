@@ -31,4 +31,4 @@ evaluators:
         verbose_error_messages_middleware: "The 'security-report.json' file must contain a vulnerability related to Verbose Error Messages (CWE-209) and reference file /api/vulnerable/* (middleware). Score 1 if found, 0 if not."
         hardcoded_credentials_config: "The 'security-report.json' file must contain a vulnerability related to Hard-coded Credentials (CWE-798) and reference Program.cs configuration. Score 1 if found, 0 if not."
         insufficient_logging_endpoints: "The 'security-report.json' file must contain a vulnerability related to Insufficient Logging (CWE-778) and reference /api/vulnerable/* endpoints. Score 1 if found, 0 if not."
-        lack_of_rate_limiting: "The 'security-report.json' file must contain a vulnerability related to Lack of Rate Limiting (CWE-770) affecting all endpoints. Score 1 if found, 0 if not."
+        lack_of_rate_limiting: "The 'security-report.json' file must contain a vulnerability related to Lack of Rate Limiting affecting all endpoints. Score 1 if found, 0 if not."
