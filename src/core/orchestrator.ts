@@ -347,9 +347,13 @@ export class Orchestrator {
     }
 
     // Resolve prompt from either inline prompt or prompt file
-    const promptFromConfig = testCaseConfig.agent.config?.prompt as string | undefined;
-    const promptFileFromConfig = testCaseConfig.agent.config?.prompt_file as string | undefined;
-    const resolvedPrompt = resolvePromptValue(promptFromConfig, promptFileFromConfig, configFileDir);
+    const promptFromConfig = testCaseConfig.agent.config?.prompt;
+    const promptFileFromConfig = testCaseConfig.agent.config?.prompt_file;
+    const resolvedPrompt = resolvePromptValue(
+      typeof promptFromConfig === 'string' ? promptFromConfig : undefined,
+      typeof promptFileFromConfig === 'string' ? promptFileFromConfig : undefined,
+      configFileDir
+    );
 
     // Display agent context before execution
     if (resolvedPrompt) {
@@ -460,11 +464,15 @@ export class Orchestrator {
         // Resolve prompt_file in evaluator config if present
         const evaluatorConfigWithResolvedPrompt = { ...evaluatorConfig.config };
         if (evaluatorConfigWithResolvedPrompt) {
-          const promptFromConfig = evaluatorConfigWithResolvedPrompt.prompt as string | undefined;
-          const promptFileFromConfig = evaluatorConfigWithResolvedPrompt.prompt_file as string | undefined;
+          const promptFromConfig = evaluatorConfigWithResolvedPrompt.prompt;
+          const promptFileFromConfig = evaluatorConfigWithResolvedPrompt.prompt_file;
           
           if (promptFileFromConfig || promptFromConfig) {
-            const resolvedPrompt = resolvePromptValue(promptFromConfig, promptFileFromConfig, configFileDir);
+            const resolvedPrompt = resolvePromptValue(
+              typeof promptFromConfig === 'string' ? promptFromConfig : undefined,
+              typeof promptFileFromConfig === 'string' ? promptFileFromConfig : undefined,
+              configFileDir
+            );
             // Update config with resolved prompt, removing prompt_file
             evaluatorConfigWithResolvedPrompt.prompt = resolvedPrompt;
             delete evaluatorConfigWithResolvedPrompt.prompt_file;

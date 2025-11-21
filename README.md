@@ -115,6 +115,8 @@ evaluators:
 
 > **💡 Tip**: Both formats support the same features and are validated using the same schema. Choose the format that best fits your workflow or existing tooling.
 
+> **📁 Prompt Files**: Instead of inline prompts, you can load them from external files using `prompt_file: ./path/to/prompt.md`. See the [Prompt Files Guide](docs/prompt-files.md) for details.
+
 ### 3. Run the evaluation
 
 ```bash
@@ -486,8 +488,12 @@ See `examples/scripts/` for ready-to-use scripts:
 
 ### Documentation
 
-- [Post-Evaluation Guide](docs/post-evaluation.md) - Complete reference
+- [Getting Started Guide](GETTING-STARTED.md) - Comprehensive walkthrough for new users
+- [Post-Evaluation Guide](docs/post-evaluation.md) - Complete reference for post-evaluation hooks
 - [Analyzing Results Guide](docs/analyzing-results.md) - Analysis patterns and best practices
+- [Prompt Files Guide](docs/prompt-files.md) - Loading prompts from external files
+- [Reusable Evaluators Guide](docs/reusable-evaluators.md) - Sharing evaluator configurations
+- [Multiple Agentic Judges Guide](docs/multiple-agentic-judges.md) - Using multiple focused evaluators
 
 ### Project Structure
 
