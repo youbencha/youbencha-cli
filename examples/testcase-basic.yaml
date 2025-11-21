@@ -66,6 +66,10 @@ evaluators:
       # If neither agent nor instructions-file is specified, uses the default
       # template from src/evaluators/prompts/agentic-judge.template.md
       
+      # Optional: Add custom instructions that are prepended to the assertions
+      # Use this to provide additional context or constraints for evaluation
+      # custom_instructions: "Do not ask for clarification. Use only the files in the repository."
+      
       # Assertion keys become metric names in output (use snake_case for consistency)
       # Each assertion should be explicit and evaluable as pass/fail
       assertions:

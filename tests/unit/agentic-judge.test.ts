@@ -228,6 +228,92 @@ describe('AgenticJudgeEvaluator', () => {
       expect(prompt).toContain('Test coverage adequacy');
       expect(prompt).toContain('Documentation quality');
     });
+
+    test('includes custom_instructions in evaluation prompt', async () => {
+      const customInstructions = 'Do not ask for clarification or additional information. Use only the files in the repository to evaluate the criteria.';
+      
+      const contextWithCustomInstructions = {
+        ...mockContext,
+        config: {
+          ...mockContext.config,
+          type: 'copilot-cli',
+          custom_instructions: customInstructions,
+        },
+      };
+
+      const mockAdapter: AgentAdapter = {
+        name: 'test-adapter',
+        version: '1.0.0',
+        checkAvailability: jest.fn().mockResolvedValue(true),
+        execute: jest.fn().mockResolvedValue({
+          exitCode: 0,
+          status: 'success',
+          output: JSON.stringify({ status: 'passed', metrics: {}, message: 'OK' }),
+          startedAt: new Date().toISOString(),
+          completedAt: new Date().toISOString(),
+          durationMs: 2000,
+          errors: [],
+        }),
+        normalizeLog: jest.fn(),
+      };
+
+      (evaluator as any).getAdapter = jest.fn().mockResolvedValue(mockAdapter);
+
+      await evaluator.evaluate(contextWithCustomInstructions);
+
+      const executeCall = (mockAdapter.execute as jest.Mock).mock.calls[0][0];
+      const prompt = executeCall.config.prompt;
+
+      // Should contain custom instructions
+      expect(prompt).toContain(customInstructions);
+      // Should still contain the criteria
+      expect(prompt).toContain('Error handling completeness');
+      expect(prompt).toContain('Test coverage adequacy');
+      expect(prompt).toContain('Documentation quality');
+      // Custom instructions should appear before criteria
+      const customInstructionsIndex = prompt.indexOf(customInstructions);
+      const criteriaIndex = prompt.indexOf('Error handling completeness');
+      expect(customInstructionsIndex).toBeLessThan(criteriaIndex);
+    });
+
+    test('works without custom_instructions (backward compatibility)', async () => {
+      const contextWithoutCustomInstructions = {
+        ...mockContext,
+        config: {
+          ...mockContext.config,
+          type: 'copilot-cli',
+          // No custom_instructions field
+        },
+      };
+
+      const mockAdapter: AgentAdapter = {
+        name: 'test-adapter',
+        version: '1.0.0',
+        checkAvailability: jest.fn().mockResolvedValue(true),
+        execute: jest.fn().mockResolvedValue({
+          exitCode: 0,
+          status: 'success',
+          output: JSON.stringify({ status: 'passed', metrics: {}, message: 'OK' }),
+          startedAt: new Date().toISOString(),
+          completedAt: new Date().toISOString(),
+          durationMs: 2000,
+          errors: [],
+        }),
+        normalizeLog: jest.fn(),
+      };
+
+      (evaluator as any).getAdapter = jest.fn().mockResolvedValue(mockAdapter);
+
+      await evaluator.evaluate(contextWithoutCustomInstructions);
+
+      const executeCall = (mockAdapter.execute as jest.Mock).mock.calls[0][0];
+      const prompt = executeCall.config.prompt;
+
+      // Should still contain criteria without custom instructions
+      expect(prompt).toContain('Error handling completeness');
+      expect(prompt).toContain('Test coverage adequacy');
+      expect(prompt).toContain('Documentation quality');
+    });
   });
 
   describe('evaluate - Error Handling', () => {
