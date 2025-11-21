@@ -244,11 +244,6 @@ export class AgenticJudgeEvaluator implements Evaluator {
     // Format assertions list
     const assertionsList = this.formatAssertions(assertions);
     
-    // Build combined content with prompt prepended to assertions
-    const combinedContent = prompt 
-      ? `${prompt}\n\n${assertionsList}`
-      : assertionsList;
-    
     // Mode 1: Load instructions from specified file
     if (instructionsFile) {
       // Support both absolute and relative paths
@@ -258,16 +253,29 @@ export class AgenticJudgeEvaluator implements Evaluator {
       
       const template = readFileSync(filePath, 'utf-8');
       
+      // Build combined content with prompt prepended to assertions
+      const combinedContent = prompt 
+        ? `${prompt}\n\n${assertionsList}`
+        : assertionsList;
+      
       // Replace placeholders with actual values (support both ASSERTIONS and CRITERIA)
       return template.replace('{{ASSERTIONS}}', combinedContent).replace('{{CRITERIA}}', combinedContent);
     }
     if (agentName) {
-      // Agent has instructions, just send assertions
-      return `Evaluation Assertions:\n${combinedContent}`;
+      // Agent has instructions, just send assertions with proper structure
+      if (prompt) {
+        return `${prompt}\n\nEvaluation Assertions:\n${assertionsList}`;
+      }
+      return `Evaluation Assertions:\n${assertionsList}`;
     }
     // Mode 2: Use default markdown template
     const templatePath = join(getModuleDirname(), 'prompts', 'agentic-judge.template.md');
     const template = readFileSync(templatePath, 'utf-8');
+    
+    // Build combined content with prompt prepended to assertions
+    const combinedContent = prompt 
+      ? `${prompt}\n\n${assertionsList}`
+      : assertionsList;
     
     // Replace placeholders with actual values (support both ASSERTIONS and CRITERIA)
     return template.replace('{{ASSERTIONS}}', combinedContent).replace('{{CRITERIA}}', combinedContent);
