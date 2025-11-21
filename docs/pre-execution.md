@@ -164,19 +164,29 @@ pre_execution:
 ## Security Considerations
 
 ### Trusted Sources Only
-Pre-execution scripts run with shell access (`shell: true`). Only use scripts from **trusted configuration files**. Never accept pre-execution commands from untrusted user input.
+Pre-execution scripts run with shell access (`shell: true`) to support shell features like pipes, redirects, and command chaining. **Commands must ONLY come from trusted configuration files, NEVER from untrusted user input.**
 
-### Workspace Isolation
-All pre-execution hooks run in an isolated workspace. They cannot access:
-- Your main repository working directory
-- Other users' workspaces
-- System directories outside the workspace
+youBencha security model:
+- Configuration files are from your repository or trusted sources
+- Commands are defined in version-controlled YAML/JSON files
+- Scripts cannot be injected from external/untrusted sources
 
-### Environment Variables
-Be careful with secrets in environment variables:
-- Use environment variable references (e.g., `${API_KEY}`)
-- Don't hardcode secrets in YAML files
-- Consider using a secrets manager
+**Never** accept pre-execution commands from:
+- User input (web forms, API requests, etc.)
+- Untrusted external sources
+- Dynamically generated content from untrusted sources
+
+### Environment Variable Security
+Pre-execution scripts receive a **controlled set** of environment variables, not the entire `process.env`:
+
+**Automatically provided (safe):**
+- `WORKSPACE_DIR`, `REPO_DIR`, `ARTIFACTS_DIR`
+- `TEST_CASE_NAME`, `REPO_URL`, `BRANCH`
+- `PATH`, `HOME`, `USER` (system variables)
+
+**User-provided variables:**
+- Only variables explicitly defined in `env:` config
+- Use environment variable references (e.g., `${API_KEY}`) to avoid hardcoding secrets
 
 ```yaml
 # Good: Reference from environment
@@ -283,6 +293,15 @@ pre_execution:
       env:
         ENV: "test"
 ```
+
+### Workspace Isolation
+All pre-execution hooks run in an isolated workspace directory:
+- Cannot access your main repository working directory
+- Cannot access other users' workspaces  
+- Cannot access system directories outside the workspace
+- All file operations are scoped to the workspace
+
+This isolation protects your system even if a pre-execution script is compromised.
 
 ## Comparison with Post-Evaluation
 

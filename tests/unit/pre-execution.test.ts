@@ -243,4 +243,58 @@ describe('ScriptPreExecution', () => {
       expect(stats.isDirectory()).toBe(true);
     });
   });
+
+  describe('security', () => {
+    it('should not expose all process.env variables', async () => {
+      // Set a sensitive environment variable that should NOT be passed to script
+      process.env.SENSITIVE_SECRET = 'should-not-be-exposed';
+      
+      mockContext.config = {
+        command: 'printenv',
+        args: [],
+        timeout_ms: 5000,
+      };
+
+      const result = await executor.execute(mockContext);
+      expect(result.status).toBe('success');
+      
+      // Verify sensitive variable is NOT in output
+      expect(result.metadata?.stdout).not.toContain('SENSITIVE_SECRET');
+      expect(result.metadata?.stdout).not.toContain('should-not-be-exposed');
+      
+      // Clean up
+      delete process.env.SENSITIVE_SECRET;
+    });
+
+    it('should only pass safe environment variables', async () => {
+      mockContext.config = {
+        command: 'printenv',
+        args: [],
+        timeout_ms: 5000,
+      };
+
+      const result = await executor.execute(mockContext);
+      expect(result.status).toBe('success');
+      
+      // Verify safe variables ARE present
+      expect(result.metadata?.stdout).toContain('WORKSPACE_DIR');
+      expect(result.metadata?.stdout).toContain('TEST_CASE_NAME');
+      expect(result.metadata?.stdout).toContain('PATH');
+    });
+
+    it('should allow user-provided env variables from config', async () => {
+      mockContext.config = {
+        command: 'printenv',
+        args: ['CUSTOM_VAR'],
+        env: {
+          CUSTOM_VAR: 'custom-value',
+        },
+        timeout_ms: 5000,
+      };
+
+      const result = await executor.execute(mockContext);
+      expect(result.status).toBe('success');
+      expect(result.metadata?.stdout).toContain('custom-value');
+    });
+  });
 });

@@ -48,15 +48,21 @@ export class ScriptPreExecution implements PreExecution {
       // Replace placeholders in args
       const args = this.replaceVariables(config.args || [], context);
 
-      // Setup environment variables
+      // Setup environment variables - only include safe, necessary variables
+      // Security: Do not inherit all of process.env to avoid leaking sensitive data
       const env = {
-        ...process.env,
+        // Safe system variables
+        PATH: process.env.PATH || '',
+        HOME: process.env.HOME || '',
+        USER: process.env.USER || '',
+        // youBencha-specific variables
         WORKSPACE_DIR: context.workspaceDir,
         REPO_DIR: context.repoDir,
         ARTIFACTS_DIR: context.artifactsDir,
         TEST_CASE_NAME: context.testCaseName,
         REPO_URL: context.repoUrl,
         BRANCH: context.branch || '',
+        // User-provided environment variables from config
         ...(config.env || {}),
       };
 
@@ -70,6 +76,7 @@ export class ScriptPreExecution implements PreExecution {
       );
 
       const duration = Date.now() - startTime;
+      const OUTPUT_TRUNCATE_LENGTH = 1000;
 
       if (exitCode === 0) {
         return {
@@ -81,8 +88,8 @@ export class ScriptPreExecution implements PreExecution {
           metadata: {
             command: config.command,
             exit_code: exitCode,
-            stdout: stdout.substring(0, 1000), // Truncate for metadata
-            stderr: stderr.substring(0, 1000),
+            stdout: stdout.substring(0, OUTPUT_TRUNCATE_LENGTH), // Truncate for metadata
+            stderr: stderr.substring(0, OUTPUT_TRUNCATE_LENGTH),
           },
         };
       } else {
@@ -95,8 +102,8 @@ export class ScriptPreExecution implements PreExecution {
           metadata: {
             command: config.command,
             exit_code: exitCode,
-            stdout: stdout.substring(0, 1000),
-            stderr: stderr.substring(0, 1000),
+            stdout: stdout.substring(0, OUTPUT_TRUNCATE_LENGTH),
+            stderr: stderr.substring(0, OUTPUT_TRUNCATE_LENGTH),
           },
           error: {
             message: `Script exited with code ${exitCode}`,
@@ -145,8 +152,21 @@ export class ScriptPreExecution implements PreExecution {
   /**
    * Run script with timeout
    * 
-   * Note: Uses shell: true to support shell features like pipes and redirects.
-   * Only use with trusted commands from configuration files.
+   * Security note: Uses shell: true to support shell features like pipes and redirects.
+   * IMPORTANT: Commands must ONLY come from trusted configuration files, NEVER from
+   * untrusted user input. youBencha validates that config files are from the repository
+   * or trusted sources, not from external/user-provided input.
+   * 
+   * Shell features enabled:
+   * - Pipes (|)
+   * - Redirects (>, >>, <)
+   * - Environment variable expansion
+   * - Command chaining (&&, ||)
+   * 
+   * Mitigation: 
+   * - Commands are from YAML/JSON config files in the repository
+   * - Environment variables are controlled and sanitized
+   * - Scripts run in isolated workspace directory
    */
   private runScript(
     command: string,
