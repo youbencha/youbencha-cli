@@ -1,0 +1,34 @@
+# Test case metadata
+name: "Software Security Analyst on .NET Vulnerable"
+description: "Tests the software-security-analyst agent's ability to analyze a .NET vulnerable codebase for security issues"
+
+repo: https://github.com/vangjv/dotnetvulnerable.git
+branch: vulnerable
+
+agent:
+  type: copilot-cli
+  agent_name: software-security-analyst  # Agent name to use from .github/agents/
+  config:
+    prompt: "Conduct a software security analysis of the codebase"
+
+evaluators:
+  - name: git-diff
+
+  # agentic-judge: Uses AI to evaluate quality based on assertions
+  - name: agentic-judge
+    config:
+      type: copilot-cli
+      agent_name: agentic-judge  # Uses the built-in evaluation agent
+      
+      # Define explicit pass/fail assertions (keys become metric names in the report)
+      assertions:
+        sql_injection_products_search: "The 'security-report.json' file must contain a vulnerability related to SQL Injection and reference file /api/vulnerable/products/search. Score 1 if found, 0 if not."
+        sql_injection_customers_search: "The 'security-report.json' file must contain a vulnerability related to SQL Injection and reference file /api/vulnerable/admin/customers/search. Score 1 if found, 0 if not."
+        broken_access_control_orders: "The 'security-report.json' file must contain a vulnerability related to Broken Access Control (CWE-639) and reference file /api/vulnerable/orders/{id}. Score 1 if found, 0 if not."
+        price_manipulation_orders_post: "The 'security-report.json' file must contain a vulnerability related to Price Manipulation (CWE-840) and reference file /api/vulnerable/orders (POST). Score 1 if found, 0 if not."
+        mass_assignment_customers_profile: "The 'security-report.json' file must contain a vulnerability related to Mass Assignment (CWE-915) and reference file /api/vulnerable/customers/profile (PUT). Score 1 if found, 0 if not."
+        token_in_url_customers_login: "The 'security-report.json' file must contain a vulnerability related to Token in URL (CWE-598) and reference file /api/vulnerable/customers/login (GET). Score 1 if found, 0 if not."
+        verbose_error_messages_middleware: "The 'security-report.json' file must contain a vulnerability related to Verbose Error Messages (CWE-209) and reference file /api/vulnerable/* (middleware). Score 1 if found, 0 if not."
+        hardcoded_credentials_config: "The 'security-report.json' file must contain a vulnerability related to Hard-coded Credentials (CWE-798) and reference Program.cs configuration. Score 1 if found, 0 if not."
+        insufficient_logging_endpoints: "The 'security-report.json' file must contain a vulnerability related to Insufficient Logging (CWE-778) and reference /api/vulnerable/* endpoints. Score 1 if found, 0 if not."
+        lack_of_rate_limiting: "The 'security-report.json' file must contain a vulnerability related to Lack of Rate Limiting (CWE-770) affecting all endpoints. Score 1 if found, 0 if not."
