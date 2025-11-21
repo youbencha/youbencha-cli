@@ -8,14 +8,14 @@ You are already in the correct working directory containing the code to evaluate
 
 **Important**: Use relative paths (e.g., `./README`, `./src/file.ts`) or current directory (`.`) when accessing files. Do NOT use absolute paths.
 
-## Evaluation Criteria
+## Evaluation Assertions
 
 {{CRITERIA}}
 
 ## Your Task - Follow These Steps
-**Step 1:** Review the provided Evaluation Criteria
-**Step 2:** Use the tools you have available to get the diff of files needed to be reviewed based on the evaluation criteria
-**Step 3:** Evaluate the changes against each criterion listed above  
+**Step 1:** Review the provided Evaluation Assertions
+**Step 2:** Use the tools you have available to get the diff of files needed to be reviewed based on the evaluation assertions
+**Step 3:** Evaluate the changes against each assertion listed above
 **Step 4:** Output your evaluation as a JSON code block using the EXACT format shown below
 
 **CRITICAL**: Your FINAL output MUST be ONLY the JSON code block in the exact format below. Do NOT create files. Do NOT add extra wrapper objects. Do NOT add extra fields.
@@ -28,11 +28,12 @@ Your final response MUST include a JSON code block with this EXACT structure:
 {
   "status": "passed",
   "metrics": {
-    "readme_modified": 1, //where readme_modified is a criteria name given
+    "readme_modified": 1, //where readme_modified is an assertion name given
     "helpful_comment_added": 1,
     "grammatically_correct": 0.8
   },
   "message": "Summary of findings with specific evidence"
+}
 }
 ```
 
@@ -53,17 +54,17 @@ Your final response MUST include a JSON code block with this EXACT structure:
 ### JSON Field Requirements
 
 - **status**: MUST be "passed" or "failed" (string)
-  - "passed" if all criteria are met
-  - "failed" if any criterion is not met
-- **metrics**: MUST be an object mapping criterion keys to numeric scores
-  - Use the exact criterion keys from the "Evaluation Criteria" section above
-  - Values: 1 = criterion met, 0 = not met, 0-1 for partial scores
+  - "passed" if all assertions are met
+  - "failed" if any assertion is not met
+- **metrics**: MUST be an object mapping assertion keys to numeric scores
+  - Use the exact assertion keys from the "Evaluation Assertions" section above
+  - Values: 1 = assertion met, 0 = not met, 0-1 for partial scores
 - **message**: MUST be a string with a summary and specific examples from the code
 
 ### Critical Requirements
 
 1. **Use the exact JSON structure shown above** - do not add extra fields like "evaluation", "repository", etc.
-2. **Use criterion keys exactly as shown** in the Evaluation Criteria section
+2. **Use assertion keys exactly as shown** in the Evaluation Assertions section
 3. **End with the JSON code block** - this is how the system extracts your evaluation
 4. **DO NOT output any other JSON structure** - only the format shown above will work
 

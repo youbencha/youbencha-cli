@@ -2,7 +2,7 @@
  * Agentic Judge Evaluator
  * 
  * Uses a full agentic coding agent (via AgentAdapter) to evaluate code quality.
- * The agent executes with tools and iterative reasoning to assess evaluation criteria.
+ * The agent executes with tools and iterative reasoning to assess evaluation assertions.
  * NOT a single LLM API call - uses full agentic workflow.
  */
 

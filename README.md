@@ -79,7 +79,7 @@ evaluators:
     config:
       type: copilot-cli
       agent_name: agentic-judge
-      criteria:
+      assertions:
         readme_modified: "README.md was modified. Score 1 if true, 0 if false."
         helpful_comment_added: "A helpful comment was added to README.md. Score 1 if true, 0 if false."
 ```
@@ -103,7 +103,7 @@ evaluators:
       "config": {
         "type": "copilot-cli",
         "agent_name": "agentic-judge",
-        "criteria": {
+        "assertions": {
           "readme_modified": "README.md was modified. Score 1 if true, 0 if false.",
           "helpful_comment_added": "A helpful comment was added to README.md. Score 1 if true, 0 if false."
         }

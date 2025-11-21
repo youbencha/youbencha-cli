@@ -41,21 +41,21 @@ evaluators:
   #   config:
   #     threshold: 0.85  # 85% similarity required to pass
   
-  # Uses AI to evaluate quality based on your criteria
+  # Uses AI to evaluate quality based on your assertions
   - name: agentic-judge
     config:
       type: copilot-cli
       agent_name: agentic-judge
       
-      # Define success criteria (keys become metric names)
-      criteria:
+      # Define success assertions (keys become metric names)
+      assertions:
         readme_modified: "The README.md file was modified. Score 1 if true, 0 if false."
         message_is_friendly: "A friendly welcome message was added. Score 1 if friendly and clear, 0.5 if present but unclear, 0 if absent."
         no_markdown_errors: "The markdown is valid with no syntax errors. Score 1 if valid, 0 if broken."
 
 # Next steps:
 # 1. Update the repo and prompt for your use case
-# 2. Customize the evaluation criteria
+# 2. Customize the evaluation assertions
 # 3. Run: yb run -c suite.yaml
 # 4. View results: yb report --from .youbencha-workspace/run-*/artifacts/results.json
 `;
@@ -122,7 +122,7 @@ export async function initCommand(options: InitCommandOptions): Promise<void> {
     logger.info('');
     logger.info('📝 Next Steps:');
     logger.info('   1. Edit suite.yaml to match your use case');
-    logger.info('   2. Update the repo, prompt, and evaluation criteria');
+    logger.info('   2. Update the repo, prompt, and evaluation assertions');
     logger.info('   3. Run: yb run -c suite.yaml');
     logger.info('   4. View results: yb report --from .youbencha-workspace/run-*/artifacts/results.json');
     logger.info('');
