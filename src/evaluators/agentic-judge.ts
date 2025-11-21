@@ -236,7 +236,7 @@ export class AgenticJudgeEvaluator implements Evaluator {
   private buildEvaluationPrompt(context: EvaluationContext): string {
     const instructionsFile = context.config['instructions-file'] as string | undefined;
     const agentName = context.config['agent_name'] as string | undefined;
-    const customInstructions = context.config['custom_instructions'] as string | undefined;
+    const prompt = context.config['prompt'] as string | undefined;
     
     // Get assertions (support both new and legacy names)
     const assertions = context.config.assertions || context.config.criteria;
@@ -244,9 +244,9 @@ export class AgenticJudgeEvaluator implements Evaluator {
     // Format assertions list
     const assertionsList = this.formatAssertions(assertions);
     
-    // Build combined content with custom instructions prepended to assertions
-    const combinedContent = customInstructions 
-      ? `${customInstructions}\n\n${assertionsList}`
+    // Build combined content with prompt prepended to assertions
+    const combinedContent = prompt 
+      ? `${prompt}\n\n${assertionsList}`
       : assertionsList;
     
     // Mode 1: Load instructions from specified file
