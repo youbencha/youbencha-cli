@@ -25,7 +25,7 @@ evaluators:
     config:
       type: copilot-cli
       agent_name: agentic-judge  # Uses the built-in evaluation agent
-      
+      custom_instructions: "Do not ask for clarification or additional information. Use only the files in the repository to evaluate the criteria."
       # Define explicit pass/fail assertions (keys become metric names in the report)
       assertions:
         readme_was_modified: "The README.md file was modified. Score 1 if true, 0 if false."
