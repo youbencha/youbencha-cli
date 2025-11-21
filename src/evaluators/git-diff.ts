@@ -92,6 +92,14 @@ export class GitDiffEvaluator implements Evaluator {
       // Get base commit (default to HEAD)
       const baseCommit = config.base_commit || 'HEAD';
       
+      // Check for untracked files and stage all changes to ensure git diff captures everything
+      // This is necessary because agents may create new files without staging them
+      const gitStatus = await git.status();
+      if (gitStatus.not_added.length > 0 || gitStatus.modified.length > 0 || gitStatus.created.length > 0) {
+        // Stage all changes including new files
+        await git.add('.');
+      }
+      
       // Get diff summary
       const diffSummary = await git.diffSummary([baseCommit]);
       
