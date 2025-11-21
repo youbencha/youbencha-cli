@@ -324,7 +324,7 @@ Example report section:
 
 ### git-diff
 
-Analyzes Git changes made by the agent with assertion-based pass/fail criteria.
+Analyzes Git changes made by the agent with assertion-based pass/fail thresholds.
 
 **Metrics:** files_changed, lines_added, lines_removed, total_changes, change_entropy
 

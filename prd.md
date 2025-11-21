@@ -101,7 +101,7 @@ Needs:
 | `yb regress --suite suite.yaml --since v0.3.0` | Compare results against historical baseline |
 | `yb dataset add --from agent-run.json` | Adds a passing output to golden dataset store |
 | `yb expected promote --from results.json --label <name>` | Promotes evaluation results to a labeled golden dataset for later use as expected reference via `--expected <label>` |
-| `yb suggest-eval --source <branch> --expected <branch>` | Analyzes differences between source and expected/ideal branches to suggest evaluators and criteria |
+| `yb suggest-eval --source <branch> --expected <branch>` | Analyzes differences between source and expected/ideal branches to suggest evaluators and assertions |
 | `yb init --repo <url> --expected-branch <branch>` | Clones repo with both working and expected/ideal branches for evaluation setup |
 
 ### 5.2 Suite Configuration (JSON/YAML)
@@ -148,7 +148,7 @@ youBencha will define an official JSON schema containing:
 | `typecheck` | command-based | pass/fail + error count |
 | `tokens` | log-based | model tokens + cost |
 | `expected-diff` | code-based | comparison against expected/ideal branch output |
-| `agentic-judge` | agentic (uses AgentAdapter) | configurable criteria with tool use |
+| `agentic-judge` | agentic (uses AgentAdapter) | configurable assertions with tool use |
 
 Optional / Post-MVP:
 
@@ -170,7 +170,7 @@ The `agentic-judge` evaluator is NOT a simple LLM API call. It performs **agenti
 
 1. **Reusing Agent System**: Uses the same `AgentAdapter` interface as main agent execution (e.g., copilot-cli)
 2. **Configurable Agent**: User specifies which agent to use, what tools to enable, and system prompt
-3. **Evaluation-Specific Prompt**: System prompt includes evaluation criteria and output format requirements
+3. **Evaluation-Specific Prompt**: System prompt includes evaluation assertions and output format requirements
 4. **Full Agentic Workflow**: Agent reads files, searches patterns, uses tools, iterates on findings
 5. **Structured Output**: Agent produces JSON conforming to `EvaluationResult` interface
 
@@ -246,7 +246,7 @@ evaluators:
     max_warnings: 2  # Expected branch has 2 warnings
 # Suggested based on detected patterns:
   - name: llm-judge
-    criteria: "Includes comprehensive error handling"
+    assertions: "Includes comprehensive error handling"
     # Reason: Expected branch adds try-catch blocks
 ```
 
