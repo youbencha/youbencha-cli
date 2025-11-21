@@ -129,6 +129,33 @@ Options:
   --output <path>    Output path (optional)
 ```
 
+### `yb analyze`
+
+Analyze evaluation results and generate strategic insights with actionable recommendations.
+
+```bash
+yb analyze --from <results-file> [--output <path>]
+
+Options:
+  --from <path>      Path to results JSON file (required)
+  --output <path>    Output path for analysis report (optional)
+  --format <format>  Report format: markdown (default: markdown)
+```
+
+**What it does:**
+- Analyzes performance metrics and identifies issues
+- Generates prioritized recommendations (high/medium/low)
+- Provides executive summary with key findings
+- Identifies quality problems, performance bottlenecks, and improvement opportunities
+
+**Example output:**
+- ✅ Successes: What went well
+- ❌ Issues: Critical problems needing attention
+- ⚠️ Warnings: Potential concerns
+- 🔴 High Priority Recommendations: Actions with immediate impact
+
+See [Analytics Documentation](docs/analytics.md) for detailed usage and examples.
+
 ### `yb suggest-suite`
 
 Generate evaluation suite suggestions using AI agent interaction.
