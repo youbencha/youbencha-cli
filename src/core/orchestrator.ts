@@ -9,6 +9,7 @@ import * as path from 'path';
 import { createHash } from 'crypto';
 import { TestCaseConfig } from '../schemas/testcase.schema.js';
 import { ResultsBundle, EvaluationResult } from '../schemas/result.schema.js';
+import { PostEvaluationResult } from '../schemas/post-evaluator.schema.js';
 import { YouBenchaLog } from '../schemas/youbenchalog.schema.js';
 import { WorkspaceManager, Workspace, WorkspaceConfig } from './workspace.js';
 import { detectEnvironment } from './env.js';
@@ -19,6 +20,10 @@ import { Evaluator, EvaluationContext } from '../evaluators/base.js';
 import { GitDiffEvaluator } from '../evaluators/git-diff.js';
 import { ExpectedDiffEvaluator } from '../evaluators/expected-diff.js';
 import { AgenticJudgeEvaluator } from '../evaluators/agentic-judge.js';
+import { PostEvaluator, PostEvaluationContext } from '../post-evaluators/base.js';
+import { WebhookPostEvaluator } from '../post-evaluators/webhook.js';
+import { DatabasePostEvaluator } from '../post-evaluators/database.js';
+import { ScriptPostEvaluator } from '../post-evaluators/script.js';
 import { resolveEvaluatorConfigs, type ResolvedEvaluatorConfig } from '../lib/evaluator-loader.js';
 import * as logger from '../lib/logger.js';
 
@@ -139,7 +144,19 @@ export class Orchestrator {
       );
       logger.info(`Results bundle saved: ${resultsBundlePath}`);
 
-      // 7. Cleanup workspace (unless keeping)
+      // 7. Run post-evaluators (if configured)
+      if (resolvedTestCaseConfig.post_evaluators && resolvedTestCaseConfig.post_evaluators.length > 0) {
+        logger.info(`Running ${resolvedTestCaseConfig.post_evaluators.length} post-evaluator(s)...`);
+        const postEvaluatorResults = await this.runPostEvaluators(
+          resolvedTestCaseConfig,
+          resultsBundle,
+          resultsBundlePath,
+          workspace
+        );
+        logger.info(`Post-evaluators completed: ${postEvaluatorResults.length} results`);
+      }
+
+      // 8. Cleanup workspace (unless keeping)
       if (!this.options.keepWorkspace) {
         await this.workspaceManager.cleanup(workspace);
         logger.info('Workspace cleaned up');
@@ -494,5 +511,134 @@ export class Orchestrator {
         }
         return null;
     }
+  }
+
+  /**
+   * Get post-evaluator instance
+   */
+  private getPostEvaluator(name: string): PostEvaluator | null {
+    switch (name) {
+      case 'webhook':
+        return new WebhookPostEvaluator();
+      case 'database':
+        return new DatabasePostEvaluator();
+      case 'script':
+        return new ScriptPostEvaluator();
+      default:
+        return null;
+    }
+  }
+
+  /**
+   * Run post-evaluators in parallel
+   * Post-evaluators never fail the main evaluation - errors are captured in results
+   */
+  private async runPostEvaluators(
+    testCaseConfig: ResolvedTestCaseConfig,
+    resultsBundle: ResultsBundle,
+    resultsBundlePath: string,
+    workspace: Workspace
+  ): Promise<PostEvaluationResult[]> {
+    if (!testCaseConfig.post_evaluators || testCaseConfig.post_evaluators.length === 0) {
+      return [];
+    }
+
+    logger.info('Running post-evaluators...');
+
+    // Run all post-evaluators in parallel using Promise.allSettled
+    const postEvaluatorPromises = testCaseConfig.post_evaluators.map(async (config) => {
+      const startTime = Date.now();
+      
+      try {
+        // Get post-evaluator instance
+        const postEvaluator = this.getPostEvaluator(config.name);
+        if (!postEvaluator) {
+          logger.warn(`Unknown post-evaluator: ${config.name}, skipping`);
+          return {
+            post_evaluator: config.name,
+            status: 'skipped' as const,
+            message: `Unknown post-evaluator type: ${config.name}`,
+            duration_ms: Date.now() - startTime,
+            timestamp: new Date().toISOString(),
+          };
+        }
+
+        // Create context
+        const context: PostEvaluationContext = {
+          resultsBundle,
+          resultsBundlePath,
+          artifactsDir: workspace.paths.artifactsDir,
+          workspaceDir: workspace.paths.runDir,
+          config: config.config,
+        };
+
+        // Check preconditions
+        const canRun = await postEvaluator.checkPreconditions(context);
+        if (!canRun) {
+          logger.warn(`Post-evaluator ${config.name} preconditions not met, skipping`);
+          return {
+            post_evaluator: config.name,
+            status: 'skipped' as const,
+            message: 'Preconditions not met',
+            duration_ms: Date.now() - startTime,
+            timestamp: new Date().toISOString(),
+          };
+        }
+
+        // Execute post-evaluator
+        logger.info(`Executing post-evaluator: ${config.name}`);
+        const result = await postEvaluator.execute(context);
+        
+        if (result.status === 'success') {
+          logger.info(`✓ ${config.name}: ${result.message}`);
+        } else if (result.status === 'failed') {
+          logger.warn(`✗ ${config.name}: ${result.message}`);
+        } else {
+          logger.info(`⊘ ${config.name}: ${result.message}`);
+        }
+
+        return result;
+      } catch (error) {
+        // Catch any unexpected errors and convert to failed result
+        logger.error(`Post-evaluator ${config.name} threw unexpected error:`, error);
+        return {
+          post_evaluator: config.name,
+          status: 'failed' as const,
+          message: 'Unexpected error during execution',
+          duration_ms: Date.now() - startTime,
+          timestamp: new Date().toISOString(),
+          error: {
+            message: error instanceof Error ? error.message : String(error),
+            stack_trace: error instanceof Error ? error.stack : undefined,
+          },
+        };
+      }
+    });
+
+    // Wait for all post-evaluators to complete
+    const settled = await Promise.allSettled(postEvaluatorPromises);
+
+    // Extract results from settled promises
+    const results = settled.map((result, index) => {
+      if (result.status === 'fulfilled') {
+        return result.value;
+      } else {
+        // Should not happen since we catch all errors above, but handle it anyway
+        const config = testCaseConfig.post_evaluators![index];
+        logger.error(`Post-evaluator ${config.name} promise rejected:`, result.reason);
+        return {
+          post_evaluator: config.name,
+          status: 'failed' as const,
+          message: 'Promise rejected unexpectedly',
+          duration_ms: 0,
+          timestamp: new Date().toISOString(),
+          error: {
+            message: result.reason instanceof Error ? result.reason.message : String(result.reason),
+          },
+        };
+      }
+    });
+
+    return results;
   }
 }
