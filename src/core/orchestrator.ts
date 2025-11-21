@@ -463,9 +463,16 @@ export class Orchestrator {
 
         // Resolve prompt_file in evaluator config if present
         const evaluatorConfigWithResolvedPrompt = { ...evaluatorConfig.config };
-        if (evaluatorConfigWithResolvedPrompt) {
+        if (evaluatorConfig.config) {
           const promptFromConfig = evaluatorConfigWithResolvedPrompt.prompt;
           const promptFileFromConfig = evaluatorConfigWithResolvedPrompt.prompt_file;
+          
+          // Validate mutual exclusivity
+          if (promptFromConfig && promptFileFromConfig) {
+            throw new Error(
+              `Evaluator "${evaluatorConfig.name}": Cannot specify both "prompt" and "prompt_file". Please use only one.`
+            );
+          }
           
           if (promptFileFromConfig || promptFromConfig) {
             const resolvedPrompt = resolvePromptValue(
