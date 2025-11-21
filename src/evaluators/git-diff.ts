@@ -103,9 +103,7 @@ export class GitDiffEvaluator implements Evaluator {
       // Check if there are any unstaged or untracked changes
       // not_added: untracked files, modified: unstaged changes
       // Note: created files are already staged, so we don't need to check them
-      const hasUnstagedChanges = 
-        gitStatus.not_added.length > 0 || 
-        gitStatus.modified.length > 0;
+      const hasUnstagedChanges = gitStatus.not_added.length > 0 || gitStatus.modified.length > 0;
         
       if (hasUnstagedChanges) {
         // Stage all changes including new files
