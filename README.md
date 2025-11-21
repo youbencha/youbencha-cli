@@ -159,6 +159,43 @@ Run an evaluation suite.
 yb run -c <config-file>
 ```
 
+### `yb eval`
+
+Run evaluations on an existing directory (without running an agent).
+
+```bash
+yb eval -c <eval-config-file> [--directory <path>] [--expected-directory <path>]
+
+Options:
+  -c, --config <path>              Path to eval configuration file (required)
+  -d, --directory <path>           Directory to evaluate (overrides config)
+  -e, --expected-directory <path>  Expected reference directory (overrides config)
+```
+
+**Use this when:**
+- You've manually run an agent and want to evaluate the results
+- You want to re-run evaluations on existing changes
+- You need to test evaluators on a specific directory
+
+**Example:**
+
+```yaml
+# eval.yaml
+name: "Evaluate manual changes"
+description: "Run evaluations on existing code"
+directory: "."
+evaluators:
+  - name: git-diff
+  - name: agentic-judge
+    config:
+      type: copilot-cli
+      agent_name: agentic-judge
+      assertions:
+        quality: "Overall code quality score"
+```
+
+See [Eval Command Documentation](docs/eval-command.md) for detailed usage and examples.
+
 ### `yb report`
 
 Generate a report from evaluation results.
