@@ -300,7 +300,7 @@ jobs:
 
 **Use Case for youBencha:**
 ```yaml
-# Hypothetical - not currently supported
+# Future enhancement - not currently supported
 pre_execution:
   - name: seed-database
     script: ./scripts/setup-test-data.sh
@@ -313,18 +313,24 @@ agent:
     prompt: "Add error handling to API client"
 ```
 
-**Note:** Based on repository memories, pre-execution hooks **do exist** but aren't well documented in the main README or examples.
+**Common Scenarios Requiring Pre-Execution:**
+- Installing dependencies before agent runs
+- Seeding test data
+- Setting up mock services
+- Generating files/configs
+- Running database migrations
 
 **Suggestion:**
-1. Document pre-execution hooks prominently
-2. Align terminology with GitHub Actions:
-   ```yaml
-   setup:  # or "before:" or "pre_steps:"
-     - name: Install dependencies
-       run: npm ci
-   ```
+Add pre-execution hook support with GitHub Actions-style syntax:
+```yaml
+setup:  # or "pre_execution:" or "before:"
+  - name: Install dependencies
+    run: npm ci
+  - name: Seed database
+    script: ./scripts/seed.sh
+```
 
-**Impact:** 🟩 Low - Feature exists but needs visibility
+**Impact:** 🟩 Low - Nice-to-have feature for advanced use cases
 
 ---
 
@@ -332,16 +338,10 @@ agent:
 
 ### 1. **Evaluator Configuration Inconsistency**
 
-**Problem:** Some evaluators use `assertions`, others use `criteria`, some use neither:
+**Problem:** Agentic-judge evaluator accepts both `assertions` and `criteria` (for backward compatibility), creating confusion:
 
 ```yaml
-# git-diff uses 'assertions'
-- name: git-diff
-  config:
-    assertions:
-      max_files_changed: 5
-
-# agentic-judge uses 'assertions' OR 'criteria' (both work?)
+# Both work due to backward compatibility
 - name: agentic-judge
   config:
     assertions:
@@ -351,7 +351,21 @@ agent:
       readme_modified: "README was modified"
 ```
 
-**Suggestion:** Standardize on one term (prefer `assertions` for pass/fail checks).
+**Evidence:** Source code shows: `const assertions = context.config.assertions || context.config.criteria;`
+
+**Confusion Points:**
+- README examples show `criteria` (lines 82, 106)
+- Actual YAML examples use `assertions`
+- Both work but no clear guidance on which to use
+- Git-diff evaluator uses `assertions` exclusively
+
+**Suggestion:** 
+1. Standardize on `assertions` (aligns with testing terminology)
+2. Update README examples to use `assertions`
+3. Deprecate `criteria` in documentation (keep code support for backward compatibility)
+4. Add migration guide for users transitioning from `criteria`
+
+**Impact:** 🟨 Medium - Causes confusion and inconsistent usage
 
 ---
 
@@ -524,11 +538,11 @@ post_evaluation:
    - **Effort:** Low (1 day)
    - **Impact:** Low (minor terminology preference)
 
-8. **Document pre-execution hooks prominently**
-   - Add to README.md
-   - Include in examples
-   - **Effort:** Low (1 day)
-   - **Impact:** Low (feature already exists)
+8. **Add pre-execution hook support**
+   - Enable setup steps before agent execution
+   - Useful for dependency installation, data seeding
+   - **Effort:** Medium (3-5 days)
+   - **Impact:** Low (nice-to-have for advanced use cases)
 
 9. **Flatten agent configuration**
    - Reduce nesting: move `prompt` out of `config`
@@ -548,14 +562,63 @@ post_evaluation:
 | **Sequential steps** | `steps:[]` | N/A (parallel only) | 🟡 Partial |
 | **Parallel execution** | Jobs by default | Evaluators by default | ✅ Excellent |
 | **Environment vars** | `env:` | String interpolation | 🔴 Missing |
-| **Setup steps** | `steps[0..n]` | `pre_execution:` | 🟢 Good (exists but underdocumented) |
+| **Setup steps** | `steps[0..n]` | Not implemented | 🔴 Missing |
 | **Conditional execution** | `if:` | N/A | 🔴 Missing |
 | **Reusable workflows** | `uses:` | `file:` (evaluators) | 🟢 Good |
 | **Matrix strategy** | `strategy.matrix` | N/A | 🔴 Missing |
 | **Artifacts** | `upload-artifact` | Built-in | ✅ Excellent |
 | **Timeout** | `timeout-minutes` | `timeout` (ms) | 🟢 Good (different units) |
+| **Needs/Dependencies** | `needs:` | N/A | 🔴 Missing |
+| **Continue on error** | `continue-on-error:` | N/A | 🔴 Missing |
 
-**Overall Alignment: 65%** - Good foundation, room for improvement
+**Overall Alignment: 58%** - Good foundation, significant room for improvement
+
+---
+
+## Visual Comparison
+
+### GitHub Actions Workflow Structure
+```
+workflow.yml
+├── name: "CI Pipeline"
+├── on: [push, pull_request]
+├── env:
+│   └── NODE_VERSION: '20'
+└── jobs:
+    ├── test:
+    │   └── steps:
+    │       ├── Checkout (sequential)
+    │       ├── Setup Node (sequential)
+    │       ├── Install deps (sequential)
+    │       └── Run tests (sequential)
+    └── build:
+        └── needs: test
+            └── steps: [...]
+```
+
+### youBencha Evaluation Structure
+```
+testcase.yaml
+├── name: "Add README comment"
+├── repo: https://github.com/...
+├── branch: main
+├── agent:
+│   ├── type: copilot-cli
+│   └── config:
+│       └── prompt: "..."
+├── evaluators:
+│   ├── git-diff ───┐
+│   └── agentic-judge ─┴─> [Run in parallel]
+└── post_evaluation:
+    ├── database ───┐
+    └── webhook ────┴─> [Run in parallel]
+```
+
+**Key Differences:**
+1. GitHub Actions: Sequential steps within jobs, parallel jobs
+2. youBencha: Single agent execution, parallel evaluators
+3. GitHub Actions: Explicit dependencies (`needs:`)
+4. youBencha: Implicit sequential flow (repo → agent → evaluators → post)
 
 ---
 
@@ -564,17 +627,18 @@ post_evaluation:
 ### Immediate (1-2 weeks)
 1. Add execution model documentation (parallel evaluators)
 2. Standardize `assertions` terminology
-3. Document pre-execution hooks in README
+3. Create prominent examples section in README
 
 ### Short-term (1-2 months)
 4. Add `env` section support
 5. Improve expected reference configuration
 6. Add optional `id` field
+7. Add pre-execution hooks for setup steps
 
 ### Long-term (3-6 months)
-7. Consider major terminology shift (test case → evaluation)
-8. Add conditional execution support (`if` conditions)
-9. Support matrix strategies for multi-scenario testing
+8. Consider major terminology shift (test case → evaluation)
+9. Add conditional execution support (`if` conditions)
+10. Support matrix strategies for multi-scenario testing
 
 ---
 
@@ -590,7 +654,7 @@ youBencha is a **thoughtfully designed framework** with strong architectural dec
 - Strong technical foundation
 - Good documentation coverage
 - Minor terminology friction
-- Opportunity for better GitHub Actions alignment
+- Opportunity for better GitHub Actions alignment (currently 58% alignment)
 
 **Recommendation:** Focus on Priority 1 items (terminology, documentation) before major marketing push. These low-effort changes will significantly reduce cognitive load for new users familiar with CI/CD workflows.
 
