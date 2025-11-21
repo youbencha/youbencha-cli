@@ -262,7 +262,7 @@ export class AgenticJudgeEvaluator implements Evaluator {
       return template.replace('{{ASSERTIONS}}', combinedContent).replace('{{CRITERIA}}', combinedContent);
     }
     if (agentName) {
-      //agent has instructions, just send assertions
+      // Agent has instructions, just send assertions
       return `Evaluation Assertions:\n${combinedContent}`;
     }
     // Mode 2: Use default markdown template
