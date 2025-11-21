@@ -7,12 +7,12 @@
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import * as yaml from 'yaml';
 import { testCaseConfigSchema, TestCaseConfig } from '../../schemas/testcase.schema.js';
 import { resolveEvaluatorConfigs } from '../../lib/evaluator-loader.js';
 import { createSpinner } from '../../lib/progress.js';
 import * as logger from '../../lib/logger.js';
 import { UserErrors, formatUserError } from '../../lib/user-errors.js';
+import { parseConfig, getFormatTips } from '../../lib/config-parser.js';
 
 /**
  * Options for validate command
@@ -60,26 +60,25 @@ export async function validateCommand(options: ValidateCommandOptions): Promise<
       process.exit(1);
     }
 
-    // Parse YAML
-    const yamlSpinner = createSpinner('Parsing YAML...');
-    yamlSpinner.start();
+    // Parse configuration (YAML or JSON)
+    const parseSpinner = createSpinner('Parsing configuration...');
+    parseSpinner.start();
     
     let configData: any;
     try {
-      configData = yaml.parse(configContent);
-      yamlSpinner.succeed('YAML parsed successfully ✓');
+      configData = parseConfig(configContent, options.config);
+      parseSpinner.succeed('Configuration parsed successfully ✓');
     } catch (error) {
-      yamlSpinner.fail('YAML parsing failed');
+      parseSpinner.fail('Configuration parsing failed');
       logger.error('');
-      logger.error('❌ Invalid YAML syntax');
+      logger.error('❌ Invalid configuration syntax');
       if (error instanceof Error) {
         logger.error(error.message);
       }
       logger.info('');
-      logger.info('💡 Common YAML mistakes:');
-      logger.info('   - Check indentation (use spaces, not tabs)');
-      logger.info('   - Ensure keys and values are properly formatted');
-      logger.info('   - Validate YAML syntax at https://yaml-online-parser.appspot.com');
+      logger.info('💡 Common mistakes:');
+      const tips = getFormatTips(options.config);
+      tips.forEach(tip => logger.info(`   ${tip}`));
       process.exit(1);
     }
 

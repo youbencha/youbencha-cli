@@ -58,7 +58,11 @@ npm unlink -g youbencha
 npm install -g youbencha
 ```
 
-### 2. Create a suite configuration (`suite.yaml`)
+### 2. Create a suite configuration
+
+youBencha supports both **YAML** and **JSON** formats for configuration files.
+
+**Option A: YAML format (`suite.yaml`)**
 
 ```yaml
 repo: https://github.com/octocat/Hello-World.git
@@ -80,10 +84,49 @@ evaluators:
         helpful_comment_added: "A helpful comment was added to README.md. Score 1 if true, 0 if false."
 ```
 
+**Option B: JSON format (`suite.json`)**
+
+```json
+{
+  "repo": "https://github.com/octocat/Hello-World.git",
+  "branch": "master",
+  "agent": {
+    "type": "copilot-cli",
+    "config": {
+      "prompt": "Add a comment to README explaining what this repository is about"
+    }
+  },
+  "evaluators": [
+    { "name": "git-diff" },
+    {
+      "name": "agentic-judge",
+      "config": {
+        "type": "copilot-cli",
+        "agent_name": "agentic-judge",
+        "criteria": {
+          "readme_modified": "README.md was modified. Score 1 if true, 0 if false.",
+          "helpful_comment_added": "A helpful comment was added to README.md. Score 1 if true, 0 if false."
+        }
+      }
+    }
+  ]
+}
+```
+
+> **💡 Tip**: Both formats support the same features and are validated using the same schema. Choose the format that best fits your workflow or existing tooling.
+
 ### 3. Run the evaluation
 
 ```bash
-yb run -c examples/testcase-basic.yaml
+# Using YAML format
+yb run -c suite.yaml
+
+# Or using JSON format
+yb run -c suite.json
+
+# See examples directory for more configurations
+yb run -c examples/testcase-simple.yaml
+yb run -c examples/testcase-simple.json
 ```
 
 The workspace is kept by default for inspection. Add `--delete-workspace` to clean up after completion.

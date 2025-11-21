@@ -5,12 +5,12 @@
  */
 
 import * as fs from 'fs/promises';
-import * as yaml from 'yaml';
 import { Orchestrator } from '../../core/orchestrator.js';
 import { testCaseConfigSchema, TestCaseConfig } from '../../schemas/testcase.schema.js';
 import { createSpinner } from '../../lib/progress.js';
 import * as logger from '../../lib/logger.js';
 import { UserErrors, formatUserError } from '../../lib/user-errors.js';
+import { parseConfig, getFormatTips } from '../../lib/config-parser.js';
 
 /**
  * Options for run command
@@ -42,20 +42,19 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
     
     const configContent = await fs.readFile(options.config, 'utf-8');
     
-    // Parse YAML
+    // Parse configuration (YAML or JSON)
     let configData;
     try {
-      configData = yaml.parse(configContent);
+      configData = parseConfig(configContent, options.config);
     } catch (error) {
-      logger.error('Failed to parse YAML configuration file');
+      logger.error('Failed to parse configuration file');
       if (error instanceof Error) {
         logger.error(error.message);
       }
       logger.info('');
-      logger.info('💡 Common YAML mistakes:');
-      logger.info('   - Check indentation (use spaces, not tabs)');
-      logger.info('   - Ensure keys and values are properly formatted');
-      logger.info('   - Validate YAML syntax at https://yaml-online-parser.appspot.com');
+      logger.info('💡 Common mistakes:');
+      const tips = getFormatTips(options.config);
+      tips.forEach(tip => logger.info(`   ${tip}`));
       process.exit(1);
     }
     

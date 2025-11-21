@@ -20,8 +20,9 @@ npm install -g youbencha
 
 ### 2. Create a simple evaluation
 
-Create a file called `my-first-suite.yaml`:
+Create a file called `my-first-suite.yaml` (or `my-first-suite.json` if you prefer JSON):
 
+**YAML format:**
 ```yaml
 repo: https://github.com/octocat/Hello-World.git
 branch: master
@@ -42,10 +43,42 @@ evaluators:
         comment_is_helpful: "A helpful comment was added"
 ```
 
+**JSON format (alternative):**
+```json
+{
+  "repo": "https://github.com/octocat/Hello-World.git",
+  "branch": "master",
+  "agent": {
+    "type": "copilot-cli",
+    "config": {
+      "prompt": "Add a comment explaining what this repo is about"
+    }
+  },
+  "evaluators": [
+    { "name": "git-diff" },
+    {
+      "name": "agentic-judge",
+      "config": {
+        "type": "copilot-cli",
+        "agent_name": "agentic-judge",
+        "criteria": {
+          "file_was_modified": "README.md was modified",
+          "comment_is_helpful": "A helpful comment was added"
+        }
+      }
+    }
+  ]
+}
+```
+
 ### 3. Run it!
 
 ```bash
+# If using YAML
 yb run -c my-first-suite.yaml
+
+# If using JSON
+yb run -c my-first-suite.json
 ```
 
 You'll see:
