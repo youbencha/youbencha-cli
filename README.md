@@ -371,6 +371,81 @@ npm test
 npm test -- --coverage
 ```
 
+## Post-Evaluators: Exporting and Analyzing Results
+
+Post-evaluators run after evaluation completes, enabling you to export results to external systems, run custom analysis, or trigger downstream workflows.
+
+### Available Post-Evaluators
+
+**1. Database Export** - Append results to JSONL file for time-series analysis
+
+```yaml
+post_evaluators:
+  - name: database
+    config:
+      type: json-file
+      output_path: ./results-history.jsonl
+      include_full_bundle: true
+      append: true
+```
+
+**2. Webhook** - POST results to HTTP endpoint
+
+```yaml
+post_evaluators:
+  - name: webhook
+    config:
+      url: ${SLACK_WEBHOOK_URL}
+      method: POST
+      headers:
+        Content-Type: "application/json"
+      retry_on_failure: true
+      timeout_ms: 5000
+```
+
+**3. Custom Script** - Execute custom analysis or integration
+
+```yaml
+post_evaluators:
+  - name: script
+    config:
+      command: ./scripts/notify-slack.sh
+      args:
+        - "${RESULTS_PATH}"
+      env:
+        SLACK_WEBHOOK_URL: "${SLACK_WEBHOOK_URL}"
+      timeout_ms: 30000
+```
+
+### Value Propositions
+
+**Single Result**: Immediate feedback on one evaluation
+- Quick validation during prompt engineering
+- Debugging agent failures
+- Understanding scope of changes
+
+**Suite of Results**: Cross-test comparison
+- Identify difficult tasks
+- Compare agent configurations
+- Aggregate metrics and pass rates
+
+**Results Over Time**: Regression detection and trends
+- Track performance changes across model/prompt updates
+- Cost optimization and ROI tracking
+- Long-term quality trends
+
+### Example Scripts
+
+See `examples/scripts/` for ready-to-use scripts:
+- `notify-slack.sh` - Post results to Slack
+- `analyze-trends.sh` - Analyze time-series data
+- `detect-regression.sh` - Compare last two runs
+
+### Documentation
+
+- [Post-Evaluators Guide](docs/post-evaluators.md) - Complete reference
+- [Analyzing Results Guide](docs/analyzing-results.md) - Analysis patterns and best practices
+
 ### Project Structure
 
 ```
@@ -379,6 +454,7 @@ src/
   cli/           - CLI commands
   core/          - Core orchestration logic
   evaluators/    - Built-in evaluators
+  post-evaluators/ - Post-evaluation exporters
   lib/           - Utility libraries
   reporters/     - Report generators
   schemas/       - Zod schemas for validation
