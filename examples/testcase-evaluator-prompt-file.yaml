@@ -1,0 +1,46 @@
+# Example Test Case: Using prompt_file in Agentic Judge Evaluator
+# 
+# This demonstrates how to load evaluation instructions from an external file
+# in the agentic-judge evaluator configuration.
+
+# Test case metadata
+name: "Add README comment with file-based evaluation instructions"
+description: "Tests the agent with evaluation instructions loaded from a file"
+
+# Repository configuration
+repo: https://github.com/octocat/Hello-World.git
+branch: master
+
+# Agent configuration
+agent:
+  type: copilot-cli
+  config:
+    prompt: "Add a friendly welcome message to README.md explaining what this repository is about"
+
+# Evaluators
+evaluators:
+  - name: git-diff
+    config:
+      max_files_changed: 1
+      max_lines_added: 5
+
+  # agentic-judge with prompt loaded from file
+  - name: agentic-judge
+    config:
+      type: copilot-cli
+      agent_name: agentic-judge
+      
+      # Load evaluation instructions from file
+      prompt_file: ./prompts/strict-evaluation-instructions.txt
+      
+      # Define explicit pass/fail assertions
+      assertions:
+        readme_was_modified: "The README.md file was modified. Score 1 if true, 0 if false."
+        message_is_friendly: "A friendly welcome message was added. Score 1 if friendly, 0.5 if neutral, 0 if absent or unfriendly."
+        no_errors: "No syntax errors or broken markdown. Score 1 if valid, 0 if broken."
+
+# Usage:
+# yb run -c examples/testcase-evaluator-prompt-file.yaml
+# yb report --from .youbencha-workspace/run-*/artifacts/results.json --format markdown
+#
+# The evaluation prompt will include instructions from examples/prompts/strict-evaluation-instructions.txt

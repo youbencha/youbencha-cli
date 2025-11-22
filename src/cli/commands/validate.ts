@@ -139,11 +139,14 @@ export async function validateCommand(options: ValidateCommandOptions): Promise<
       logger.info('🤖 Agent:');
       logger.info(`   Type: ${testCaseConfig.agent.type}`);
       if (testCaseConfig.agent.config?.prompt) {
-        const promptLength = testCaseConfig.agent.config.prompt.length;
+        const promptLength = (testCaseConfig.agent.config.prompt as string).length;
         logger.info(`   Prompt length: ${promptLength} characters`);
         if (promptLength < 10) {
           logger.warn('   ⚠️  Prompt is very short - consider adding more detail');
         }
+      }
+      if (testCaseConfig.agent.config?.prompt_file) {
+        logger.info(`   Prompt file: ${testCaseConfig.agent.config.prompt_file as string}`);
       }
       logger.info('');
     }
