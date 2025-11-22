@@ -38,7 +38,7 @@ evaluators:
     config:
       type: copilot-cli
       agent_name: agentic-judge
-      criteria:
+      assertions:
         file_was_modified: "README.md was modified"
         comment_is_helpful: "A helpful comment was added"
 ```
@@ -61,7 +61,7 @@ evaluators:
       "config": {
         "type": "copilot-cli",
         "agent_name": "agentic-judge",
-        "criteria": {
+        "assertions": {
           "file_was_modified": "README.md was modified",
           "comment_is_helpful": "A helpful comment was added"
         }
@@ -125,7 +125,7 @@ evaluators:                   # How to measure success
   - name: git-diff            # Built-in: measures scope
   - name: agentic-judge       # Built-in: evaluates quality
     config:
-      criteria:
+      assertions:
         metric_name: "What to check..."
 ```
 
@@ -137,8 +137,8 @@ evaluators:                   # How to measure success
 - Change distribution across files
 
 **agentic-judge** - Subjective quality assessment:
-- Uses AI to evaluate based on your criteria
-- Each criterion becomes a metric in the report
+- Uses AI to evaluate based on your assertions
+- Each assertion becomes a metric in the report
 - Useful for checking: code quality, test coverage, documentation
 
 ### Comparing to a Reference (Optional)
@@ -189,7 +189,7 @@ evaluators:
       threshold: 0.90
   - name: agentic-judge
     config:
-      criteria:
+      assertions:
         has_tests: "Unit tests were added"
         has_docs: "Documentation was updated"
 ```
@@ -199,12 +199,12 @@ evaluators:
 ### 1. Start Simple
 Begin with just `git-diff` and `agentic-judge`. Add more evaluators as you learn.
 
-### 2. Make Criteria Specific
+### 2. Make Assertions Specific
 ❌ Bad: `"Code is good"`
 ✅ Good: `"All functions have error handling. Score 1 if complete, 0.5 if partial, 0 if missing"`
 
 ### 3. Use Descriptive Metric Names
-Keys in `criteria:` become metric names in reports. Use `snake_case` for consistency:
+Keys in `assertions:` become metric names in reports. Use `snake_case` for consistency:
 - ✅ `readme_modified`
 - ✅ `error_handling_complete`
 - ❌ `test1`
@@ -248,7 +248,7 @@ sudo npm install -g youbencha
 Now that you've run your first evaluation:
 
 1. **Try with your own code** - Point to your repository
-2. **Add more criteria** - Define what quality means for your project
+2. **Add more assertions** - Define what quality means for your project
 3. **Use reference comparisons** - Compare against known-good implementations
 4. **Automate in CI** - Run evaluations on every commit
 

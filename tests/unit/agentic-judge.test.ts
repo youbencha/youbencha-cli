@@ -172,7 +172,7 @@ describe('AgenticJudgeEvaluator', () => {
           test_coverage_score: 8.5,
           documentation_score: 7.0,
         },
-        message: 'All criteria met',
+        message: 'All assertions met',
       };
 
       const mockAdapter: AgentAdapter = {
@@ -200,7 +200,7 @@ describe('AgenticJudgeEvaluator', () => {
       expect(result.message).toBe(expectedResult.message);
     });
 
-    test('builds evaluation prompt with criteria', async () => {
+    test('builds evaluation prompt with assertions', async () => {
       const mockAdapter: AgentAdapter = {
         name: 'test-adapter',
         version: '1.0.0',
@@ -230,7 +230,7 @@ describe('AgenticJudgeEvaluator', () => {
     });
 
     test('includes prompt in evaluation prompt', async () => {
-      const promptText = 'Do not ask for clarification or additional information. Use only the files in the repository to evaluate the criteria.';
+      const promptText = 'Do not ask for clarification or additional information. Use only the files in the repository to evaluate the assertions.';
       
       const contextWithPrompt = {
         ...mockContext,
@@ -266,14 +266,14 @@ describe('AgenticJudgeEvaluator', () => {
 
       // Should contain prompt text
       expect(evaluationPrompt).toContain(promptText);
-      // Should still contain the criteria
+      // Should still contain the assertions
       expect(evaluationPrompt).toContain('Error handling completeness');
       expect(evaluationPrompt).toContain('Test coverage adequacy');
       expect(evaluationPrompt).toContain('Documentation quality');
-      // Prompt should appear before criteria
+      // Prompt should appear before assertions
       const promptIndex = evaluationPrompt.indexOf(promptText);
-      const criteriaIndex = evaluationPrompt.indexOf('Error handling completeness');
-      expect(promptIndex).toBeLessThan(criteriaIndex);
+      const assertionsIndex = evaluationPrompt.indexOf('Error handling completeness');
+      expect(promptIndex).toBeLessThan(assertionsIndex);
     });
 
     test('works without prompt (backward compatibility)', async () => {
@@ -309,7 +309,7 @@ describe('AgenticJudgeEvaluator', () => {
       const executeCall = (mockAdapter.execute as jest.Mock).mock.calls[0][0];
       const evaluationPrompt = executeCall.config.prompt;
 
-      // Should still contain criteria without prompt
+      // Should still contain assertions without prompt
       expect(evaluationPrompt).toContain('Error handling completeness');
       expect(evaluationPrompt).toContain('Test coverage adequacy');
       expect(evaluationPrompt).toContain('Documentation quality');

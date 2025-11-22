@@ -213,7 +213,7 @@ evaluators:
       threshold: 0.85  # Require 85% similarity to pass
   - name: agentic-judge
     config:
-      criteria:
+      assertions:
         - "All API endpoints have try-catch blocks"
         - "Error responses follow REST standards"
         - "Logging is added for all errors"
@@ -283,7 +283,7 @@ interface AgentAdapter {
 |-----------|------|---------|-------------|
 | `git-diff` | Code-based | `files_changed`, `lines_added`, `lines_removed`, `change_entropy` | Analyzes Git changes made by agent |
 | `expected-diff` | Code-based | `aggregate_similarity`, `files_matched`, `files_changed`, `file_similarities` | Compares output against expected reference branch |
-| `agentic-judge` | AI-based | `score`, `criteria_met`, `reasoning` | Uses AI agent to review code quality based on natural language criteria |
+| `agentic-judge` | AI-based | `score`, `assertions_met`, `reasoning` | Uses AI agent to review code quality based on natural language assertions |
 
 **Evaluator Interface**:
 ```typescript
@@ -970,7 +970,7 @@ evaluators:
       threshold: 0.80
   - name: agentic-judge
     config:
-      criteria:
+      assertions:
         - "All POST endpoints have Joi validation schemas"
         - "Validation errors return 400 status codes"
         - "Error messages are user-friendly"
@@ -1092,11 +1092,11 @@ Output matches expected reference (87% similarity)
 
 ### ✅ agentic-judge (12.4s)
 
-All criteria met - validation implementation is complete and follows best practices
+All assertions met - validation implementation is complete and follows best practices
 
 | Metric | Value |
 |--------|-------|
-| Criteria Met | 3/3 |
+| Assertions Met | 3/3 |
 | Score | 0.95 |
 
 **Criteria Evaluation:**

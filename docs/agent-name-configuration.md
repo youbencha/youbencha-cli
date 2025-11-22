@@ -33,8 +33,8 @@ evaluators:
     config:
       type: copilot-cli
       agent_name: evaluation-agent  # Agent name for evaluation
-      criteria:
-        code_quality: "Assessment criteria here"
+      assertions:
+        code_quality: "Assessment assertions here"
 ```
 
 ## Complete Example
@@ -56,7 +56,7 @@ evaluators:
     config:
       type: copilot-cli
       agent_name: code-reviewer  # Use same agent for evaluation
-      criteria:
+      assertions:
         code_quality: "Code follows best practices. Score 1-10."
         documentation: "Code has proper documentation. Score 1-10."
 ```

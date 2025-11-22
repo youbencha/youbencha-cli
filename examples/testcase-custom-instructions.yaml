@@ -36,7 +36,7 @@ evaluators:
       
       # Prompt is prepended to the assertions
       # Use this to provide additional context, constraints, or guidance for the evaluation
-      prompt: "Do not ask for clarification or additional information. Use only the files in the repository to evaluate the criteria."
+      prompt: "Do not ask for clarification or additional information. Use only the files in the repository to evaluate the assertions."
       
       # Define explicit pass/fail assertions (keys become metric names in the report)
       assertions:

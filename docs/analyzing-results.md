@@ -72,7 +72,7 @@ A single evaluation produces a `ResultsBundle` JSON file with:
 
 1. **Binary Success**: Did the agent complete the task? (`summary.overall_status`)
 2. **Scope of Changes**: How many files and lines changed? (`git-diff.metrics`)
-3. **Quality Assessment**: Did it meet specific criteria? (`agentic-judge.metrics`)
+3. **Quality Assessment**: Did it meet specific assertions? (`agentic-judge.metrics`)
 4. **Performance**: How long did it take? (`execution.duration_ms`)
 5. **Cost Tracking**: Token usage (in `youbencha.log.json`)
 

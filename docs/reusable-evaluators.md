@@ -246,7 +246,7 @@ description: "Reviews code changes for common security vulnerabilities including
 ### 4. Version Control
 
 Commit evaluator definitions to version control alongside test cases:
-- Track changes to evaluation criteria over time
+- Track changes to evaluation assertions over time
 - Enable code review of evaluation logic changes
 - Share evaluators across team members
 

@@ -180,7 +180,7 @@ export async function validateCommand(options: ValidateCommandOptions): Promise<
       
       // Check if agentic-judge has assertions
       if (name === 'agentic-judge') {
-        const assertions = config?.assertions || config?.criteria; // Support both
+        const assertions = config?.assertions || config?.criteria; // Support both (backward compatibility)
         if (!assertions || (typeof assertions === 'object' && Object.keys(assertions).length === 0)) {
           logger.warn('      ⚠️  agentic-judge evaluator should have assertions defined');
         } else if (options.verbose && typeof assertions === 'object') {
