@@ -44,7 +44,8 @@ async function main() {
       '  Run agents, measure their output, and get objective insights.\n\n' +
       '  Quick start:\n' +
       `    ${commandName} init              # Create a starter configuration\n` +
-      `    ${commandName} run -c suite.yaml # Run an evaluation`)
+      `    ${commandName} run -c suite.yaml # Run an evaluation\n` +
+      `    ${commandName} eval -c eval.yaml # Evaluate existing code without running agent`)
     .version(packageJson.version);
 
   // Register init command (create starter suite)
