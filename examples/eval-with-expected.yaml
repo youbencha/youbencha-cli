@@ -18,6 +18,6 @@ evaluators:
   # Analyze git changes
   - name: git-diff
     config:
-      thresholds:
-        files_changed: 5
-        lines_added: 200
+      assertions:
+        max_files_changed: 5
+        max_lines_added: 200

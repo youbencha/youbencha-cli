@@ -21,9 +21,9 @@ describe('Eval Configuration Schema Contract', () => {
           {
             name: 'git-diff',
             config: {
-              thresholds: {
-                files_changed: 10,
-                lines_added: 100,
+              assertions: {
+                max_files_changed: 10,
+                max_lines_added: 100,
               },
             },
           },
