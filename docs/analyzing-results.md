@@ -109,7 +109,7 @@ When you run multiple test cases with the same agent configuration, you can comp
 
 **Aggregate Success Rate:**
 ```bash
-# Run suite
+# Run test cases
 for test in tests/*.yaml; do
     yb run -c "$test"
 done
@@ -129,7 +129,7 @@ jq -s 'map({
 
 **Cost Analysis:**
 ```bash
-# Total execution time across suite
+# Total execution time across test cases
 jq -s 'map(.execution.duration_ms) | add / 1000' results/*.json  # in seconds
 
 # Average changes per test
@@ -410,7 +410,7 @@ engine = create_engine(os.environ['DATABASE_URL'])
 #!/bin/bash
 # ci-check.sh
 
-yb run -c regression-suite.yaml
+yb run -c testcase-regression.yaml
 
 # Check results
 FAILED=$(jq '.summary.failed' .youbencha-workspace/.../artifacts/results.json)

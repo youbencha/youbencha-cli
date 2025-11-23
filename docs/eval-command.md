@@ -10,7 +10,7 @@ You've already run an agent and want to test different evaluator configurations 
 
 ```bash
 # First run created output in .youbencha-workspace/run-abc123/src-modified
-yb run -c suite.yaml
+yb run -c testcase.yaml
 
 # Now try different evaluators on the same output
 yb eval -c eval-strict.yaml  # With stricter thresholds
@@ -58,8 +58,8 @@ Evaluate multiple agent outputs consistently:
 
 ```bash
 # Run different agents
-yb run -c suite-agent-a.yaml
-yb run -c suite-agent-b.yaml
+yb run -c testcase-agent-a.yaml
+yb run -c testcase-agent-b.yaml
 
 # Evaluate both with same criteria
 yb eval -c eval-comparison.yaml --directory agent-a-output
