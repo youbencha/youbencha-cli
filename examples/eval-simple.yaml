@@ -15,11 +15,10 @@ directory: "."
 evaluators:
   - name: git-diff
     config:
-      thresholds:
-        files_changed: 100
-        lines_added: 5000
-        total_changes: 6000
-        change_entropy: 0.9
+      assertions:
+      # Maximum number of files that can be changed
+      # Use this to ensure focused changes (e.g., for a bug fix)
+        max_files_changed: 1
         
   # Example: Agentic judge evaluator (requires agent to be configured)
   # - name: agentic-judge
