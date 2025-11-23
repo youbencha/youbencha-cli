@@ -204,6 +204,7 @@ Two GitHub Actions workflows are configured:
 
 - `NPM_TOKEN` - NPM automation token for publishing
 - `GITHUB_TOKEN` - Automatically provided by GitHub Actions
+- `CODECOV_TOKEN` (Optional) - For uploading code coverage reports to Codecov
 
 ## Best Practices
 

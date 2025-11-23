@@ -99,11 +99,11 @@ npm pack --dry-run
 echo ""
 if [ "$VERSION_CHOICE" = "4" ]; then
   echo -e "${YELLOW}Setting version to $VERSION_TYPE...${NC}"
-  npm version $VERSION_TYPE --no-git-tag-version
 else
   echo -e "${YELLOW}Bumping version ($VERSION_TYPE)...${NC}"
-  npm version $VERSION_TYPE --no-git-tag-version
 fi
+
+npm version $VERSION_TYPE --no-git-tag-version
 
 NEW_VERSION=$(node -p "require('./package.json').version")
 echo -e "${GREEN}New version: $NEW_VERSION${NC}"
