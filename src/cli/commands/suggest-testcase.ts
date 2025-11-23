@@ -1,5 +1,5 @@
 /**
- * suggest-suite command - Interactive test case generation using AI agents
+ * suggest-testcase command - Interactive test case generation using AI agents
  */
 
 import { Command } from 'commander';
@@ -11,19 +11,19 @@ import { createSpinner } from '../../lib/progress.js';
 import { UserErrors, formatUserError } from '../../lib/user-errors.js';
 
 /**
- * Register suggest-suite command
+ * Register suggest-testcase command
  */
-export function registerSuggestSuiteCommand(program: Command): void {
+export function registerSuggestTestCaseCommand(program: Command): void {
   program
-    .command('suggest-suite')
+    .command('suggest-testcase')
     .description('Generate test case suggestions using AI agent')
     .requiredOption('--agent <type>', 'Agent tool to use (e.g., copilot-cli)')
     .requiredOption('--output-dir <path>', 'Path to successful agent output folder')
-    .option('--agent-file <path>', 'Custom agent file path', 'agents/suggest-suite.agent.md')
+    .option('--agent-file <path>', 'Custom agent file path', 'agents/suggest-testcase.agent.md')
     .option('--save <path>', 'Path to save generated test case (default: suggested-testcase.yaml)')
     .action(async (options) => {
       try {
-        await handleSuggestSuite(options);
+        await handleSuggestTestCase(options);
       } catch (error) {
         logger.error('Test case suggestion failed:', error);
         process.exit(1);
@@ -32,9 +32,9 @@ export function registerSuggestSuiteCommand(program: Command): void {
 }
 
 /**
- * Handle suggest-suite command execution
+ * Handle suggest-testcase command execution
  */
-async function handleSuggestSuite(options: {
+async function handleSuggestTestCase(options: {
   agent: string;
   outputDir: string;
   agentFile: string;

@@ -15,7 +15,7 @@ import { dirname, join } from 'path';
 import { runCommand } from './commands/run.js';
 import { evalCommand } from './commands/eval.js';
 import { reportCommand } from './commands/report.js';
-import { registerSuggestSuiteCommand } from './commands/suggest-suite.js';
+import { registerSuggestTestCaseCommand } from './commands/suggest-testcase.js';
 import { listCommand } from './commands/list.js';
 import { initCommand } from './commands/init.js';
 import { validateCommand } from './commands/validate.js';
@@ -43,20 +43,20 @@ async function main() {
       '  A developer-friendly framework for testing AI coding tools.\n' +
       '  Run agents, measure their output, and get objective insights.\n\n' +
       '  Quick start:\n' +
-      `    ${commandName} init              # Create a starter configuration\n` +
-      `    ${commandName} run -c suite.yaml # Run an evaluation\n` +
-      `    ${commandName} eval -c eval.yaml # Evaluate existing code without running agent`)
+      `    ${commandName} init                   # Create a starter configuration\n` +
+      `    ${commandName} run -c testcase.yaml  # Run an evaluation\n` +
+      `    ${commandName} eval -c eval.yaml     # Evaluate existing code without running agent`)
     .version(packageJson.version);
 
-  // Register init command (create starter suite)
+  // Register init command (create starter test case)
   program
     .command('init')
-    .description('Create a starter suite.yaml configuration')
-    .option('--force', 'Overwrite existing suite.yaml if present')
+    .description('Create a starter testcase.yaml configuration')
+    .option('--force', 'Overwrite existing testcase.yaml if present')
     .addHelpText('after', `
 Examples:
-  $ ${commandName} init                    # Create suite.yaml in current directory
-  $ ${commandName} init --force            # Overwrite existing suite.yaml
+  $ ${commandName} init                    # Create testcase.yaml in current directory
+  $ ${commandName} init --force            # Overwrite existing testcase.yaml
   
   This creates a fully-commented starter configuration you can customize.
     `)
@@ -65,14 +65,14 @@ Examples:
   // Register commands
   program
     .command('run')
-    .description('Run an evaluation suite against an AI agent')
-    .requiredOption('-c, --config <path>', 'Path to suite configuration file (YAML or JSON, e.g., suite.yaml or suite.json)')
+    .description('Run a test case against an AI agent')
+    .requiredOption('-c, --config <path>', 'Path to test case configuration file (YAML or JSON, e.g., testcase.yaml or testcase.json)')
     .option('--delete-workspace', 'Delete workspace directory after evaluation (by default, workspace is kept for inspection)')
     .addHelpText('after', `
 Examples:
-  $ ${commandName} run -c suite.yaml                    # Run evaluation (workspace kept by default)
-  $ ${commandName} run -c suite.json                    # JSON format is also supported
-  $ ${commandName} run -c suite.yaml --delete-workspace # Delete workspace after completion
+  $ ${commandName} run -c testcase.yaml                    # Run evaluation (workspace kept by default)
+  $ ${commandName} run -c testcase.json                    # JSON format is also supported
+  $ ${commandName} run -c testcase.yaml --delete-workspace # Delete workspace after completion
   
   See examples/testcase-simple.yaml or examples/testcase-simple.json for working configurations.
     `)
@@ -116,8 +116,8 @@ Examples:
     `)
     .action(reportCommand);
 
-  // Register suggest-suite command (User Story 3)
-  registerSuggestSuiteCommand(program);
+  // Register suggest-testcase command (User Story 3)
+  registerSuggestTestCaseCommand(program);
 
   // Register list command (show available evaluators)
   program
@@ -127,21 +127,21 @@ Examples:
 Examples:
   $ ${commandName} list                           # Show all available evaluators
   
-  Use this to discover which evaluators you can use in your suite.yaml or suite.json
+  Use this to discover which evaluators you can use in your testcase.yaml or testcase.json
     `)
     .action(listCommand);
 
-  // Register validate command (check suite configuration)
+  // Register validate command (check test case configuration)
   program
     .command('validate')
-    .description('Validate a suite configuration without running it')
-    .requiredOption('-c, --config <path>', 'Path to suite configuration file (YAML or JSON)')
+    .description('Validate a test case configuration without running it')
+    .requiredOption('-c, --config <path>', 'Path to test case configuration file (YAML or JSON)')
     .option('-v, --verbose', 'Show detailed validation information')
     .addHelpText('after', `
 Examples:
-  $ ${commandName} validate -c suite.yaml         # Quick validation check
-  $ ${commandName} validate -c suite.json         # JSON format is also supported
-  $ ${commandName} validate -c suite.yaml -v      # Detailed validation with suggestions
+  $ ${commandName} validate -c testcase.yaml         # Quick validation check
+  $ ${commandName} validate -c testcase.json         # JSON format is also supported
+  $ ${commandName} validate -c testcase.yaml -v      # Detailed validation with suggestions
   
   Use this to check your configuration before committing or running.
     `)
