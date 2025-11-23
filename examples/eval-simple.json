@@ -1,0 +1,19 @@
+{
+  "name": "Example Evaluation (JSON)",
+  "description": "Example of running evaluators on an existing directory without agent execution",
+  "directory": ".",
+  "evaluators": [
+    {
+      "name": "git-diff",
+      "config": {
+        "thresholds": {
+          "files_changed": 100,
+          "lines_added": 5000,
+          "total_changes": 6000,
+          "change_entropy": 0.9
+        }
+      }
+    }
+  ],
+  "output_dir": ".youbencha-eval"
+}
