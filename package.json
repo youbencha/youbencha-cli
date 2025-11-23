@@ -13,17 +13,39 @@
     "test": "jest",
     "lint": "eslint src/**/*.ts tests/**/*.ts",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
-    "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\""
+    "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "prepublishOnly": "npm run lint && npm run test && npm run build",
+    "prepack": "npm run build"
   },
   "keywords": [
     "agent",
     "evaluation",
     "testing",
     "cli",
-    "benchmark"
+    "benchmark",
+    "ai",
+    "copilot",
+    "automation",
+    "code-generation",
+    "llm"
   ],
-  "author": "",
+  "author": "youBencha",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/youbencha/youbencha-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/youbencha/youbencha-cli/issues"
+  },
+  "homepage": "https://github.com/youbencha/youbencha-cli#readme",
+  "files": [
+    "dist/",
+    "examples/",
+    "README.md",
+    "GETTING-STARTED.md",
+    "LICENSE"
+  ],
   "engines": {
     "node": ">=20.0.0"
   },
