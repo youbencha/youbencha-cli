@@ -21,7 +21,7 @@ class MockReporter implements Reporter {
     bundle: ResultsBundle,
     options?: Record<string, unknown>
   ): Promise<string> {
-    return `Mock report for ${bundle.suite.repo}`;
+    return `Mock report for ${bundle.test_case.repo}`;
   }
 
   async writeToFile(
@@ -43,8 +43,10 @@ describe('Reporter Contract', () => {
 
   const mockBundle: ResultsBundle = {
     version: '1.0.0',
-    suite: {
-      config_file: 'suite.yaml',
+    test_case: {
+      name: 'Test Case Name',
+      description: 'Test case description',
+      config_file: 'testcase.yaml',
       config_hash: 'abc123',
       repo: 'https://github.com/example/test-repo',
       branch: 'main',

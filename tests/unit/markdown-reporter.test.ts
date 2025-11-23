@@ -74,12 +74,16 @@ describe('MarkdownReporter', () => {
       expect(result).toContain('| Skipped | 0 |');
     });
 
-    it('should include suite configuration section', async () => {
+    it('should include test case configuration section', async () => {
       const bundle: ResultsBundle = createMockResultsBundle();
 
       const result = await reporter.generate(bundle);
 
-      expect(result).toContain('## Suite Configuration');
+      expect(result).toContain('## Test Case Configuration');
+      expect(result).toContain('**Name:**');
+      expect(result).toContain('Test Case Name');
+      expect(result).toContain('**Description:**');
+      expect(result).toContain('Test case description');
       expect(result).toContain('**Repository:**');
       expect(result).toContain('https://github.com/example/repo.git');
       expect(result).toContain('**Branch:**');
@@ -366,8 +370,8 @@ describe('MarkdownReporter', () => {
       const bundle1: ResultsBundle = createMockResultsBundle();
       const bundle2: ResultsBundle = {
         ...createMockResultsBundle(),
-        suite: {
-          ...createMockResultsBundle().suite,
+        test_case: {
+          ...createMockResultsBundle().test_case,
           repo: 'https://github.com/different/repo.git',
         },
       };
@@ -407,8 +411,10 @@ describe('MarkdownReporter', () => {
 function createMockResultsBundle(): ResultsBundle {
   return {
     version: '1.0.0',
-    suite: {
-      config_file: 'suite.yaml',
+    test_case: {
+      name: 'Test Case Name',
+      description: 'Test case description',
+      config_file: 'testcase.yaml',
       config_hash: 'abc123',
       repo: 'https://github.com/example/repo.git',
       branch: 'main',
