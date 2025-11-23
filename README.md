@@ -569,7 +569,6 @@ docker run -it --rm \
   -w /workspace \
   node:20 \
   npx youbencha run -c testcase.yaml
-  npx youbencha run -c suite.yaml
 
 # Or use dedicated CI/CD runners
 ```
