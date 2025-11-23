@@ -1,0 +1,23 @@
+name: "Evaluate with Expected Reference"
+description: "Example of evaluating code changes against an expected reference"
+
+# Directory to evaluate (where your code is)
+directory: "./examples/agent-outputs/auth-feature"
+
+# Expected reference directory (what the code should look like)
+# This is used by the expected-diff evaluator to compare outputs
+expected_directory: "./examples/agent-outputs/auth-feature"
+
+# Evaluators to run
+evaluators:
+  # Compare against expected reference
+  - name: expected-diff
+    config:
+      threshold: 0.80  # Require 80% similarity to pass
+      
+  # Analyze git changes
+  - name: git-diff
+    config:
+      assertions:
+        max_files_changed: 5
+        max_lines_added: 200

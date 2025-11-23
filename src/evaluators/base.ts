@@ -28,8 +28,8 @@ export interface EvaluationContext {
   /** Assertion-specific configuration from test case config */
   config: Record<string, unknown>;
 
-  /** Test case configuration for context */
-  testCaseConfig: TestCaseConfig;
+  /** Test case configuration for context (optional for eval-only mode) */
+  testCaseConfig?: TestCaseConfig;
 }
 
 /**

@@ -29,8 +29,9 @@ evaluators:
   # Standard git-diff to track scope of changes
   - name: git-diff
     config:
-      max_files_changed: 5
-      max_lines_changed: 200
+      assertions:
+        max_files_changed: 5
+        max_total_changes: 200
   
   # Judge 1: Error Handling Quality
   # Focused evaluation of error handling implementation

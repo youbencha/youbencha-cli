@@ -1,0 +1,37 @@
+name: "Example Evaluation"
+description: "Example of running evaluators on an existing directory without agent execution"
+
+# Directory to evaluate (relative or absolute path)
+# This should be a git repository for git-diff evaluator to work
+directory: "."
+
+# Optional: Expected reference directory for expected-diff evaluator
+# expected_directory: "./examples/agent-outputs/expected-auth-feature"
+
+# Optional: Where to save results (default: .youbencha-eval)
+# output_dir: ".youbencha-eval"
+
+# Evaluators to run
+evaluators:
+  - name: git-diff
+    config:
+      assertions:
+      # Maximum number of files that can be changed
+      # Use this to ensure focused changes (e.g., for a bug fix)
+        max_files_changed: 1
+        
+  # Example: Agentic judge evaluator (requires agent to be configured)
+  # - name: agentic-judge
+  #   config:
+  #     type: copilot-cli
+  #     agent_name: agentic-judge
+  #     assertions:
+  #       authentication_implemented: "Authentication logic was properly implemented. Score 1 if true, 0 if false."
+  #       tests_added: "Unit tests were added for authentication. Score 1 if true, 0 if false."
+
+# Optional: Post-evaluation hooks
+# post_evaluation:
+#   - name: webhook
+#     config:
+#       url: "https://example.com/webhook"
+#       method: POST

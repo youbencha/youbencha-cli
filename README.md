@@ -155,11 +155,28 @@ yb report --from .youbencha-workspace/run-*/artifacts/results.json
 
 ### `yb run`
 
-Run an evaluation suite.
+Run an evaluation suite with agent execution.
 
 ```bash
 yb run -c <config-file>
 ```
+
+### `yb eval`
+
+Run evaluators on existing directories without executing an agent. Useful for re-evaluating outputs, testing evaluators, or evaluating manual changes.
+
+```bash
+yb eval -c <eval-config-file>
+```
+
+**Use cases:**
+- Re-evaluate agent outputs with different evaluator configurations
+- Evaluate manual code changes using youBencha's evaluators
+- Test custom evaluators during development
+- CI/CD integration with other tools
+- Comparative analysis of multiple outputs
+
+See the [Eval Command Guide](docs/eval-command.md) for detailed documentation.
 
 ### `yb report`
 

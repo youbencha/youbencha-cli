@@ -21,8 +21,9 @@ agent:
 evaluators:
   - name: git-diff
     config:
-      max_files_changed: 1
-      max_lines_added: 5
+      assertions:
+        max_files_changed: 1
+        max_lines_added: 5
 
   # agentic-judge with prompt loaded from file
   - name: agentic-judge
