@@ -340,13 +340,18 @@ export class Orchestrator {
       if (evalConfig.post_evaluation && evalConfig.post_evaluation.length > 0) {
         logger.info(`Running ${evalConfig.post_evaluation.length} post-evaluation(s)...`);
         
+        const runDirPath = path.join(outputDir, runId);
+        
         // Create a synthetic workspace object for post-evaluations
-        const syntheticWorkspace = {
+        const syntheticWorkspace: Pick<Workspace, 'paths'> = {
           paths: {
-            runDir: path.join(outputDir, runId),
+            root: outputDir,
+            runDir: runDirPath,
             artifactsDir,
+            evaluatorArtifactsDir: artifactsDir,
             modifiedDir,
             expectedDir,
+            lockFile: path.join(runDirPath, '.lock'),
           },
         };
         
@@ -354,7 +359,7 @@ export class Orchestrator {
           evalConfig,
           resultsBundle,
           resultsBundlePath,
-          syntheticWorkspace as any
+          syntheticWorkspace
         );
         logger.info(`Post-evaluations completed: ${postEvaluationResults.length} results`);
       }
@@ -530,22 +535,23 @@ export class Orchestrator {
     evalConfig: EvalConfig,
     resultsBundle: ResultsBundle,
     resultsBundlePath: string,
-    workspace: any
+    workspace: Pick<Workspace, 'paths'>
   ): Promise<PostEvaluationResult[]> {
     if (!evalConfig.post_evaluation || evalConfig.post_evaluation.length === 0) {
       return [];
     }
 
     // Reuse the existing post-evaluation logic with a synthetic test case config
-    const syntheticTestCaseConfig = {
+    // Only post_evaluation field is needed by runPostEvaluations
+    const syntheticTestCaseConfig: Pick<ResolvedTestCaseConfig, 'post_evaluation'> = {
       post_evaluation: evalConfig.post_evaluation,
-    } as any;
+    };
 
     return this.runPostEvaluations(
-      syntheticTestCaseConfig,
+      syntheticTestCaseConfig as ResolvedTestCaseConfig,
       resultsBundle,
       resultsBundlePath,
-      workspace
+      workspace as Workspace
     );
   }
 

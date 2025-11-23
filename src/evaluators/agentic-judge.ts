@@ -52,19 +52,14 @@ export class AgenticJudgeEvaluator implements Evaluator {
    */
   async checkPreconditions(context: EvaluationContext): Promise<boolean> {
     try {
-      // Check if agent configuration exists in test case config (or use fallback for eval-only mode)
+      // Check if agent type is configured (either in test case config or evaluator config)
       const agentConfig = context.testCaseConfig?.agent;
-      if (!agentConfig || !agentConfig.type) {
-        // In eval-only mode, check if agent type is in evaluator config
-        const agentType = context.config.type;
-        if (!agentType) {
-          return false;
-        }
-      }
-      const agentType = context.config.type;
+      const agentType = (agentConfig?.type || context.config.type) as string;
+      
       if (!agentType) {
         return false;
       }
+      
       // Validate assertions exists and is not empty
       const assertions = context.config.assertions || context.config.criteria; // Support both for transition
       if (!assertions) {
@@ -77,9 +72,8 @@ export class AgenticJudgeEvaluator implements Evaluator {
         return false;
       }
 
-      // Get the adapter - use evaluator config type for eval-only mode
-      const adapterType = (agentConfig?.type || context.config.type) as string;
-      const adapter = await this.getAdapter(adapterType);
+      // Get the adapter
+      const adapter = await this.getAdapter(agentType);
       if (!adapter) {
         return false;
       }
