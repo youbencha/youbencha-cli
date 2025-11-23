@@ -52,10 +52,14 @@ export class AgenticJudgeEvaluator implements Evaluator {
    */
   async checkPreconditions(context: EvaluationContext): Promise<boolean> {
     try {
-      // Check if agent configuration exists in test case config
-      const agentConfig = context.testCaseConfig.agent;
+      // Check if agent configuration exists in test case config (or use fallback for eval-only mode)
+      const agentConfig = context.testCaseConfig?.agent;
       if (!agentConfig || !agentConfig.type) {
-        return false;
+        // In eval-only mode, check if agent type is in evaluator config
+        const agentType = context.config.type;
+        if (!agentType) {
+          return false;
+        }
       }
       const agentType = context.config.type;
       if (!agentType) {
@@ -73,8 +77,9 @@ export class AgenticJudgeEvaluator implements Evaluator {
         return false;
       }
 
-      // Get the adapter
-      const adapter = await this.getAdapter(agentConfig.type);
+      // Get the adapter - use evaluator config type for eval-only mode
+      const adapterType = (agentConfig?.type || context.config.type) as string;
+      const adapter = await this.getAdapter(adapterType);
       if (!adapter) {
         return false;
       }
@@ -101,8 +106,8 @@ export class AgenticJudgeEvaluator implements Evaluator {
           'Agent not configured or not available - check agent.type in evaluator config and ensure agent is installed'
         );
       }
-      // Get adapter for configured agent type from test case config
-      const agentConfig = context.testCaseConfig.agent;
+      // Get adapter for configured agent type from test case config (or evaluator config for eval-only)
+      const agentConfig = context.testCaseConfig?.agent;
       console.log('Agent config from suiteConfig:', agentConfig);
       const agentType = context.config?.type as string;
       console.log('Agent type from config:', agentType);

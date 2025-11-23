@@ -13,6 +13,7 @@ import { dirname, join } from 'path';
 
 // Import commands
 import { runCommand } from './commands/run.js';
+import { evalCommand } from './commands/eval.js';
 import { reportCommand } from './commands/report.js';
 import { registerSuggestSuiteCommand } from './commands/suggest-suite.js';
 import { listCommand } from './commands/list.js';
@@ -75,6 +76,26 @@ Examples:
   See examples/testcase-simple.yaml or examples/testcase-simple.json for working configurations.
     `)
     .action(runCommand);
+
+  program
+    .command('eval')
+    .description('Run evaluators on existing directories (no agent execution)')
+    .requiredOption('-c, --config <path>', 'Path to eval configuration file (YAML or JSON)')
+    .addHelpText('after', `
+Examples:
+  $ ${commandName} eval -c eval.yaml                    # Evaluate existing directory
+  $ ${commandName} eval -c eval.json                    # JSON format is also supported
+  
+  Use cases:
+  - Re-evaluate agent outputs with different evaluators
+  - Evaluate manual code changes
+  - Test custom evaluators during development
+  - CI/CD integration with other tools
+  
+  The eval command runs evaluators without executing an agent, making it
+  faster and more flexible for iterative evaluation workflows.
+    `)
+    .action(evalCommand);
 
   program
     .command('report')

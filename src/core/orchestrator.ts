@@ -8,6 +8,7 @@
 import * as path from 'path';
 import { createHash } from 'crypto';
 import { TestCaseConfig } from '../schemas/testcase.schema.js';
+import { EvalConfig } from '../schemas/eval.schema.js';
 import { ResultsBundle, EvaluationResult } from '../schemas/result.schema.js';
 import { PostEvaluationResult } from '../schemas/post-evaluation.schema.js';
 import { PreExecutionResult } from '../schemas/pre-execution.schema.js';
@@ -200,6 +201,352 @@ export class Orchestrator {
 
       throw error;
     }
+  }
+
+  /**
+   * Run evaluation-only workflow (no agent execution)
+   * 
+   * This method runs evaluators on existing directories without executing an agent.
+   * Useful for:
+   * - Re-evaluating existing agent outputs
+   * - Evaluating manual code changes
+   * - Testing evaluators during development
+   * - CI/CD integration with other tools
+   * 
+   * @param evalConfig - Eval configuration
+   * @param configFile - Path to the config file used
+   * @returns Results bundle with evaluation results
+   */
+  async runEvaluationOnly(evalConfig: EvalConfig, configFile: string): Promise<ResultsBundle> {
+    const startedAt = new Date().toISOString();
+    logger.info('Starting evaluation-only workflow (no agent execution)');
+
+    // Detect environment
+    const env = detectEnvironment();
+
+    // Validate that the directory exists
+    const fs = await import('fs/promises');
+    try {
+      const dirStat = await fs.stat(evalConfig.directory);
+      if (!dirStat.isDirectory()) {
+        throw new Error(`Path is not a directory: ${evalConfig.directory}`);
+      }
+    } catch (error) {
+      throw new Error(`Directory does not exist: ${evalConfig.directory}`);
+    }
+
+    // Validate expected directory if provided
+    let expectedDir: string | undefined;
+    if (evalConfig.expected_directory) {
+      try {
+        const expectedDirStat = await fs.stat(evalConfig.expected_directory);
+        if (!expectedDirStat.isDirectory()) {
+          throw new Error(`Expected path is not a directory: ${evalConfig.expected_directory}`);
+        }
+        expectedDir = path.resolve(evalConfig.expected_directory);
+      } catch (error) {
+        throw new Error(`Expected directory does not exist: ${evalConfig.expected_directory}`);
+      }
+    }
+
+    // Resolve paths
+    const modifiedDir = path.resolve(evalConfig.directory);
+    const outputDir = evalConfig.output_dir || '.youbencha-eval';
+    
+    // Create output directory with timestamp
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const runId = `eval-${timestamp}`;
+    const artifactsDir = path.join(outputDir, runId, 'artifacts');
+    
+    await fs.mkdir(artifactsDir, { recursive: true });
+    logger.info(`Output directory created: ${path.join(outputDir, runId)}`);
+
+    try {
+      // Create a minimal YouBenchaLog for eval-only mode
+      const agentLog: YouBenchaLog = {
+        version: '1.0.0',
+        agent: {
+          name: 'manual',
+          version: '1.0.0',
+          adapter_version: '1.0.0',
+        },
+        model: {
+          name: 'none',
+          provider: 'manual',
+          parameters: {},
+        },
+        execution: {
+          started_at: startedAt,
+          completed_at: startedAt,
+          duration_ms: 0,
+          status: 'success',
+          exit_code: 0,
+        },
+        messages: [
+          {
+            role: 'user',
+            content: 'Manual evaluation (no agent execution)',
+            timestamp: startedAt,
+          },
+        ],
+        usage: {
+          prompt_tokens: 0,
+          completion_tokens: 0,
+          total_tokens: 0,
+          estimated_cost_usd: 0,
+        },
+        errors: [],
+        environment: {
+          os: env.os,
+          node_version: env.nodeVersion,
+          youbencha_version: env.youbenchaVersion,
+          working_directory: modifiedDir,
+        },
+      };
+
+      // Save youBencha log
+      const agentLogPath = await saveYouBenchaLog(agentLog, artifactsDir);
+      logger.info(`youBencha log saved: ${agentLogPath}`);
+
+      // Run evaluators using a synthetic workspace-like context
+      logger.info('Running evaluators...');
+      const evaluatorResults = await this.runEvaluatorsForEvalOnly(
+        evalConfig,
+        modifiedDir,
+        expectedDir,
+        artifactsDir,
+        agentLog
+      );
+      logger.info(`Evaluators completed: ${evaluatorResults.length} results`);
+
+      // Build results bundle
+      const resultsBundle = await this.buildResultsBundleForEvalOnly(
+        evalConfig,
+        configFile,
+        modifiedDir,
+        expectedDir,
+        path.join(outputDir, runId),
+        artifactsDir,
+        agentLogPath,
+        evaluatorResults,
+        startedAt
+      );
+
+      // Save results bundle
+      const resultsBundlePath = await saveResultsBundle(resultsBundle, artifactsDir);
+      logger.info(`Results bundle saved: ${resultsBundlePath}`);
+
+      // Run post-evaluations (if configured)
+      if (evalConfig.post_evaluation && evalConfig.post_evaluation.length > 0) {
+        logger.info(`Running ${evalConfig.post_evaluation.length} post-evaluation(s)...`);
+        
+        // Create a synthetic workspace object for post-evaluations
+        const syntheticWorkspace = {
+          paths: {
+            runDir: path.join(outputDir, runId),
+            artifactsDir,
+            modifiedDir,
+            expectedDir,
+          },
+        };
+        
+        const postEvaluationResults = await this.runPostEvaluationsForEvalOnly(
+          evalConfig,
+          resultsBundle,
+          resultsBundlePath,
+          syntheticWorkspace as any
+        );
+        logger.info(`Post-evaluations completed: ${postEvaluationResults.length} results`);
+      }
+
+      return resultsBundle;
+    } catch (error) {
+      logger.error('Evaluation failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Run evaluators for eval-only mode
+   */
+  private async runEvaluatorsForEvalOnly(
+    evalConfig: EvalConfig,
+    modifiedDir: string,
+    expectedDir: string | undefined,
+    artifactsDir: string,
+    agentLog: YouBenchaLog
+  ): Promise<EvaluationResult[]> {
+    const results: EvaluationResult[] = [];
+
+    // Run evaluators in parallel using Promise.allSettled
+    const evaluatorPromises = evalConfig.evaluators.map(async (evaluatorConfig) => {
+      try {
+        const evaluator = this.getEvaluator(evaluatorConfig.name);
+        if (!evaluator) {
+          return {
+            evaluator: evaluatorConfig.name,
+            status: 'skipped' as const,
+            metrics: {},
+            message: `Unknown evaluator: ${evaluatorConfig.name}`,
+            duration_ms: 0,
+            timestamp: new Date().toISOString(),
+            error: {
+              message: `Evaluator '${evaluatorConfig.name}' not found`,
+            },
+          };
+        }
+
+        // Build evaluation context
+        const context: EvaluationContext = {
+          modifiedDir,
+          expectedDir,
+          artifactsDir,
+          agentLog,
+          config: evaluatorConfig.config || {},
+          testCaseConfig: undefined, // No test case config in eval-only mode
+        };
+
+        // Run evaluator
+        const result = await evaluator.evaluate(context);
+        return result;
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return {
+          evaluator: evaluatorConfig.name,
+          status: 'skipped' as const,
+          metrics: {},
+          message: `Evaluator error: ${errorMessage}`,
+          duration_ms: 0,
+          timestamp: new Date().toISOString(),
+          error: {
+            message: errorMessage,
+            stack_trace: error instanceof Error ? error.stack : undefined,
+          },
+        };
+      }
+    });
+
+    const settledResults = await Promise.allSettled(evaluatorPromises);
+
+    // Collect results
+    for (const settled of settledResults) {
+      if (settled.status === 'fulfilled') {
+        results.push(settled.value);
+      } else {
+        logger.error('Evaluator promise rejected', settled.reason);
+        results.push({
+          evaluator: 'unknown',
+          status: 'skipped',
+          metrics: {},
+          message: `Evaluator failed: ${settled.reason}`,
+          duration_ms: 0,
+          timestamp: new Date().toISOString(),
+          error: {
+            message: String(settled.reason),
+          },
+        });
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Build results bundle for eval-only mode
+   */
+  private async buildResultsBundleForEvalOnly(
+    evalConfig: EvalConfig,
+    configFile: string,
+    modifiedDir: string,
+    expectedDir: string | undefined,
+    runDir: string,
+    artifactsDir: string,
+    agentLogPath: string,
+    evaluatorResults: EvaluationResult[],
+    startedAt: string
+  ): Promise<ResultsBundle> {
+    const completedAt = new Date().toISOString();
+    const durationMs = new Date(completedAt).getTime() - new Date(startedAt).getTime();
+    const env = detectEnvironment();
+
+    // Calculate summary statistics
+    const summary = this.calculateSummary(evaluatorResults);
+
+    // Get artifacts manifest
+    const allArtifacts = await getArtifactManifest(artifactsDir);
+    const evaluatorArtifacts = allArtifacts.filter(
+      (f) => !f.includes('youbencha.log.json') && !f.includes('results.json')
+    );
+
+    // Generate config hash
+    const configHash = createHash('sha256')
+      .update(JSON.stringify(evalConfig, null, 0))
+      .digest('hex')
+      .substring(0, 16);
+
+    return {
+      version: '1.0.0',
+      test_case: {
+        name: evalConfig.name,
+        description: evalConfig.description,
+        config_file: configFile,
+        config_hash: configHash,
+        repo: `file://${modifiedDir}`, // Use file:// URL for local directory
+        branch: 'eval-only',
+        commit: 'manual',
+        expected_branch: expectedDir ? 'eval-only-expected' : undefined,
+      },
+      execution: {
+        started_at: startedAt,
+        completed_at: completedAt,
+        duration_ms: durationMs,
+        youbencha_version: env.youbenchaVersion,
+        environment: {
+          os: `${env.os} ${env.osVersion}`,
+          node_version: env.nodeVersion,
+          workspace_dir: runDir,
+        },
+      },
+      agent: {
+        type: 'manual',
+        youbencha_log_path: 'youbencha.log.json',
+        status: 'success',
+        exit_code: 0,
+      },
+      evaluators: evaluatorResults,
+      summary,
+      artifacts: {
+        agent_log: path.basename(agentLogPath),
+        reports: [],
+        evaluator_artifacts: evaluatorArtifacts,
+      },
+    };
+  }
+
+  /**
+   * Run post-evaluations for eval-only mode
+   */
+  private async runPostEvaluationsForEvalOnly(
+    evalConfig: EvalConfig,
+    resultsBundle: ResultsBundle,
+    resultsBundlePath: string,
+    workspace: any
+  ): Promise<PostEvaluationResult[]> {
+    if (!evalConfig.post_evaluation || evalConfig.post_evaluation.length === 0) {
+      return [];
+    }
+
+    // Reuse the existing post-evaluation logic with a synthetic test case config
+    const syntheticTestCaseConfig = {
+      post_evaluation: evalConfig.post_evaluation,
+    } as any;
+
+    return this.runPostEvaluations(
+      syntheticTestCaseConfig,
+      resultsBundle,
+      resultsBundlePath,
+      workspace
+    );
   }
 
   /**
