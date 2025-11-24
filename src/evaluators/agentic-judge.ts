@@ -378,7 +378,11 @@ export class AgenticJudgeEvaluator implements Evaluator {
         return null;
       }
 
-      return parsed as AgentEvaluationOutput;
+      return {
+        status: parsed.status as 'passed' | 'failed',
+        metrics: parsed.metrics as Record<string, unknown>,
+        message: parsed.message,
+      };
     } catch (error) {
       return null;
     }

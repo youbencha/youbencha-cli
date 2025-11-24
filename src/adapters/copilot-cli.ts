@@ -383,7 +383,11 @@ export class CopilotCLIAdapter implements AgentAdapter {
     });
 
     let currentMessageContent = '';
-    let currentToolCalls: Array<{ tool: string; args: string }> = [];
+    let currentToolCalls: Array<{
+      id: string;
+      type: string;
+      function: { name: string; arguments: string };
+    }> = [];
     
     for (const line of lines) {
       const trimmed = line.trim();

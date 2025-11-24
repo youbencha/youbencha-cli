@@ -87,7 +87,7 @@ export class ExpectedDiffEvaluator implements Evaluator {
       );
 
       // Determine status based on threshold
-      const status = metrics.aggregate_similarity >= threshold ? 'passed' : 'failed';
+      const status = (metrics.aggregate_similarity as number) >= threshold ? 'passed' : 'failed';
 
       // Generate artifacts
       const artifacts = await this.generateArtifacts(
@@ -332,7 +332,7 @@ export class ExpectedDiffEvaluator implements Evaluator {
     threshold: number,
     status: 'passed' | 'failed'
   ): string {
-    const similarityPercent = (metrics.aggregate_similarity * 100).toFixed(1);
+    const similarityPercent = ((metrics.aggregate_similarity as number) * 100).toFixed(1);
     const thresholdPercent = (threshold * 100).toFixed(0);
 
     const parts = [
