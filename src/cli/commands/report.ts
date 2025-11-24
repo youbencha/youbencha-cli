@@ -31,7 +31,7 @@ export async function reportCommand(options: ReportCommandOptions): Promise<void
     // Load results bundle
     logger.info(`Loading results from ${options.from}`);
     const resultsContent = await fs.readFile(options.from, 'utf-8');
-    const resultsData = JSON.parse(resultsContent);
+    const resultsData: unknown = JSON.parse(resultsContent);
 
     // Validate results bundle
     let resultsBundle: ResultsBundle;

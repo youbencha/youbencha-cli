@@ -12,6 +12,7 @@ import { createSpinner } from '../../lib/progress.js';
 import * as logger from '../../lib/logger.js';
 import { UserErrors, formatUserError } from '../../lib/user-errors.js';
 import { parseConfig, getFormatTips } from '../../lib/config-parser.js';
+import { ZodError } from 'zod';
 
 /**
  * Options for eval command
@@ -70,14 +71,11 @@ export async function evalCommand(options: EvalCommandOptions): Promise<void> {
       
       // Extract validation errors
       const errors: string[] = [];
-      if (error instanceof Error && 'errors' in error) {
-        const zodError = error as any;
-        if (Array.isArray(zodError.errors)) {
-          zodError.errors.forEach((err: any) => {
-            const path = err.path.join('.');
-            errors.push(`${path}: ${err.message}`);
-          });
-        }
+      if (error instanceof ZodError) {
+        error.errors.forEach((err) => {
+          const path = err.path.join('.');
+          errors.push(`${path}: ${err.message}`);
+        });
       } else if (error instanceof Error) {
         errors.push(error.message);
       }

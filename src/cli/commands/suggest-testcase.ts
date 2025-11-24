@@ -21,7 +21,7 @@ export function registerSuggestTestCaseCommand(program: Command): void {
     .requiredOption('--output-dir <path>', 'Path to successful agent output folder')
     .option('--agent-file <path>', 'Custom agent file path', 'agents/suggest-testcase.agent.md')
     .option('--save <path>', 'Path to save generated test case (default: suggested-testcase.yaml)')
-    .action(async (options) => {
+    .action(async (options: SuggestTestCaseOptions) => {
       try {
         await handleSuggestTestCase(options);
       } catch (error) {
@@ -32,14 +32,19 @@ export function registerSuggestTestCaseCommand(program: Command): void {
 }
 
 /**
- * Handle suggest-testcase command execution
+ * Options type for suggest-testcase command
  */
-async function handleSuggestTestCase(options: {
+interface SuggestTestCaseOptions {
   agent: string;
   outputDir: string;
   agentFile: string;
   save?: string;
-}): Promise<void> {
+}
+
+/**
+ * Handle suggest-testcase command execution
+ */
+async function handleSuggestTestCase(options: SuggestTestCaseOptions): Promise<void> {
   logger.info('Starting test case suggestion workflow...');
 
   // Step 1: Validate output directory
