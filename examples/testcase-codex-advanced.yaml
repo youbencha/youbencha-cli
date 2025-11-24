@@ -1,0 +1,44 @@
+# OpenAI Codex CLI - Advanced Example
+# 
+# This example shows more advanced usage of the codex-cli adapter including:
+# - Using a different model (gpt-3.5-turbo for faster, cheaper execution)
+# - Multiple evaluators
+# - Longer, more complex prompts
+
+name: "Code Refactoring with Codex"
+description: "Tests Codex's ability to refactor code for better readability and maintainability"
+
+repo: https://github.com/octocat/Hello-World.git
+branch: master
+
+agent:
+  type: codex-cli
+  model: gpt-3.5-turbo  # Faster and cheaper alternative to gpt-4
+  config:
+    prompt: |
+      Analyze the codebase and perform the following tasks:
+      
+      1. Review all code files in the repository
+      2. Look for any opportunities to improve code quality
+      3. Add inline comments to explain complex logic
+      4. Ensure consistent formatting
+      5. Create a summary of changes in CHANGES.md
+      
+      Focus on making the code more maintainable without changing functionality.
+
+evaluators:
+  - name: git-diff
+    config:
+      max_changes: 50
+      
+  - name: agentic-judge
+    config:
+      type: copilot-cli
+      agent_name: agentic-judge
+      assertions:
+        files_modified: "At least one code file was modified. Score 1 if true, 0 if false."
+        comments_added: "Inline comments were added to explain logic. Score 1 if comprehensive, 0.5 if partial, 0 if none."
+        no_breaking_changes: "No functionality was changed, only code quality improvements. Score 1 if true, 0 if false."
+        summary_created: "A CHANGES.md file was created with a summary. Score 1 if exists and detailed, 0.5 if exists but brief, 0 if missing."
+
+timeout: 600000  # 10 minutes for more complex task

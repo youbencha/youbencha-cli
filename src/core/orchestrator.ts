@@ -18,6 +18,7 @@ import { detectEnvironment } from './env.js';
 import { saveYouBenchaLog, saveResultsBundle, getArtifactManifest } from './storage.js';
 import { AgentAdapter, AgentExecutionContext } from '../adapters/base.js';
 import { CopilotCLIAdapter } from '../adapters/copilot-cli.js';
+import { CodexCLIAdapter } from '../adapters/codex-cli.js';
 import { Evaluator, EvaluationContext } from '../evaluators/base.js';
 import { GitDiffEvaluator } from '../evaluators/git-diff.js';
 import { ExpectedDiffEvaluator } from '../evaluators/expected-diff.js';
@@ -1003,6 +1004,8 @@ export class Orchestrator {
     switch (adapterType) {
       case 'copilot-cli':
         return new CopilotCLIAdapter();
+      case 'codex-cli':
+        return new CodexCLIAdapter();
       default:
         throw new Error(`Unknown agent adapter type: ${adapterType}`);
     }

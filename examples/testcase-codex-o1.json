@@ -1,0 +1,35 @@
+{
+  "name": "Codex CLI with o1 Model",
+  "description": "Tests the o1 model's advanced reasoning capabilities for complex code generation",
+  "repo": "https://github.com/octocat/Hello-World.git",
+  "branch": "master",
+  "agent": {
+    "type": "codex-cli",
+    "model": "o1",
+    "config": {
+      "prompt": "Create a comprehensive test suite for this repository. Analyze the code, understand its purpose, and write unit tests that cover the main functionality. Use appropriate testing frameworks and follow best practices."
+    }
+  },
+  "evaluators": [
+    {
+      "name": "git-diff",
+      "config": {
+        "max_changes": 100
+      }
+    },
+    {
+      "name": "agentic-judge",
+      "config": {
+        "type": "copilot-cli",
+        "agent_name": "agentic-judge",
+        "assertions": {
+          "test_files_created": "Test files were created. Score 1 if true, 0 if false.",
+          "test_coverage": "Tests cover main functionality. Score 1 if comprehensive, 0.5 if partial, 0 if minimal.",
+          "tests_runnable": "Tests are properly structured and can be run. Score 1 if true, 0 if false.",
+          "best_practices": "Tests follow best practices (clear names, arrange-act-assert, etc.). Score 1 if excellent, 0.5 if good, 0 if poor."
+        }
+      }
+    }
+  ],
+  "timeout": 600000
+}

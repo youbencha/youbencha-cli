@@ -1,0 +1,42 @@
+# OpenAI Codex CLI Example Test Case
+# 
+# This example demonstrates how to use the codex-cli adapter with youBencha.
+# The adapter interfaces with OpenAI's API (modern successor to Codex) for code generation tasks.
+#
+# Prerequisites:
+# - OPENAI_API_KEY environment variable must be set
+# - Python 3.x with openai package installed (pip install openai)
+
+name: "Simple Code Fix with Codex"
+description: "Tests Codex CLI's ability to analyze and fix a simple bug in a function"
+
+# Repository to test against
+repo: https://github.com/octocat/Hello-World.git
+branch: master
+
+# Agent configuration for Codex CLI
+agent:
+  type: codex-cli
+  model: gpt-4  # Options: gpt-4, gpt-4-turbo, gpt-3.5-turbo, o1, o1-mini
+  config:
+    prompt: |
+      Please analyze the README.md file and add a helpful comment at the top 
+      explaining what this repository is about. Make the comment clear and concise.
+
+# Evaluators to assess the agent's output
+evaluators:
+  - name: git-diff
+    config:
+      max_changes: 10
+      
+  - name: agentic-judge
+    config:
+      type: copilot-cli
+      agent_name: agentic-judge
+      assertions:
+        readme_modified: "README.md was modified. Score 1 if true, 0 if false."
+        comment_added: "A comment was added to the README. Score 1 if true, 0 if false."
+        comment_helpful: "The comment is helpful and explains the repository purpose. Score 1 if very helpful, 0.5 if somewhat helpful, 0 if not helpful."
+
+# Timeout for agent execution (5 minutes)
+timeout: 300000
