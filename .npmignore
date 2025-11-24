@@ -1,0 +1,69 @@
+# Source files - only publish compiled code
+src/
+tests/
+*.ts
+!*.d.ts
+
+# Configuration files
+tsconfig.json
+jest.config.js
+.eslintrc.json
+.prettierrc
+
+# Build artifacts
+*.tsbuildinfo
+coverage/
+*.lcov
+
+# Development files
+.github/
+.vscode/
+.idea/
+.specify/
+specs/
+
+# Documentation that's not needed in package
+docs/
+diagrams.md
+prd.md
+youbencha-log.md
+RFC-001-youBencha-Framework.md
+IMPLEMENTATION_SUMMARY.md
+MODEL_SELECTION_IMPLEMENTATION.md
+TEST-CASE-NAMING.md
+SECURITY.md
+agents/
+
+# Runtime/temporary files
+.youbencha-workspace/
+.youbencha-eval/
+.test-temp/
+results/
+artifacts/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env
+.env.*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# CI/CD
+.travis.yml
+.gitlab-ci.yml
+azure-pipelines.yml
+
+# Package manager
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
