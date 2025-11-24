@@ -17,7 +17,9 @@ youBencha is a testing and benchmarking framework designed to help developers ev
 
 - **Node.js 20+** - youBencha requires Node.js version 20 or higher
 - **Git** - For cloning repositories during evaluation
-- **GitHub Copilot CLI** - Currently the only supported agent adapter (MVP)
+- **Agent CLI** - At least one supported agent adapter:
+  - **GitHub Copilot CLI** - For GitHub Copilot agent evaluations
+  - **OpenAI API** - For Codex CLI adapter (requires Python 3.x and `openai` package)
 
 ## Installation
 
@@ -145,6 +147,58 @@ yb report --from .youbencha-workspace/run-*/artifacts/results.json
 ```
 
 **That's it!** youBencha will clone the repo, run the agent, evaluate the output, and generate a comprehensive report.
+
+---
+
+## Supported Agent Adapters
+
+youBencha currently supports two agent adapters:
+
+### GitHub Copilot CLI (`copilot-cli`)
+
+Use GitHub's Copilot CLI for agent-powered code generation.
+
+**Requirements:**
+- GitHub Copilot CLI installed and authenticated
+- Active GitHub Copilot subscription
+
+**Models:** claude-sonnet-4.5, claude-sonnet-4, gpt-5, gpt-5.1, etc.
+
+**Example:**
+```yaml
+agent:
+  type: copilot-cli
+  model: gpt-5.1
+  config:
+    prompt: "Your task description"
+```
+
+### OpenAI Codex CLI (`codex-cli`)
+
+Interface directly with OpenAI's API for code generation tasks.
+
+**Requirements:**
+- OPENAI_API_KEY environment variable set
+- Python 3.x with `openai` package installed
+
+**Models:** gpt-4, gpt-4-turbo, gpt-3.5-turbo, o1, o1-mini
+
+**Example:**
+```yaml
+agent:
+  type: codex-cli
+  model: gpt-4
+  config:
+    prompt: "Your task description"
+```
+
+**Setup:**
+```bash
+export OPENAI_API_KEY="sk-your-api-key"
+pip install openai
+```
+
+See [Codex CLI Adapter Documentation](docs/codex-cli-adapter.md) for detailed configuration and usage.
 
 ---
 
