@@ -11,7 +11,7 @@ import { exec } from 'child_process';
 import * as os from 'os';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { createWriteStream } from 'fs';
+import { createWriteStream, readFileSync } from 'fs';
 import { 
   AgentAdapter, 
   AgentExecutionContext, 
@@ -520,8 +520,6 @@ export class CopilotCLIAdapter implements AgentAdapter {
     try {
       // Try to read version from package.json
       const packageJsonPath = path.join(process.cwd(), 'package.json');
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
-      const { readFileSync } = require('fs') as { readFileSync: (path: string, encoding: string) => string };
       const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8')) as { version?: string };
       return packageJson.version || '1.0.0';
     } catch {

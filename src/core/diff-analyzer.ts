@@ -6,6 +6,7 @@
  */
 
 import * as fs from 'fs/promises';
+import { accessSync } from 'fs';
 import * as path from 'path';
 import { diffLines } from 'diff';
 
@@ -373,7 +374,7 @@ export class DiffAnalyzer {
     const outputFiles = potentiallyModified.filter(f => {
       const sourceFile = path.join(sourcePath, f);
       try {
-        void fs.access(sourceFile);
+        accessSync(sourceFile);
         return false;
       } catch {
         return true;

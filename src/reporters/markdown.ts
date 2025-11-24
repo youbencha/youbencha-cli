@@ -11,6 +11,15 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 
 /**
+ * File similarity data structure used in expected-diff evaluator metrics
+ */
+interface FileSimilarity {
+  similarity: number;
+  status: string;
+  path: string;
+}
+
+/**
  * Markdown Reporter implementation
  * 
  * Generates formatted Markdown reports with tables and sections.
@@ -291,12 +300,6 @@ export class MarkdownReporter implements Reporter {
       lines.push('');
       lines.push('| File | Similarity | Status |');
       lines.push('|------|------------|--------|');
-      
-      interface FileSimilarity {
-        similarity: number;
-        status: string;
-        path: string;
-      }
       
       // Sort by similarity (lowest first) to highlight differences
       const sortedFiles = [...(metrics.file_similarities as FileSimilarity[])]

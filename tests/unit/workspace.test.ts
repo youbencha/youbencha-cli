@@ -210,9 +210,7 @@ describe('WorkspaceManager', () => {
         branch: 'main',
       };
       
-      const workspace = await manager.createWorkspace(config);
-      // workspace variable kept for potential future validation
-      void workspace;
+      await manager.createWorkspace(config);
       
       expect(mockGit.clone).toHaveBeenCalledWith(
         'https://github.com/test/repo.git',
