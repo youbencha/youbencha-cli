@@ -16,15 +16,20 @@ import { CopilotCLIAdapter } from '../adapters/copilot-cli.js';
 
 /**
  * Get the directory path for this module (ES module equivalent of __dirname)
+ * 
+ * NOTE: Uses eval() to work around Jest's inability to parse import.meta.url at module load time.
+ * This is safe because: (1) the string is constant, not user input, (2) Jest environment is detected
+ * first and uses a static path, (3) eval() is only executed in production/non-Jest environments.
  */
 function getModuleDirname(): string {
-  // Jest/test environment workaround
+  // Jest/test environment workaround - use static path
   if (typeof process !== 'undefined' && process.env.JEST_WORKER_ID !== undefined) {
     return join(process.cwd(), 'src', 'evaluators');
   }
   
   try {
-    // Try to access import.meta.url - will fail in Jest/CommonJS
+    // Use eval() to prevent Jest parser from encountering import.meta directly
+    // This is the only way to access import.meta.url while maintaining Jest compatibility
     const metaUrl = eval('import.meta.url');
     const _filename = fileURLToPath(metaUrl);
     return dirname(_filename);
@@ -136,7 +141,7 @@ export class AgenticJudgeEvaluator implements Evaluator {
         try {
           await fs.default.copy(sourceAgentsDir, destAgentsDir);
         } catch (error) {
-          // Ignore copy errors - agent may still work without custom agents
+          // Safe to ignore - .github/agents may not exist, and agent can work without custom agents
         }
       }
 
