@@ -1,0 +1,44 @@
+# Example test case for Claude Code agent
+# This demonstrates how to configure youBencha to evaluate Claude Code's performance
+
+name: "Claude Code - Add Documentation"
+description: "Tests Claude Code's ability to add documentation to a simple project"
+
+# Repository to test on
+repo: https://github.com/octocat/Hello-World.git
+branch: master
+
+# Agent configuration
+agent:
+  type: claude-code
+  config:
+    # Prompt for the agent
+    prompt: "Add a comprehensive README documentation explaining what this repository does and how to use it"
+    
+    # Optional: Specify the Claude model to use
+    # model: "claude-3-5-sonnet-20241022"
+    
+    # Note: Claude Code authentication must be completed before running
+    # Run: claude /login
+
+# Evaluators to assess the agent's output
+evaluators:
+  # Git diff evaluator checks what was changed
+  - name: git-diff
+    config:
+      assertions:
+        max_files_changed: 3
+        max_lines_added: 100
+  
+  # Agentic judge evaluates the quality of changes
+  - name: agentic-judge
+    config:
+      type: claude-code
+      agent_name: agentic-judge
+      assertions:
+        readme_exists: "A README file exists in the repository. Score 1 if true, 0 if false."
+        documentation_added: "Documentation was added explaining the repository purpose. Score 1 if comprehensive, 0.5 if minimal, 0 if none."
+        clear_instructions: "Clear usage instructions are provided. Score 1 if true, 0 if false."
+
+# Optional: Timeout in milliseconds (default: 300000 = 5 minutes)
+timeout: 600000

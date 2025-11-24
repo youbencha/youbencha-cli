@@ -17,7 +17,9 @@ youBencha is a testing and benchmarking framework designed to help developers ev
 
 - **Node.js 20+** - youBencha requires Node.js version 20 or higher
 - **Git** - For cloning repositories during evaluation
-- **GitHub Copilot CLI** - Currently the only supported agent adapter (MVP)
+- **Agent CLI** - Install the agent you want to test:
+  - **GitHub Copilot CLI** - `npm install -g @github/copilot-cli`
+  - **Claude Code** - `npm install -g @anthropic-ai/claude-code`
 
 ## Installation
 
@@ -121,6 +123,34 @@ evaluators:
 > **💡 Tip**: Both formats support the same features and are validated using the same schema. Choose the format that best fits your workflow or existing tooling.
 
 > **📁 Prompt Files**: Instead of inline prompts, you can load them from external files using `prompt_file: ./path/to/prompt.md`. See the [Prompt Files Guide](docs/prompt-files.md) for details.
+
+#### Supported Agent Adapters
+
+youBencha currently supports the following agent adapters:
+
+**GitHub Copilot CLI** (`copilot-cli`)
+- Installation: `npm install -g @github/copilot-cli`
+- Authentication: Follow GitHub Copilot CLI setup
+- Configuration example shown above
+
+**Claude Code** (`claude-code`)
+- Installation: `npm install -g @anthropic-ai/claude-code`
+- Authentication: `claude /login`
+- Example configuration:
+
+```yaml
+agent:
+  type: claude-code
+  config:
+    prompt: "Your prompt here"
+    model: "claude-3-5-sonnet-20241022"  # Optional, defaults to latest Sonnet
+```
+
+Both adapters support:
+- Custom prompts via inline strings or external files
+- Model selection (where applicable)
+- Full logging and output capture
+- Standardized youBencha log format
 
 ### 3. Run the evaluation
 
