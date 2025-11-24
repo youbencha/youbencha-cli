@@ -217,8 +217,11 @@ export class ClaudeCodeAdapter implements AgentAdapter {
 
     // On Windows, use PowerShell to invoke claude
     if (process.platform === 'win32') {
+      // Add --add-dir to the arguments before escaping
+      const allArgs = [...baseArgs, '--add-dir', context.workspaceDir];
+      
       // Build the PowerShell command using the call operator (&)
-      const escapedArgs = baseArgs.map(arg => {
+      const escapedArgs = allArgs.map(arg => {
         // Escape single quotes by doubling them for PowerShell
         const escaped = arg.replace(/'/g, "''");
         return `'${escaped}'`;
