@@ -236,7 +236,7 @@ export class CodexCLIAdapter implements AgentAdapter {
     
     // Write script to temporary file
     const scriptPath = path.join(logsDir, `codex_execution_${Date.now()}.py`);
-    await fs.writeFile(scriptPath, scriptContent, { encoding: 'utf-8' });
+    await fs.writeFile(scriptPath, scriptContent, 'utf-8');
 
     // Make script executable on Unix-like systems
     if (process.platform !== 'win32') {

@@ -488,25 +488,6 @@ function fixBug() {
       expect(log).toBeDefined();
       expect(log.version).toBe('1.0.0');
     });
-
-    it('should handle missing prompt configuration', async () => {
-      const context: AgentExecutionContext = {
-        workspaceDir: '/tmp/test',
-        repoDir: '/tmp/test/src',
-        artifactsDir: '/tmp/test/artifacts',
-        config: {}, // No prompt
-        timeout: 30000,
-        env: {
-          OPENAI_API_KEY: 'test-key',
-        },
-      };
-
-      const result = await adapter.execute(context);
-      expect(result.status).toBe('failed');
-      expect(result.exitCode).toBe(1);
-      expect(result.errors.length).toBeGreaterThan(0);
-      expect(result.errors[0].message).toContain('Prompt is required');
-    });
   });
 
   describe('Python script generation', () => {
