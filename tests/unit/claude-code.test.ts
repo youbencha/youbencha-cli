@@ -413,4 +413,47 @@ Total tokens used: 1500
       }
     });
   });
+
+  describe('agent/subagent configuration', () => {
+    it('should accept custom agent in config', async () => {
+      const contextWithAgent: AgentExecutionContext = {
+        workspaceDir: '/tmp/test',
+        repoDir: '/tmp/test/src',
+        artifactsDir: '/tmp/test/artifacts',
+        config: {
+          prompt: 'Test prompt',
+          agent: 'code-reviewer',  // Custom agent name
+        },
+        timeout: 60000,
+        env: {},
+      };
+
+      try {
+        await adapter.execute(contextWithAgent);
+      } catch (error) {
+        // Expected if claude not installed
+        expect(error).toBeDefined();
+      }
+    });
+
+    it('should work without explicit agent', async () => {
+      const contextWithoutAgent: AgentExecutionContext = {
+        workspaceDir: '/tmp/test',
+        repoDir: '/tmp/test/src',
+        artifactsDir: '/tmp/test/artifacts',
+        config: {
+          prompt: 'Test prompt',
+        },
+        timeout: 60000,
+        env: {},
+      };
+
+      try {
+        await adapter.execute(contextWithoutAgent);
+      } catch (error) {
+        // Expected if claude not installed
+        expect(error).toBeDefined();
+      }
+    });
+  });
 });

@@ -131,16 +131,19 @@ youBencha currently supports the following agent adapters:
 **GitHub Copilot CLI** (`copilot-cli`)
 - Installation: `npm install -g @github/copilot-cli`
 - Authentication: Follow GitHub Copilot CLI setup
+- Supports custom agents from `.github/agents/` directory
 - Configuration example shown above
 
 **Claude Code** (`claude-code`)
 - Installation: `npm install -g @anthropic-ai/claude-code`
 - Authentication: `claude /login`
+- Supports custom agents from `.claude/agents/` directory
 - Example configuration:
 
 ```yaml
 agent:
   type: claude-code
+  agent_name: code-reviewer  # Optional: use custom agent from .claude/agents/
   config:
     prompt: "Your prompt here"
     model: "claude-3-5-sonnet-20241022"  # Optional, defaults to latest Sonnet
@@ -149,8 +152,14 @@ agent:
 Both adapters support:
 - Custom prompts via inline strings or external files
 - Model selection (where applicable)
+- Named agents/subagents for specialized tasks
 - Full logging and output capture
 - Standardized youBencha log format
+
+**Using Custom Agents:**
+- **Copilot CLI**: Place agent files in `.github/agents/` and reference via `agent_name`
+- **Claude Code**: Place agent files in `.claude/agents/` and reference via `agent_name`
+- Agent files are automatically copied to the workspace during evaluation
 
 ### 3. Run the evaluation
 

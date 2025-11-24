@@ -194,6 +194,7 @@ export class ClaudeCodeAdapter implements AgentAdapter {
     context: AgentExecutionContext
   ): { command: string; args: string[] } {
     const prompt = context.config.prompt as string | undefined;
+    const agent = context.config.agent as string | undefined;
     const model = context.config.model as string | undefined;
     
     if (!prompt) {
@@ -206,6 +207,11 @@ export class ClaudeCodeAdapter implements AgentAdapter {
     // Add model if specified
     if (model) {
       baseArgs.push('--model', model);
+    }
+    
+    // Add agent if specified (Claude Code uses agent files in .claude/agents/)
+    if (agent) {
+      baseArgs.push('--agent', agent);
     }
     
     // Add logging configuration

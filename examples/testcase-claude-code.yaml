@@ -11,6 +11,8 @@ branch: master
 # Agent configuration
 agent:
   type: claude-code
+  # Optional: Use a custom agent definition from .claude/agents/
+  # agent_name: code-reviewer
   config:
     # Prompt for the agent
     prompt: "Add a comprehensive README documentation explaining what this repository does and how to use it"
@@ -34,6 +36,7 @@ evaluators:
   - name: agentic-judge
     config:
       type: claude-code
+      # Optional: Use a custom agent for evaluation
       agent_name: agentic-judge
       assertions:
         readme_exists: "A README file exists in the repository. Score 1 if true, 0 if false."

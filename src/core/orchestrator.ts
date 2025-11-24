@@ -686,17 +686,37 @@ export class Orchestrator {
     agentLog: YouBenchaLog;
     agentExecution: ResultsBundle['agent'];
   }> {
-    // Copy agent files if agent name is specified and type is copilot-cli
-    if (testCaseConfig.agent.type === 'copilot-cli' && testCaseConfig.agent.agent_name) {
+    // Copy agent files if agent name is specified
+    if (testCaseConfig.agent.agent_name) {
       logger.info(`Copying agent definition for: ${testCaseConfig.agent.agent_name}`);
       const fs = await import('fs-extra');
-      const sourceAgentsDir = path.join(process.cwd(), '.github', 'agents');
-      const destAgentsDir = path.join(workspace.paths.modifiedDir, '.github', 'agents');
-      try {
-        await fs.default.copy(sourceAgentsDir, destAgentsDir);
-        logger.info('Agent files copied successfully');
-      } catch (error) {
-        logger.warn(`Failed to copy agent files: ${error instanceof Error ? error.message : String(error)}`);
+      
+      // Determine source and destination directories based on agent type
+      let sourceAgentsDir: string;
+      let destAgentsDir: string;
+      
+      if (testCaseConfig.agent.type === 'copilot-cli') {
+        // Copilot uses .github/agents/
+        sourceAgentsDir = path.join(process.cwd(), '.github', 'agents');
+        destAgentsDir = path.join(workspace.paths.modifiedDir, '.github', 'agents');
+      } else if (testCaseConfig.agent.type === 'claude-code') {
+        // Claude Code uses .claude/agents/
+        sourceAgentsDir = path.join(process.cwd(), '.claude', 'agents');
+        destAgentsDir = path.join(workspace.paths.modifiedDir, '.claude', 'agents');
+      } else {
+        // Skip copying for unknown agent types
+        logger.warn(`Agent type ${testCaseConfig.agent.type} does not support agent files`);
+        sourceAgentsDir = '';
+        destAgentsDir = '';
+      }
+      
+      if (sourceAgentsDir && destAgentsDir) {
+        try {
+          await fs.default.copy(sourceAgentsDir, destAgentsDir);
+          logger.info('Agent files copied successfully');
+        } catch (error) {
+          logger.warn(`Failed to copy agent files: ${error instanceof Error ? error.message : String(error)}`);
+        }
       }
     }
 

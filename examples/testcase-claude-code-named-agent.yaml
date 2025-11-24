@@ -1,0 +1,39 @@
+# Example test case using Claude Code with a named agent
+# This demonstrates how to use a custom agent definition from .claude/agents/
+
+name: "Claude Code - Code Review with Custom Agent"
+description: "Tests a custom Claude Code agent's ability to review code and suggest improvements"
+
+repo: https://github.com/octocat/Hello-World.git
+branch: master
+
+agent:
+  type: claude-code
+  # Named agent from .claude/agents/ directory
+  # The agent definition will be automatically copied to the workspace
+  agent_name: code-reviewer
+  config:
+    prompt: "Review the code and suggest improvements for better maintainability"
+    model: "claude-3-5-sonnet-20241022"
+
+evaluators:
+  - name: git-diff
+    config:
+      # Only fail if changes are excessive
+      assertions:
+        max_lines_changed: 500
+  
+  - name: agentic-judge
+    config:
+      type: claude-code
+      # Use the same agent for evaluation
+      agent_name: code-reviewer
+      timeout: 600000  # 10 minutes for thorough evaluation
+      
+      assertions:
+        code_quality: "Code follows best practices and is well-structured. Score 1-10."
+        documentation: "Code is properly documented with clear comments. Score 1-10."
+        maintainability: "Code changes improve maintainability. Score 1-10."
+
+# Optional: Timeout in milliseconds (default: 300000 = 5 minutes)
+timeout: 600000
