@@ -15,7 +15,7 @@ import { parse as parseYaml } from 'yaml';
  * @returns Parsed configuration object
  * @throws Error if parsing fails
  */
-export function parseConfig(content: string, filePath: string): any {
+export function parseConfig(content: string, filePath: string): unknown {
   const extension = filePath.toLowerCase().split('.').pop();
   
   if (extension === 'json') {

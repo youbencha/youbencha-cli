@@ -26,10 +26,10 @@ const __dirname = dirname(__filename);
 /**
  * Main CLI function
  */
-async function main() {
+async function main(): Promise<void> {
   // Read package.json for version
   const packageJsonPath = join(__dirname, '..', '..', 'package.json');
-  const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf-8'));
+  const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf-8')) as { version: string };
 
   // Detect command name from how the CLI was invoked (supports both 'yb' and 'youbencha')
   const commandName = process.argv[1]?.includes('youbencha') ? 'youbencha' : 'yb';

@@ -327,7 +327,7 @@ export class WorkspaceManager {
    * @param workspace - Workspace instance
    * @returns Workspace information object
    */
-  getWorkspaceInfo(workspace: Workspace): Record<string, any> {
+  getWorkspaceInfo(workspace: Workspace): Record<string, unknown> {
     return {
       runId: workspace.runId,
       repo: workspace.repo,

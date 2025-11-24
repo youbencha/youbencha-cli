@@ -176,11 +176,11 @@ export class ScriptPostEvaluation implements PostEvaluation {
         }, 2000);
       }, timeoutMs);
 
-      child.stdout.on('data', (data) => {
+      child.stdout.on('data', (data: Buffer) => {
         stdout += data.toString();
       });
 
-      child.stderr.on('data', (data) => {
+      child.stderr.on('data', (data: Buffer) => {
         stderr += data.toString();
       });
 

@@ -7,8 +7,6 @@
 import * as os from 'os';
 import {
   EnvironmentDetector,
-  EnvironmentInfo,
-  SystemInfo,
 } from '../../src/core/env';
 import { version as packageVersion } from '../../package.json';
 

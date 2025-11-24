@@ -27,7 +27,7 @@ function getModuleDirname(): string {
  */
 interface AgentEvaluationOutput {
   status: 'passed' | 'failed';
-  metrics: Record<string, any>;
+  metrics: Record<string, unknown>;
   message: string;
 }
 
@@ -283,7 +283,7 @@ export class AgenticJudgeEvaluator implements Evaluator {
   /**
    * Format assertions list for prompt
    */
-  private formatAssertions(assertions: any): string {
+  private formatAssertions(assertions: unknown): string {
     if (Array.isArray(assertions)) {
       // Legacy array format: ["assertion 1", "assertion 2"]
       return assertions
@@ -292,8 +292,8 @@ export class AgenticJudgeEvaluator implements Evaluator {
     } else if (typeof assertions === 'object' && assertions !== null) {
       // New object format: {"key1": "assertion 1", "key2": "assertion 2"}
       // Use snake_case keys for consistency with youBencha Log format
-      return Object.entries(assertions)
-        .map(([key, value]) => `- **${key}**: ${value}`)
+      return Object.entries(assertions as Record<string, unknown>)
+        .map(([key, value]) => `- **${key}**: ${String(value)}`)
         .join('\n');
     }
     return '';
@@ -355,7 +355,7 @@ export class AgenticJudgeEvaluator implements Evaluator {
    */
   private validateAndParse(jsonText: string): AgentEvaluationOutput | null {
     try {
-      const parsed = JSON.parse(jsonText);
+      const parsed = JSON.parse(jsonText) as Record<string, unknown>;
       
       // Validate required fields exist
       if (!parsed.status || !parsed.metrics || !parsed.message) {
@@ -378,7 +378,11 @@ export class AgenticJudgeEvaluator implements Evaluator {
         return null;
       }
 
-      return parsed as AgentEvaluationOutput;
+      return {
+        status: parsed.status as 'passed' | 'failed',
+        metrics: parsed.metrics as Record<string, unknown>,
+        message: parsed.message,
+      };
     } catch (error) {
       return null;
     }

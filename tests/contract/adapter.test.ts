@@ -25,7 +25,7 @@ class MockAgentAdapter implements AgentAdapter {
     return true;
   }
 
-  async execute(context: AgentExecutionContext): Promise<AgentExecutionResult> {
+  async execute(_context: AgentExecutionContext): Promise<AgentExecutionResult> {
     const startedAt = new Date().toISOString();
     const completedAt = new Date(Date.now() + 1000).toISOString();
 

@@ -11,7 +11,7 @@ import { exec } from 'child_process';
 import * as os from 'os';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { createWriteStream } from 'fs';
+import { createWriteStream, readFileSync } from 'fs';
 import { 
   AgentAdapter, 
   AgentExecutionContext, 
@@ -297,7 +297,7 @@ export class CopilotCLIAdapter implements AgentAdapter {
       }
 
       // Capture stdout and stderr with real-time streaming
-      childProcess.stdout?.on('data', (data) => {
+      childProcess.stdout?.on('data', (data: Buffer) => {
         const text = data.toString();
         output += text;
         // Stream to console in real-time
@@ -308,7 +308,7 @@ export class CopilotCLIAdapter implements AgentAdapter {
         }
       });
 
-      childProcess.stderr?.on('data', (data) => {
+      childProcess.stderr?.on('data', (data: Buffer) => {
         const text = data.toString();
         output += text;
         // Stream to console in real-time
@@ -383,7 +383,11 @@ export class CopilotCLIAdapter implements AgentAdapter {
     });
 
     let currentMessageContent = '';
-    let currentToolCalls: any[] = [];
+    let currentToolCalls: Array<{
+      id: string;
+      type: string;
+      function: { name: string; arguments: string };
+    }> = [];
     
     for (const line of lines) {
       const trimmed = line.trim();
@@ -516,8 +520,7 @@ export class CopilotCLIAdapter implements AgentAdapter {
     try {
       // Try to read version from package.json
       const packageJsonPath = path.join(process.cwd(), 'package.json');
-      const fs = require('fs');
-      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+      const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8')) as { version?: string };
       return packageJson.version || '1.0.0';
     } catch {
       return '1.0.0';

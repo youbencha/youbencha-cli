@@ -87,7 +87,7 @@ export class ExpectedDiffEvaluator implements Evaluator {
       );
 
       // Determine status based on threshold
-      const status = metrics.aggregate_similarity >= threshold ? 'passed' : 'failed';
+      const status = (metrics.aggregate_similarity as number) >= threshold ? 'passed' : 'failed';
 
       // Generate artifacts
       const artifacts = await this.generateArtifacts(
@@ -247,7 +247,7 @@ export class ExpectedDiffEvaluator implements Evaluator {
     fileSimilarities: FileSimilarity[],
     modifiedFiles: string[],
     expectedFiles: string[]
-  ) {
+  ): Record<string, unknown> {
     // Count file status categories
     const matched = fileSimilarities.filter(f => f.status === 'matched').length;
     const changed = fileSimilarities.filter(f => f.status === 'changed').length;
@@ -332,19 +332,19 @@ export class ExpectedDiffEvaluator implements Evaluator {
     threshold: number,
     status: 'passed' | 'failed'
   ): string {
-    const similarityPercent = (metrics.aggregate_similarity * 100).toFixed(1);
+    const similarityPercent = ((metrics.aggregate_similarity as number) * 100).toFixed(1);
     const thresholdPercent = (threshold * 100).toFixed(0);
 
     const parts = [
       `Similarity: ${similarityPercent}% (threshold: ${thresholdPercent}%)`,
-      `Files: ${metrics.files_matched} matched, ${metrics.files_changed} changed`,
+      `Files: ${String(metrics.files_matched)} matched, ${String(metrics.files_changed)} changed`,
     ];
 
-    if (metrics.files_added > 0) {
-      parts.push(`${metrics.files_added} added`);
+    if ((metrics.files_added as number) > 0) {
+      parts.push(`${String(metrics.files_added)} added`);
     }
-    if (metrics.files_removed > 0) {
-      parts.push(`${metrics.files_removed} removed`);
+    if ((metrics.files_removed as number) > 0) {
+      parts.push(`${String(metrics.files_removed)} removed`);
     }
 
     if (status === 'passed') {

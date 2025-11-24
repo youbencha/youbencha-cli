@@ -11,6 +11,15 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 
 /**
+ * File similarity data structure used in expected-diff evaluator metrics
+ */
+interface FileSimilarity {
+  similarity: number;
+  status: string;
+  path: string;
+}
+
+/**
  * Markdown Reporter implementation
  * 
  * Generates formatted Markdown reports with tables and sections.
@@ -262,7 +271,7 @@ export class MarkdownReporter implements Reporter {
   /**
    * Generate enhanced metrics display for expected-diff evaluator
    */
-  private generateExpectedDiffMetrics(metrics: Record<string, any>): string[] {
+  private generateExpectedDiffMetrics(metrics: Record<string, unknown>): string[] {
     const lines: string[] = [];
     
     // Summary metrics table
@@ -279,10 +288,10 @@ export class MarkdownReporter implements Reporter {
       lines.push(`| Threshold | ${thresholdPercent}% |`);
     }
     
-    lines.push(`| Files Matched | ${metrics.files_matched || 0} |`);
-    lines.push(`| Files Changed | ${metrics.files_changed || 0} |`);
-    lines.push(`| Files Added | ${metrics.files_added || 0} |`);
-    lines.push(`| Files Removed | ${metrics.files_removed || 0} |`);
+    lines.push(`| Files Matched | ${String(metrics.files_matched ?? 0)} |`);
+    lines.push(`| Files Changed | ${String(metrics.files_changed ?? 0)} |`);
+    lines.push(`| Files Added | ${String(metrics.files_added ?? 0)} |`);
+    lines.push(`| Files Removed | ${String(metrics.files_removed ?? 0)} |`);
     lines.push('');
     
     // File-level details table (if available)
@@ -293,7 +302,7 @@ export class MarkdownReporter implements Reporter {
       lines.push('|------|------------|--------|');
       
       // Sort by similarity (lowest first) to highlight differences
-      const sortedFiles = [...metrics.file_similarities]
+      const sortedFiles = [...(metrics.file_similarities as FileSimilarity[])]
         .sort((a, b) => a.similarity - b.similarity)
         .slice(0, 20); // Show top 20 most different files
       
@@ -305,12 +314,10 @@ export class MarkdownReporter implements Reporter {
         lines.push(`| ${file.path} | ${similarityPercent}% | ${statusEmoji} ${file.status} |`);
       }
       
-      if (metrics.file_similarities.length > 20) {
+      if ((metrics.file_similarities as FileSimilarity[]).length > 20) {
         lines.push(`| ... | ... | ... |`);
-        lines.push(`| *(${metrics.file_similarities.length - 20} more files)* | | |`);
+        lines.push(`| *(${(metrics.file_similarities as FileSimilarity[]).length - 20} more files)* | | |`);
       }
-      
-      lines.push('');
     }
     
     return lines;

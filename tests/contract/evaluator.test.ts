@@ -23,11 +23,11 @@ class MockEvaluator implements Evaluator {
   readonly description = 'Mock evaluator for testing';
   readonly requiresExpectedReference = false;
 
-  async checkPreconditions(context: EvaluationContext): Promise<boolean> {
+  async checkPreconditions(_context: EvaluationContext): Promise<boolean> {
     return true;
   }
 
-  async evaluate(context: EvaluationContext): Promise<EvaluationResult> {
+  async evaluate(_context: EvaluationContext): Promise<EvaluationResult> {
     const timestamp = new Date().toISOString();
     return {
       evaluator: this.name,

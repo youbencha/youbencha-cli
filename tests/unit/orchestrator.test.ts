@@ -176,9 +176,7 @@ describe('Orchestrator', () => {
         ],
       };
 
-      const startTime = Date.now();
       const result = await orchestrator.runEvaluation(configWithMultiple);
-      const endTime = Date.now();
 
       expect(result.evaluators.length).toBeGreaterThanOrEqual(2);
       // Parallel execution should be faster than sequential
