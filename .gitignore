@@ -43,3 +43,4 @@ Thumbs.db
 .youbencha-eval/
 results/
 artifacts/
+.test-temp/
