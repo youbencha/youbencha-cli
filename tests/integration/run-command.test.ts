@@ -30,13 +30,15 @@ describe('Integration: Run Command', () => {
 
     // Create test suite configuration
     const suiteYaml = `
+name: "Test Case"
+description: "Integration test case"
 version: "1.0"
-repo: "${testRepoDir.replace(/\\/g, '/')}"
+repo: "https://github.com/youbencha/youbencha-cli"
 branch: main
 agent:
-  adapter: copilot-cli
-  version: 1.0
-  prompt: "Add a new line to test.txt"
+  type: copilot-cli
+  config:
+    prompt: "Add a new line to test.txt"
 evaluators:
   - name: git-diff
     config: {}

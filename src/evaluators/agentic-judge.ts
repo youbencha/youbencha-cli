@@ -18,8 +18,20 @@ import { CopilotCLIAdapter } from '../adapters/copilot-cli.js';
  * Get the directory path for this module (ES module equivalent of __dirname)
  */
 function getModuleDirname(): string {
-  const _filename = fileURLToPath(import.meta.url);
-  return dirname(_filename);
+  // Jest/test environment workaround
+  if (typeof process !== 'undefined' && process.env.JEST_WORKER_ID !== undefined) {
+    return join(process.cwd(), 'src', 'evaluators');
+  }
+  
+  try {
+    // Try to access import.meta.url - will fail in Jest/CommonJS
+    const metaUrl = eval('import.meta.url');
+    const _filename = fileURLToPath(metaUrl);
+    return dirname(_filename);
+  } catch {
+    // Fallback for environments where import.meta is not available
+    return join(process.cwd(), 'src', 'evaluators');
+  }
 }
 
 /**
