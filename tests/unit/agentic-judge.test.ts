@@ -54,7 +54,9 @@ describe('AgenticJudgeEvaluator', () => {
           'Documentation quality',
         ],
       },
-      suiteConfig: {
+      testCaseConfig: {
+        name: 'Test Case',
+        description: 'Test case for agentic judge',
         version: '1.0.0',
         repo: 'https://github.com/test/repo',
         branch: 'main',
@@ -104,8 +106,8 @@ describe('AgenticJudgeEvaluator', () => {
     test('returns false when agent config is missing', async () => {
       const contextWithoutAgent = {
         ...mockContext,
-        suiteConfig: {
-          ...mockContext.suiteConfig,
+        testCaseConfig: {
+          ...mockContext.testCaseConfig,
           agent: undefined as any,
         },
       };
@@ -117,8 +119,8 @@ describe('AgenticJudgeEvaluator', () => {
     test('returns false when agent type is invalid', async () => {
       const contextWithInvalidAgent = {
         ...mockContext,
-        suiteConfig: {
-          ...mockContext.suiteConfig,
+        testCaseConfig: {
+          ...mockContext.testCaseConfig,
           agent: {
             type: 'invalid-agent-type' as any,
             config: {},
@@ -397,8 +399,8 @@ describe('AgenticJudgeEvaluator', () => {
     test('skips when preconditions not met', async () => {
       const contextWithoutAgent = {
         ...mockContext,
-        suiteConfig: {
-          ...mockContext.suiteConfig,
+        testCaseConfig: {
+          ...mockContext.testCaseConfig,
           agent: undefined as any,
         },
       };
@@ -508,8 +510,8 @@ describe('AgenticJudgeEvaluator', () => {
     test('handles unknown adapter type', async () => {
       const contextWithUnknownAdapter = {
         ...mockContext,
-        suiteConfig: {
-          ...mockContext.suiteConfig,
+        testCaseConfig: {
+          ...mockContext.testCaseConfig,
           agent: {
             type: 'unknown-adapter' as any,
             config: {},

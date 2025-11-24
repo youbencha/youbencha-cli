@@ -1,6 +1,6 @@
 /**
- * Integration tests for suggest-suite command
- * Tests the complete workflow of generating suite suggestions
+ * Integration tests for suggest-testcase command
+ * Tests the complete workflow of generating test case suggestions
  */
 
 import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
@@ -18,7 +18,7 @@ describe('Suggest Suite Integration', () => {
 
   beforeEach(async () => {
     // Create temp directory for test
-    tempDir = path.join(process.cwd(), '.test-temp', `suggest-suite-${Date.now()}`);
+    tempDir = path.join(process.cwd(), '.test-temp', `suggest-testcase-${Date.now()}`);
     outputDir = path.join(tempDir, 'output');
     await fs.mkdir(outputDir, { recursive: true });
 
@@ -42,7 +42,7 @@ describe('Suggest Suite Integration', () => {
 
       try {
         await execAsync(
-          `node dist/cli/index.js suggest-suite --agent copilot-cli --output-dir ${nonExistentDir}`,
+          `node dist/cli/index.js suggest-testcase --agent copilot-cli --output-dir ${nonExistentDir}`,
           { cwd: process.cwd() }
         );
         fail('Should have thrown an error');
@@ -55,7 +55,7 @@ describe('Suggest Suite Integration', () => {
     test('fails when agent type is unsupported', async () => {
       try {
         await execAsync(
-          `node dist/cli/index.js suggest-suite --agent unknown-agent --output-dir ${outputDir}`,
+          `node dist/cli/index.js suggest-testcase --agent unknown-agent --output-dir ${outputDir}`,
           { cwd: process.cwd() }
         );
         fail('Should have thrown an error');
@@ -68,7 +68,7 @@ describe('Suggest Suite Integration', () => {
     test('fails when agent file does not exist', async () => {
       try {
         await execAsync(
-          `node dist/cli/index.js suggest-suite --agent copilot-cli --output-dir ${outputDir} --agent-file /non/existent/file.md`,
+          `node dist/cli/index.js suggest-testcase --agent copilot-cli --output-dir ${outputDir} --agent-file /non/existent/file.md`,
           { cwd: process.cwd() }
         );
         fail('Should have thrown an error');
@@ -88,7 +88,7 @@ describe('Suggest Suite Integration', () => {
 
       // This should validate successfully (but may fail on agent execution)
       // We're just testing the validation step
-      const command = `node dist/cli/index.js suggest-suite --agent copilot-cli --output-dir ${outputDir} --agent-file ${agentFile}`;
+      const command = `node dist/cli/index.js suggest-testcase --agent copilot-cli --output-dir ${outputDir} --agent-file ${agentFile}`;
       
       // Note: This will fail on agent execution, but validation should pass
       try {
@@ -142,13 +142,13 @@ Example content
       expect(content).not.toContain('Domain Knowledge');
     });
 
-    test('reads actual suggest-suite agent file', async () => {
-      const actualAgentFile = path.join(process.cwd(), 'agents', 'suggest-suite.agent.md');
+    test('reads actual suggest-testcase agent file', async () => {
+      const actualAgentFile = path.join(process.cwd(), 'agents', 'suggest-testcase.agent.md');
       
       // Verify the real agent file exists and has proper structure
       const content = await fs.readFile(actualAgentFile, 'utf-8');
       
-      expect(content).toContain('# youBencha Suite Suggestion Agent');
+      expect(content).toContain('# youBencha Test Case Suggestion Agent');
       expect(content).toContain('## Your Role');
       expect(content).toContain('## Domain Knowledge');
       expect(content).toContain('## Workflow Instructions');
