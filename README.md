@@ -58,13 +58,16 @@ npm unlink -g youbencha
 npm install -g youbencha
 ```
 
-### 2. Create a suite configuration
+### 2. Create a test case configuration
 
 youBencha supports both **YAML** and **JSON** formats for configuration files.
 
-**Option A: YAML format (`suite.yaml`)**
+**Option A: YAML format (`testcase.yaml`)**
 
 ```yaml
+name: "README Comment Addition"
+description: "Tests the agent's ability to add a helpful comment explaining the repository purpose"
+
 repo: https://github.com/octocat/Hello-World.git
 branch: master
 
@@ -84,10 +87,12 @@ evaluators:
         helpful_comment_added: "A helpful comment was added to README.md. Score 1 if true, 0 if false."
 ```
 
-**Option B: JSON format (`suite.json`)**
+**Option B: JSON format (`testcase.json`)**
 
 ```json
 {
+  "name": "README Comment Addition",
+  "description": "Tests the agent's ability to add a helpful comment explaining the repository purpose",
   "repo": "https://github.com/octocat/Hello-World.git",
   "branch": "master",
   "agent": {
@@ -121,10 +126,10 @@ evaluators:
 
 ```bash
 # Using YAML format
-yb run -c suite.yaml
+yb run -c testcase.yaml
 
 # Or using JSON format
-yb run -c suite.json
+yb run -c testcase.json
 
 # See examples directory for more configurations
 yb run -c examples/testcase-simple.yaml
@@ -155,7 +160,7 @@ yb report --from .youbencha-workspace/run-*/artifacts/results.json
 
 ### `yb run`
 
-Run an evaluation suite with agent execution.
+Run a test case with agent execution.
 
 ```bash
 yb run -c <config-file>
@@ -191,34 +196,34 @@ Options:
   --output <path>    Output path (optional)
 ```
 
-### `yb suggest-suite`
+### `yb suggest-testcase`
 
-Generate evaluation suite suggestions using AI agent interaction.
+Generate test case suggestions using AI agent interaction.
 
 ```bash
-yb suggest-suite --agent <type> --output-dir <path> [--agent-file <path>]
+yb suggest-testcase --agent <type> --output-dir <path> [--agent-file <path>]
 
 Options:
   --agent <type>           Agent tool to use (e.g., copilot-cli) (required)
   --output-dir <path>      Path to successful agent output folder (required)
-  --agent-file <path>      Custom agent file (default: agents/suggest-suite.agent.md)
-  --save <path>            Path to save generated suite (optional)
+  --agent-file <path>      Custom agent file (default: agents/suggest-testcase.agent.md)
+  --save <path>            Path to save generated test case (optional)
 ```
 
 **Interactive Workflow:**
 
-The `suggest-suite` command launches an interactive AI agent session that:
+The `suggest-testcase` command launches an interactive AI agent session that:
 1. Analyzes your agent's output folder
 2. Asks about your baseline/source for comparison
 3. Requests your original instructions/intent
 4. Detects patterns in the changes (auth, tests, API, docs, etc.)
 5. Recommends appropriate evaluators with reasoning
-6. Generates a complete suite configuration
+6. Generates a complete test case configuration
 
 **Example Session:**
 
 ```bash
-$ yb suggest-suite --agent copilot-cli --output-dir ./my-feature
+$ yb suggest-testcase --agent copilot-cli --output-dir ./my-feature
 
 🤖 Launching interactive agent session...
 
@@ -233,19 +238,19 @@ Agent: I've analyzed the changes and detected:
 - New test files added
 - Error handling patterns
 
-Here's your suggested suite.yaml:
+Here's your suggested testcase.yaml:
 
-[Generated suite configuration with reasoning]
+[Generated test case configuration with reasoning]
 
-To use this suite:
-1. Save as 'suite.yaml' in your project
-2. Run: yb run -c suite.yaml
+To use this test case:
+1. Save as 'testcase.yaml' in your project
+2. Run: yb run -c testcase.yaml
 3. Review evaluation results
 ```
 
 **Use Cases:**
 
-- **After successful agent work** - Generate evaluation suite for validation
+- **After successful agent work** - Generate test case for validation
 - **Quality assurance** - Ensure agent followed best practices
 - **Documentation** - Understand what evaluations are appropriate
 - **Learning** - See how different changes map to evaluators
@@ -256,9 +261,12 @@ youBencha supports comparing agent outputs against an expected reference branch.
 
 ### Configuration
 
-Add an expected reference to your suite configuration:
+Add an expected reference to your test case configuration:
 
 ```yaml
+name: "Feature Implementation"
+description: "Tests the agent's ability to implement a feature matching the reference implementation"
+
 repo: https://github.com/octocat/Hello-World.git
 branch: main
 expected_source: branch
@@ -372,7 +380,7 @@ Compares agent output against expected reference branch.
 
 **Metrics:** aggregate_similarity, threshold, files_matched, files_changed, files_added, files_removed, file_similarities
 
-**Requires:** expected_source and expected configured in suite
+**Requires:** expected_source and expected configured in test case
 
 ### agentic-judge
 
@@ -545,7 +553,7 @@ youBencha follows a pluggable architecture:
 
 **Before running evaluations:**
 
-1. **Suite configurations execute code**: Only run suite configurations from trusted sources
+1. **Test case configurations execute code**: Only run test case configurations from trusted sources
 2. **Agent file system access**: Agents have full access to the workspace directory
 3. **Isolation strongly recommended**: Run evaluations in containers or VMs for untrusted code
 4. **Repository cloning**: Validates repository URLs but exercise caution with private repos
@@ -560,7 +568,7 @@ docker run -it --rm \
   -v $(pwd):/workspace \
   -w /workspace \
   node:20 \
-  npx youbencha run -c suite.yaml
+  npx youbencha run -c testcase.yaml
 
 # Or use dedicated CI/CD runners
 ```

@@ -36,7 +36,7 @@ Use `yb run` when you want to:
 
 1. **Test an AI agent's coding ability**
    ```bash
-   yb run -c suite.yaml
+   yb run -c testcase.yaml
    ```
    The agent will clone a repo, make changes, and be evaluated.
 
@@ -51,8 +51,10 @@ Use `yb run` when you want to:
 
 ### Example: Testing an agent
 ```yaml
-# suite.yaml - Full test case
-name: "Test Agent on Feature"
+# testcase.yaml - Full test case
+name: "Authentication Middleware Addition"
+description: "Tests agent ability to add authentication middleware"
+
 repo: https://github.com/example/repo.git
 branch: main
 
@@ -129,9 +131,11 @@ evaluators:
 
 ## Configuration Differences
 
-### `yb run` Configuration (suite.yaml)
+### `yb run` Configuration (testcase.yaml)
 
 **Required:**
+- `name` - Test case name
+- `description` - What you're testing
 - `repo` - Repository URL (will be cloned)
 - `agent` - Agent configuration with type and config
 - `evaluators` - List of evaluators
@@ -170,7 +174,7 @@ evaluators:
 
 ```bash
 # 1. Run agent once
-yb run -c suite.yaml
+yb run -c testcase.yaml
 # Output in: .youbencha-workspace/run-abc123/
 
 # 2. Test different evaluator configs (fast!)
@@ -178,8 +182,8 @@ yb eval -c eval-v1.yaml  # First try
 yb eval -c eval-v2.yaml  # Adjusted thresholds
 yb eval -c eval-v3.yaml  # Added more evaluators
 
-# 3. Once satisfied, update suite.yaml with final evaluators
-yb run -c suite-final.yaml
+# 3. Once satisfied, update testcase.yaml with final evaluators
+yb run -c testcase-final.yaml
 ```
 
 ### Workflow 2: Manual Development + Evaluation
@@ -226,8 +230,8 @@ steps:
 
 ```bash
 # 1. Run multiple agents
-yb run -c suite-agent-a.yaml  # Uses agent A
-yb run -c suite-agent-b.yaml  # Uses agent B
+yb run -c testcase-agent-a.yaml  # Uses agent A
+yb run -c testcase-agent-b.yaml  # Uses agent B
 
 # 2. Evaluate all outputs with same criteria
 yb eval -c eval-comparison.yaml --directory .youbencha-workspace/run-agentA/src-modified

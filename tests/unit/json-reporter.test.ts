@@ -61,7 +61,7 @@ describe('JsonReporter', () => {
       const parsed = JSON.parse(result);
 
       expect(parsed.version).toBe(bundle.version);
-      expect(parsed.suite.repo).toBe(bundle.suite.repo);
+      expect(parsed.test_case.repo).toBe(bundle.test_case.repo);
       expect(parsed.summary.total_evaluators).toBe(bundle.summary.total_evaluators);
       expect(parsed.evaluators).toHaveLength(bundle.evaluators.length);
     });
@@ -160,15 +160,15 @@ describe('JsonReporter', () => {
       const parsed = JSON.parse(content);
 
       expect(parsed.version).toBe(bundle.version);
-      expect(parsed.suite.repo).toBe(bundle.suite.repo);
+      expect(parsed.test_case.repo).toBe(bundle.test_case.repo);
     });
 
     it('should overwrite existing file', async () => {
       const bundle1: ResultsBundle = createMockResultsBundle();
       const bundle2: ResultsBundle = {
         ...createMockResultsBundle(),
-        suite: {
-          ...createMockResultsBundle().suite,
+        test_case: {
+          ...createMockResultsBundle().test_case,
           repo: 'https://github.com/different/repo.git',
         },
       };
@@ -180,7 +180,7 @@ describe('JsonReporter', () => {
       const content = await fs.readFile(outputPath, 'utf-8');
       const parsed = JSON.parse(content);
 
-      expect(parsed.suite.repo).toBe(bundle2.suite.repo);
+      expect(parsed.test_case.repo).toBe(bundle2.test_case.repo);
     });
 
     it('should handle options parameter gracefully', async () => {
@@ -209,8 +209,10 @@ describe('JsonReporter', () => {
 function createMockResultsBundle(): ResultsBundle {
   return {
     version: '1.0.0',
-    suite: {
-      config_file: 'suite.yaml',
+    test_case: {
+      name: 'Test Case Name',
+      description: 'Test case description',
+      config_file: 'testcase.yaml',
       config_hash: 'abc123',
       repo: 'https://github.com/example/repo.git',
       branch: 'main',

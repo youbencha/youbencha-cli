@@ -1,7 +1,7 @@
 /**
  * Init Command
  * 
- * Creates a starter suite.yaml configuration in the current directory.
+ * Creates a starter testcase.yaml configuration in the current directory.
  */
 
 import * as fs from 'fs/promises';
@@ -10,10 +10,14 @@ import * as logger from '../../lib/logger.js';
 import { createSpinner } from '../../lib/progress.js';
 
 /**
- * Starter suite template
+ * Starter test case template
  */
-const STARTER_SUITE = `# youBencha Evaluation Suite
+const STARTER_TESTCASE = `# youBencha Test Case Configuration
 # Learn more: https://github.com/youbencha/youbencha-cli
+
+# Test case metadata
+name: "Welcome Message Addition"
+description: "Tests the agent's ability to add a friendly welcome message to the README file"
 
 # Repository to evaluate
 repo: https://github.com/octocat/Hello-World.git
@@ -56,7 +60,7 @@ evaluators:
 # Next steps:
 # 1. Update the repo and prompt for your use case
 # 2. Customize the evaluation assertions
-# 3. Run: yb run -c suite.yaml
+# 3. Run: yb run -c testcase.yaml
 # 4. View results: yb report --from .youbencha-workspace/run-*/artifacts/results.json
 `;
 
@@ -70,14 +74,14 @@ interface InitCommandOptions {
 /**
  * Init command handler
  * 
- * Creates a suite.yaml file in the current directory.
+ * Creates a testcase.yaml file in the current directory.
  */
 export async function initCommand(options: InitCommandOptions): Promise<void> {
-  const outputPath = path.join(process.cwd(), 'suite.yaml');
+  const outputPath = path.join(process.cwd(), 'testcase.yaml');
   
   try {
     // Check if file already exists
-    const spinner = createSpinner('Checking for existing suite.yaml...');
+    const spinner = createSpinner('Checking for existing testcase.yaml...');
     spinner.start();
     
     try {
@@ -87,7 +91,7 @@ export async function initCommand(options: InitCommandOptions): Promise<void> {
       
       if (!options.force) {
         logger.error('');
-        logger.error('❌ suite.yaml already exists in this directory');
+        logger.error('❌ testcase.yaml already exists in this directory');
         logger.info('');
         logger.info('💡 Options:');
         logger.info('   - Use a different directory');
@@ -97,33 +101,33 @@ export async function initCommand(options: InitCommandOptions): Promise<void> {
         process.exit(1);
       }
       
-      logger.warn('⚠️  Overwriting existing suite.yaml (--force flag used)');
+      logger.warn('⚠️  Overwriting existing testcase.yaml (--force flag used)');
     } catch {
       // File doesn't exist, continue
       spinner.stop();
     }
     
     // Write the file
-    const writeSpinner = createSpinner('Creating suite.yaml...');
+    const writeSpinner = createSpinner('Creating testcase.yaml...');
     writeSpinner.start();
     
-    await fs.writeFile(outputPath, STARTER_SUITE, 'utf-8');
+    await fs.writeFile(outputPath, STARTER_TESTCASE, 'utf-8');
     
-    writeSpinner.succeed('Created suite.yaml ✓');
+    writeSpinner.succeed('Created testcase.yaml ✓');
     
     logger.info('');
     logger.info('✨ Starter configuration created successfully!');
     logger.info('');
-    logger.info('📋 What\'s in suite.yaml:');
+    logger.info('📋 What\'s in testcase.yaml:');
     logger.info('   - Example repository (Hello-World)');
     logger.info('   - Sample prompt for the agent');
     logger.info('   - Two evaluators: git-diff and agentic-judge');
     logger.info('   - Comments explaining each section');
     logger.info('');
     logger.info('📝 Next Steps:');
-    logger.info('   1. Edit suite.yaml to match your use case');
+    logger.info('   1. Edit testcase.yaml to match your use case');
     logger.info('   2. Update the repo, prompt, and evaluation assertions');
-    logger.info('   3. Run: yb run -c suite.yaml');
+    logger.info('   3. Run: yb run -c testcase.yaml');
     logger.info('   4. View results: yb report --from .youbencha-workspace/run-*/artifacts/results.json');
     logger.info('');
     logger.info('💡 Tips:');
@@ -134,7 +138,7 @@ export async function initCommand(options: InitCommandOptions): Promise<void> {
     
     process.exit(0);
   } catch (error) {
-    logger.error('Failed to create suite.yaml:');
+    logger.error('Failed to create testcase.yaml:');
     if (error instanceof Error) {
       logger.error(error.message);
     }

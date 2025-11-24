@@ -36,7 +36,7 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
     
     if (configStats.size > maxConfigSize) {
       logger.error(`Configuration file too large: ${configStats.size} bytes (max: ${maxConfigSize})`);
-      logger.info('💡 Tip: Suite configuration files should typically be under 10KB');
+      logger.info('💡 Tip: Test case configuration files should typically be under 10KB');
       process.exit(1);
     }
     

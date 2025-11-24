@@ -1,8 +1,10 @@
 /**
- * Suite Configuration Schema
+ * Suite Configuration Schema (DEPRECATED)
  * 
- * Zod schema for evaluation suite configuration.
- * Defines what to evaluate and how.
+ * @deprecated Use testcase.schema.ts instead. This file is kept for backward compatibility.
+ * The terminology has been updated from "suite" to "test case" to be more developer-friendly.
+ * 
+ * This schema is re-exported from testcase.schema.ts and will be removed in a future version.
  */
 
 import { z } from 'zod';
@@ -125,15 +127,18 @@ export const suiteConfigSchema = z
 
 /**
  * Inferred TypeScript type from schema
+ * @deprecated Use TestCaseConfig from testcase.schema.ts instead
  */
 export type SuiteConfig = z.infer<typeof suiteConfigSchema>;
 
 /**
  * Helper type for agent configuration
+ * @deprecated Use AgentConfig from testcase.schema.ts instead
  */
 export type AgentConfig = z.infer<typeof agentConfigSchema>;
 
 /**
  * Helper type for evaluator configuration
+ * @deprecated Use EvaluatorConfig from testcase.schema.ts instead
  */
 export type EvaluatorConfig = z.infer<typeof evaluatorConfigSchema>;

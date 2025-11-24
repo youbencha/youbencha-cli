@@ -55,7 +55,7 @@ describe('Orchestrator', () => {
       
       expect(result).toBeDefined();
       expect(result.version).toBe('1.0.0');
-      expect(result.suite).toBeDefined();
+      expect(result.test_case).toBeDefined();
       expect(result.execution).toBeDefined();
       expect(result.agent).toBeDefined();
       expect(result.evaluators).toBeDefined();
@@ -63,12 +63,12 @@ describe('Orchestrator', () => {
       expect(result.artifacts).toBeDefined();
     }, 120000); // 2 min timeout for potential git operations
 
-    test('includes suite metadata', async () => {
+    test('includes test case metadata', async () => {
       const result = await orchestrator.runEvaluation(mockSuiteConfig);
       
-      expect(result.suite.repo).toBe(mockSuiteConfig.repo);
-      expect(result.suite.branch).toBe(mockSuiteConfig.branch);
-      expect(result.suite.commit).toBeDefined();
+      expect(result.test_case.repo).toBe(mockSuiteConfig.repo);
+      expect(result.test_case.branch).toBe(mockSuiteConfig.branch);
+      expect(result.test_case.commit).toBeDefined();
     }, 120000);
 
     test('includes execution metadata', async () => {
@@ -211,7 +211,7 @@ describe('Orchestrator', () => {
 
       const result = await orchestrator.runEvaluation(configWithExpected);
       
-      expect(result.suite.expected_branch).toBe('master');
+      expect(result.test_case.expected_branch).toBe('master');
       expect(result).toBeDefined();
     }, 120000);
 

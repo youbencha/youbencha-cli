@@ -2,13 +2,13 @@
 
 ## Overview
 
-youBencha now supports specifying custom agent names in the evaluation suite configuration. This allows you to use named agents (e.g., GitHub Copilot CLI agents defined in `.github/agents/`) during both the coding agent run and the agentic-judge evaluation.
+youBencha now supports specifying custom agent names in the test case configuration. This allows you to use named agents (e.g., GitHub Copilot CLI agents defined in `.github/agents/`) during both the coding agent run and the agentic-judge evaluation.
 
 ## Features
 
 ### 1. Named Agent for Coding Run
 
-Specify an agent name in the `agent` section of your suite configuration:
+Specify an agent name in the `agent` section of your test case configuration:
 
 ```yaml
 agent:
@@ -40,6 +40,9 @@ evaluators:
 ## Complete Example
 
 ```yaml
+name: "Code Review Test Case"
+description: "Tests code review improvements using a named agent"
+
 repo: https://github.com/octocat/Hello-World.git
 branch: master
 
@@ -100,6 +103,6 @@ agent:
 
 ## See Also
 
-- [Basic Suite Example](../examples/basic-suite.yaml)
-- [Named Agent Example](../examples/named-agent-suite.yaml)
+- [Basic Test Case Example](../examples/testcase-basic.yaml)
+- [Named Agent Example](../examples/testcase-named-agent.yaml)
 - [Agent Outputs Examples](../examples/agent-outputs/)

@@ -63,13 +63,13 @@ export const UserErrors = {
   }),
 
   /**
-   * Invalid suite configuration
+   * Invalid test case configuration
    */
   invalidConfig: (errors: string[]): UserError => ({
-    title: 'Invalid suite configuration',
-    description: 'Your suite.yaml file has validation errors that need to be fixed.',
+    title: 'Invalid test case configuration',
+    description: 'Your testcase.yaml file has validation errors that need to be fixed.',
     actions: [
-      'Review the errors below and update your suite.yaml',
+      'Review the errors below and update your testcase.yaml',
       'Check example configurations in the examples/ directory',
       'Refer to the documentation: https://github.com/youbencha/youbencha-cli#quick-start',
     ],
@@ -96,10 +96,10 @@ export const UserErrors = {
    */
   expectedBranchNotFound: (branch: string, repo: string): UserError => ({
     title: `Expected reference branch '${branch}' not found`,
-    description: `Your suite configuration references branch '${branch}' for comparison, but it doesn't exist in the repository.`,
+    description: `Your test case configuration references branch '${branch}' for comparison, but it doesn't exist in the repository.`,
     actions: [
       `Verify the branch name is correct (check with: git branch -r)`,
-      `If the branch was recently deleted, update your suite.yaml to use a different reference`,
+      `If the branch was recently deleted, update your testcase.yaml to use a different reference`,
       'Remove the expected_source and expected fields if you don\'t need comparison',
     ],
     technicalDetails: `Repository: ${repo}`,
@@ -110,11 +110,11 @@ export const UserErrors = {
    */
   noEvaluators: (): UserError => ({
     title: 'No evaluators configured',
-    description: 'Your suite.yaml must include at least one evaluator to run an evaluation.',
+    description: 'Your testcase.yaml must include at least one evaluator to run an evaluation.',
     actions: [
       'Add at least one evaluator to the "evaluators" section',
       'Common choices: git-diff (measures changes), agentic-judge (quality assessment)',
-      'See examples/basic-suite.yaml for a working configuration',
+      'See examples/testcase-basic.yaml for a working configuration',
     ],
   }),
 
@@ -140,7 +140,7 @@ export const UserErrors = {
     description: `The ${agentType} agent terminated with an error (exit code ${exitCode}). This might be due to invalid prompts, API issues, or tool configuration.`,
     actions: [
       'Check the agent logs in the workspace artifacts directory',
-      'Verify your prompt in suite.yaml is valid',
+      'Verify your prompt in testcase.yaml is valid',
       `Test ${agentType} directly with a simple command to ensure it's working`,
       'If using API-based agents, check your API keys and rate limits',
     ],
@@ -155,7 +155,7 @@ export const UserErrors = {
     actions: [
       `Install ${dependency} if needed`,
       `Check the evaluator's documentation for setup requirements`,
-      'Remove this evaluator from suite.yaml if you don\'t need it',
+      'Remove this evaluator from testcase.yaml if you don\'t need it',
     ],
   }),
 
@@ -166,7 +166,7 @@ export const UserErrors = {
     title: 'Operation timed out',
     description: `The ${operation} operation exceeded the ${timeoutMs / 1000}s timeout limit.`,
     actions: [
-      'Increase the timeout in your suite.yaml configuration',
+      'Increase the timeout in your testcase.yaml configuration',
       'Check if the repository is too large (consider a smaller test case)',
       'Verify network connectivity if downloading remote resources',
       'Check system resources (CPU, memory) - the operation might be stuck',
@@ -183,7 +183,7 @@ export const UserErrors = {
       'Verify the file path is correct',
       'Check if the evaluation completed successfully',
       'Look for results in .youbencha-workspace/run-*/artifacts/results.json',
-      'Run a new evaluation with: yb run -c suite.yaml',
+      'Run a new evaluation with: yb run -c testcase.yaml',
     ],
   }),
 
@@ -194,9 +194,9 @@ export const UserErrors = {
     title: `Invalid configuration for '${evaluatorName}' evaluator`,
     description: `The ${evaluatorName} evaluator has a configuration problem.`,
     actions: [
-      'Review the evaluator configuration in your suite.yaml',
+      'Review the evaluator configuration in your testcase.yaml',
       'Check the documentation for required and optional fields',
-      'See examples/basic-suite.yaml for working configurations',
+      'See examples/testcase-basic.yaml for working configurations',
     ],
     technicalDetails: reason,
   }),

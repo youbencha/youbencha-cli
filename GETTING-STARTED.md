@@ -20,10 +20,13 @@ npm install -g youbencha
 
 ### 2. Create a simple evaluation
 
-Create a file called `my-first-suite.yaml` (or `my-first-suite.json` if you prefer JSON):
+Create a file called `my-first-testcase.yaml` (or `my-first-testcase.json` if you prefer JSON):
 
 **YAML format:**
 ```yaml
+name: "First Test Case"
+description: "A simple test case to verify the agent can add helpful comments"
+
 repo: https://github.com/octocat/Hello-World.git
 branch: master
 
@@ -46,6 +49,8 @@ evaluators:
 **JSON format (alternative):**
 ```json
 {
+  "name": "First Test Case",
+  "description": "A simple test case to verify the agent can add helpful comments",
   "repo": "https://github.com/octocat/Hello-World.git",
   "branch": "master",
   "agent": {
@@ -75,10 +80,10 @@ evaluators:
 
 ```bash
 # If using YAML
-yb run -c my-first-suite.yaml
+yb run -c my-first-testcase.yaml
 
 # If using JSON
-yb run -c my-first-suite.json
+yb run -c my-first-testcase.json
 ```
 
 You'll see:
@@ -110,9 +115,12 @@ youBencha creates a workspace with:
 
 ## What Each Part Does
 
-### Suite Configuration (`suite.yaml`)
+### Test Case Configuration (`testcase.yaml`)
 
 ```yaml
+name: "Test Case Name"        # Short descriptive name
+description: "What this tests" # Detailed description
+
 repo: <git-url>               # Where to get the code
 branch: <branch-name>         # Which branch to test
 
@@ -146,6 +154,9 @@ evaluators:                   # How to measure success
 Want to compare the agent's output to a known-good version?
 
 ```yaml
+name: "Feature Implementation Comparison"
+description: "Compares agent implementation against reference"
+
 repo: https://github.com/your/repo.git
 branch: main                  # Start from main
 expected_source: branch       # Compare to another branch
@@ -166,7 +177,7 @@ By default, youBencha keeps the workspace after evaluation so you can inspect wh
 To clean up the workspace after completion:
 
 ```bash
-yb run -c suite.yaml --delete-workspace
+yb run -c testcase.yaml --delete-workspace
 ```
 
 ### Testing locally
@@ -214,9 +225,9 @@ The agent's output quality depends heavily on your prompt. Test and iterate!
 
 ### 5. Check Examples
 Look at `examples/` directory for working configurations:
-- `simple-suite.yaml` - Minimal configuration
-- `basic-suite.yaml` - Standard setup
-- `expected-ref-suite.yaml` - With reference comparison
+- `testcase-simple.yaml` - Minimal configuration
+- `testcase-basic.yaml` - Standard setup
+- `testcase-expected-ref.yaml` - With reference comparison
 
 ## Troubleshooting
 
@@ -252,15 +263,15 @@ Now that you've run your first evaluation:
 3. **Use reference comparisons** - Compare against known-good implementations
 4. **Automate in CI** - Run evaluations on every commit
 
-### Advanced: Generate Suites Automatically
+### Advanced: Generate Test Cases Automatically
 
-Have a successful agent output already? Let youBencha suggest an evaluation suite:
+Have a successful agent output already? Let youBencha suggest a test case:
 
 ```bash
-yb suggest-suite --agent copilot-cli --output-dir ./my-agent-output
+yb suggest-testcase --agent copilot-cli --output-dir ./my-agent-output
 ```
 
-The agent will interactively help you create a comprehensive evaluation suite based on what changed.
+The agent will interactively help you create a comprehensive test case based on what changed.
 
 ---
 

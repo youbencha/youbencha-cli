@@ -40,8 +40,8 @@ export class MarkdownReporter implements Reporter {
     sections.push(this.generateSummary(bundle));
     sections.push('');
 
-    // Suite Configuration
-    sections.push(this.generateSuiteConfig(bundle));
+    // Test Case Configuration
+    sections.push(this.generateTestCaseConfig(bundle));
     sections.push('');
 
     // Execution Details
@@ -92,7 +92,7 @@ export class MarkdownReporter implements Reporter {
   /**
    * Generate test case configuration section
    */
-  private generateSuiteConfig(bundle: ResultsBundle): string {
+  private generateTestCaseConfig(bundle: ResultsBundle): string {
     const lines: string[] = [];
     
     lines.push('## Test Case Configuration');

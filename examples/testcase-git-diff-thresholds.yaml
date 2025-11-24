@@ -1,5 +1,8 @@
-# Example suite demonstrating git-diff evaluator with threshold-based assertions
+# Example test case demonstrating git-diff evaluator with threshold-based assertions
 # This ensures the agent's changes stay within acceptable bounds
+
+name: "Git Diff Thresholds Example"
+description: "Demonstrates how to use git-diff evaluator with threshold-based assertions to ensure focused changes"
 
 repo: https://github.com/octocat/Hello-World.git
 branch: master
