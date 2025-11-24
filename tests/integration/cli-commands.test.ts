@@ -28,16 +28,16 @@ describe('Integration: CLI Commands', () => {
 
     it('should support init subcommand help', () => {
       const output = execSync(`node ${cliPath} init --help`, { encoding: 'utf-8' });
-      expect(output).toContain('Create a starter suite.yaml configuration');
+      expect(output).toContain('Create a starter testcase.yaml configuration');
       expect(output).toContain('Examples:');
       expect(output).toContain('init');
     });
 
     it('should support run subcommand help', () => {
       const output = execSync(`node ${cliPath} run --help`, { encoding: 'utf-8' });
-      expect(output).toContain('Run an evaluation suite against an AI agent');
+      expect(output).toContain('Run a test case against an AI agent');
       expect(output).toContain('Examples:');
-      expect(output).toContain('run -c suite.yaml');
+      expect(output).toContain('run -c testcase.yaml');
     });
 
     it('should support report subcommand help', () => {
@@ -57,9 +57,9 @@ describe('Integration: CLI Commands', () => {
 
     it('should support validate subcommand help', () => {
       const output = execSync(`node ${cliPath} validate --help`, { encoding: 'utf-8' });
-      expect(output).toContain('Validate a suite configuration');
+      expect(output).toContain('Validate a test case configuration');
       expect(output).toContain('Examples:');
-      expect(output).toContain('validate -c suite.yaml');
+      expect(output).toContain('validate -c testcase.yaml');
     });
   });
 });

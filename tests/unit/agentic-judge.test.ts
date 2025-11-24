@@ -48,13 +48,16 @@ describe('AgenticJudgeEvaluator', () => {
         },
       },
       config: {
+        type: 'copilot-cli',
         criteria: [
           'Error handling completeness',
           'Test coverage adequacy',
           'Documentation quality',
         ],
       },
-      suiteConfig: {
+      testCaseConfig: {
+        name: 'Test Case',
+        description: 'Test case for agentic judge',
         version: '1.0.0',
         repo: 'https://github.com/test/repo',
         branch: 'main',
@@ -104,8 +107,8 @@ describe('AgenticJudgeEvaluator', () => {
     test('returns false when agent config is missing', async () => {
       const contextWithoutAgent = {
         ...mockContext,
-        suiteConfig: {
-          ...mockContext.suiteConfig,
+        testCaseConfig: {
+          ...mockContext.testCaseConfig,
           agent: undefined as any,
         },
       };
@@ -117,8 +120,8 @@ describe('AgenticJudgeEvaluator', () => {
     test('returns false when agent type is invalid', async () => {
       const contextWithInvalidAgent = {
         ...mockContext,
-        suiteConfig: {
-          ...mockContext.suiteConfig,
+        testCaseConfig: {
+          ...mockContext.testCaseConfig,
           agent: {
             type: 'invalid-agent-type' as any,
             config: {},
@@ -196,7 +199,12 @@ describe('AgenticJudgeEvaluator', () => {
       const result = await evaluator.evaluate(mockContext);
 
       expect(result.status).toBe('passed');
-      expect(result.metrics).toMatchObject(expectedResult.metrics);
+      // The evaluator moves assertion scores to the assertions field, not metrics
+      expect(result.assertions).toMatchObject(expectedResult.metrics);
+      expect(result.metrics).toMatchObject({
+        agent_type: 'copilot-cli',
+        agent_duration_ms: 2000,
+      });
       expect(result.message).toBe(expectedResult.message);
     });
 
@@ -397,8 +405,8 @@ describe('AgenticJudgeEvaluator', () => {
     test('skips when preconditions not met', async () => {
       const contextWithoutAgent = {
         ...mockContext,
-        suiteConfig: {
-          ...mockContext.suiteConfig,
+        testCaseConfig: {
+          ...mockContext.testCaseConfig,
           agent: undefined as any,
         },
       };
@@ -508,8 +516,8 @@ describe('AgenticJudgeEvaluator', () => {
     test('handles unknown adapter type', async () => {
       const contextWithUnknownAdapter = {
         ...mockContext,
-        suiteConfig: {
-          ...mockContext.suiteConfig,
+        testCaseConfig: {
+          ...mockContext.testCaseConfig,
           agent: {
             type: 'unknown-adapter' as any,
             config: {},

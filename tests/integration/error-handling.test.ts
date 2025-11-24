@@ -229,13 +229,14 @@ timeout: 30
 
     // Create config with unknown evaluator
     await fs.writeFile(unknownEvaluatorConfig, `
-version: "1.0"
-repo: "${testRepoDir.replace(/\\/g, '/')}"
+name: "Error Handling Test"
+description: "Test case with unknown evaluator"
+repo: "https://github.com/youbencha/youbencha-cli"
 branch: main
 agent:
-  adapter: copilot-cli
-  version: 1.0
-  prompt: "Test prompt"
+  type: copilot-cli
+  config:
+    prompt: "Test prompt"
 evaluators:
   - name: nonexistent-evaluator-xyz
     config: {}

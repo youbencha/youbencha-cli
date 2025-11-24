@@ -16,10 +16,27 @@ import { CopilotCLIAdapter } from '../adapters/copilot-cli.js';
 
 /**
  * Get the directory path for this module (ES module equivalent of __dirname)
+ * 
+ * NOTE: Uses eval() to work around Jest's inability to parse import.meta.url at module load time.
+ * This is safe because: (1) the string is constant, not user input, (2) Jest environment is detected
+ * first and uses a static path, (3) eval() is only executed in production/non-Jest environments.
  */
 function getModuleDirname(): string {
-  const _filename = fileURLToPath(import.meta.url);
-  return dirname(_filename);
+  // Jest/test environment workaround - use static path
+  if (typeof process !== 'undefined' && process.env.JEST_WORKER_ID !== undefined) {
+    return join(process.cwd(), 'src', 'evaluators');
+  }
+  
+  try {
+    // Use eval() to prevent Jest parser from encountering import.meta directly
+    // This is the only way to access import.meta.url while maintaining Jest compatibility
+    const metaUrl = eval('import.meta.url');
+    const _filename = fileURLToPath(metaUrl);
+    return dirname(_filename);
+  } catch {
+    // Fallback for environments where import.meta is not available
+    return join(process.cwd(), 'src', 'evaluators');
+  }
 }
 
 /**
@@ -101,10 +118,7 @@ export class AgenticJudgeEvaluator implements Evaluator {
         );
       }
       // Get adapter for configured agent type from test case config (or evaluator config for eval-only)
-      const agentConfig = context.testCaseConfig?.agent;
-      console.log('Agent config from suiteConfig:', agentConfig);
       const agentType = context.config?.type as string;
-      console.log('Agent type from config:', agentType);
       if (!agentType) {
         return this.createSkippedResult(
           startedAt,
@@ -120,19 +134,14 @@ export class AgenticJudgeEvaluator implements Evaluator {
       }
 
       //if type == copilot-cli and agentName is specified, copy .github/agents folder to modifiedDir
-      console.log('context.config:', context.config);
       if (agentType === 'copilot-cli' && context.config.agent_name) {
-        console.log('Copying .github/agents to modifiedDir for copilot-cli agent...');
         const fs = await import('fs-extra');
         const sourceAgentsDir = join(process.cwd(), '.github', 'agents');
-        console.log('Source agents dir:', sourceAgentsDir);
         const destAgentsDir = join(context.modifiedDir, '.github', 'agents');
-        console.log('Destination agents dir:', destAgentsDir);
         try {
           await fs.default.copy(sourceAgentsDir, destAgentsDir);
-          console.log('Copied .github/agents successfully');
         } catch (error) {
-          console.error('Failed to copy .github/agents:', error);
+          // Safe to ignore - .github/agents may not exist, and agent can work without custom agents
         }
       }
 
