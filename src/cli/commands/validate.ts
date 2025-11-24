@@ -13,6 +13,7 @@ import { createSpinner } from '../../lib/progress.js';
 import * as logger from '../../lib/logger.js';
 import { UserErrors, formatUserError } from '../../lib/user-errors.js';
 import { parseConfig, getFormatTips } from '../../lib/config-parser.js';
+import { ZodError } from 'zod';
 
 /**
  * Options for validate command
@@ -64,7 +65,7 @@ export async function validateCommand(options: ValidateCommandOptions): Promise<
     const parseSpinner = createSpinner('Parsing configuration...');
     parseSpinner.start();
     
-    let configData: any;
+    let configData: unknown;
     try {
       configData = parseConfig(configContent, options.config);
       parseSpinner.succeed('Configuration parsed successfully ✓');
@@ -95,14 +96,11 @@ export async function validateCommand(options: ValidateCommandOptions): Promise<
       
       // Extract validation errors
       const errors: string[] = [];
-      if (error instanceof Error && 'errors' in error) {
-        const zodError = error as any;
-        if (Array.isArray(zodError.errors)) {
-          zodError.errors.forEach((err: any) => {
-            const path = err.path.join('.');
-            errors.push(`${path}: ${err.message}`);
-          });
-        }
+      if (error instanceof ZodError) {
+        error.errors.forEach((err) => {
+          const path = err.path.join('.');
+          errors.push(`${path}: ${err.message}`);
+        });
       } else if (error instanceof Error) {
         errors.push(error.message);
       }
@@ -139,14 +137,14 @@ export async function validateCommand(options: ValidateCommandOptions): Promise<
       logger.info('🤖 Agent:');
       logger.info(`   Type: ${testCaseConfig.agent.type}`);
       if (testCaseConfig.agent.config?.prompt) {
-        const promptLength = (testCaseConfig.agent.config.prompt as string).length;
+        const promptLength = String(testCaseConfig.agent.config.prompt).length;
         logger.info(`   Prompt length: ${promptLength} characters`);
         if (promptLength < 10) {
           logger.warn('   ⚠️  Prompt is very short - consider adding more detail');
         }
       }
       if (testCaseConfig.agent.config?.prompt_file) {
-        logger.info(`   Prompt file: ${testCaseConfig.agent.config.prompt_file as string}`);
+        logger.info(`   Prompt file: ${String(testCaseConfig.agent.config.prompt_file)}`);
       }
       logger.info('');
     }
