@@ -19,15 +19,15 @@ class MockReporter implements Reporter {
 
   async generate(
     bundle: ResultsBundle,
-    options?: Record<string, unknown>
+    _options?: Record<string, unknown>
   ): Promise<string> {
     return `Mock report for ${bundle.test_case.repo}`;
   }
 
   async writeToFile(
-    bundle: ResultsBundle,
-    outputPath: string,
-    options?: Record<string, unknown>
+    _bundle: ResultsBundle,
+    _outputPath: string,
+    _options?: Record<string, unknown>
   ): Promise<void> {
     // Mock implementation - would write to file
     return Promise.resolve();

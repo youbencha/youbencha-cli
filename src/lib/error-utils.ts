@@ -12,7 +12,7 @@ export interface SanitizedError {
  * Removes absolute paths and sensitive information
  */
 export function sanitizeError(
-  error: Error | unknown,
+  error: unknown,
   includeStack: boolean = process.env.NODE_ENV === 'development'
 ): SanitizedError {
   const err = error instanceof Error ? error : new Error(String(error));
@@ -24,7 +24,7 @@ export function sanitizeError(
   message = message.replace(/[A-Z]:\\[\w\\.-]+/g, '[PATH]');
   
   // Remove Unix paths (/home/user/...)
-  message = message.replace(/\/[\w\/.-]+/g, (match) => {
+  message = message.replace(/\/[\w/.-]+/g, (match) => {
     // Keep relative paths, sanitize absolute
     if (match.startsWith('/home') || match.startsWith('/Users') || match.startsWith('/root')) {
       return '[PATH]';
@@ -39,8 +39,8 @@ export function sanitizeError(
     // Sanitize stack trace too
     let stack = err.stack;
     stack = stack.replace(/[A-Z]:\\[\w\\.-]+/g, '[PATH]');
-    stack = stack.replace(/\/home\/[\w\/.-]+/g, '[PATH]');
-    stack = stack.replace(/\/Users\/[\w\/.-]+/g, '[PATH]');
+    stack = stack.replace(/\/home\/[\w/.-]+/g, '[PATH]');
+    stack = stack.replace(/\/Users\/[\w/.-]+/g, '[PATH]');
     result.stack_trace = stack;
   }
   

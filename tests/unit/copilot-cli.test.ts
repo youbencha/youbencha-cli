@@ -11,7 +11,6 @@
 
 import { CopilotCLIAdapter } from '../../src/adapters/copilot-cli.js';
 import { AgentExecutionContext } from '../../src/adapters/base.js';
-import { YouBenchaLog } from '../../src/schemas/youbenchalog.schema.js';
 
 describe('CopilotCLIAdapter', () => {
   let adapter: CopilotCLIAdapter;
@@ -360,11 +359,11 @@ describe('CopilotCLIAdapter', () => {
       expect(log.execution.status).toBe('success');
     });
 
-    it('should conform to youBencha Log schema', () => {
+    it('should conform to youBencha Log schema', async () => {
       const log = adapter.normalizeLog(mockRawOutput, mockResult);
       
       // This will throw if schema validation fails
-      const { youBenchaLogSchema } = require('../../src/schemas/youbenchalog.schema.js');
+      const { youBenchaLogSchema } = await import('../../src/schemas/youbenchalog.schema.js');
       expect(() => youBenchaLogSchema.parse(log)).not.toThrow();
     });
   });

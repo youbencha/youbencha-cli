@@ -6,7 +6,6 @@
 
 import { AgenticJudgeEvaluator } from '../../src/evaluators/agentic-judge.js';
 import { EvaluationContext } from '../../src/evaluators/base.js';
-import { CopilotCLIAdapter } from '../../src/adapters/copilot-cli.js';
 import { AgentAdapter } from '../../src/adapters/base.js';
 import * as fs from 'fs/promises';
 import * as path from 'path';

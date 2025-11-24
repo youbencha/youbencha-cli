@@ -21,7 +21,7 @@ export interface AgentExecutionContext {
   artifactsDir: string;
 
   /** Agent-specific configuration from suite config */
-  config: Record<string, any>;
+  config: Record<string, unknown>;
 
   /** Timeout in milliseconds (0 = no timeout) */
   timeout: number;

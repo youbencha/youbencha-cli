@@ -41,7 +41,7 @@ export function levenshteinDistance(str1: string, str2: string): number {
   // Create a 2D array for dynamic programming
   const dp: number[][] = Array(len1 + 1)
     .fill(null)
-    .map(() => Array(len2 + 1).fill(0));
+    .map(() => Array(len2 + 1).fill(0) as number[]);
   
   // Initialize first row and column
   for (let i = 0; i <= len1; i++) {

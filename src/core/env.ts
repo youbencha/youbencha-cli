@@ -183,7 +183,12 @@ export class EnvironmentDetector {
   /**
    * Get full environment (all sections combined)
    */
-  getFullEnvironment(workingDirectory?: string) {
+  getFullEnvironment(workingDirectory?: string): {
+    info: EnvironmentInfo;
+    system: SystemInfo;
+    user: UserInfo;
+    env: Record<string, string>;
+  } {
     return {
       info: this.getEnvironmentInfo(workingDirectory),
       system: this.getSystemInfo(),
@@ -195,7 +200,12 @@ export class EnvironmentDetector {
   /**
    * Format environment for youBencha Log schema
    */
-  formatEnvironmentForLog(workingDirectory?: string) {
+  formatEnvironmentForLog(workingDirectory?: string): {
+    os: string;
+    node_version: string;
+    youbencha_version: string;
+    working_directory: string;
+  } {
     const info = this.getEnvironmentInfo(workingDirectory);
     
     return {
@@ -240,7 +250,7 @@ function getYouBenchaVersion(): string {
     
     for (const packageJsonPath of possiblePaths) {
       try {
-        const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+        const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8')) as { version?: string };
         if (packageJson.version) {
           return packageJson.version;
         }

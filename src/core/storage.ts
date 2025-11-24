@@ -117,7 +117,7 @@ export async function getArtifactManifest(artifactsDir: string): Promise<string[
 
   const files: string[] = [];
 
-  function scanDirectory(currentDir: string, relativePath: string = '') {
+  function scanDirectory(currentDir: string, relativePath: string = ''): void {
     const entries = readdirSync(currentDir);
 
     for (const entry of entries) {

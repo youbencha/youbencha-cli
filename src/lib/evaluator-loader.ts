@@ -16,7 +16,7 @@ import { parseConfig } from './config-parser.js';
  */
 export interface ResolvedEvaluatorConfig {
   name: string;
-  config?: Record<string, any>;
+  config?: Record<string, unknown>;
 }
 
 /**

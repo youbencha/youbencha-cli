@@ -274,7 +274,7 @@ export class DiffAnalyzer {
     const files: string[] = [];
     const shouldExclude = this.shouldExclude.bind(this);
 
-    async function walk(currentPath: string, basePath: string) {
+    async function walk(currentPath: string, basePath: string): Promise<void> {
       const entries = await fs.readdir(currentPath, { withFileTypes: true });
 
       for (const entry of entries) {
@@ -373,7 +373,7 @@ export class DiffAnalyzer {
     const outputFiles = potentiallyModified.filter(f => {
       const sourceFile = path.join(sourcePath, f);
       try {
-        fs.access(sourceFile);
+        void fs.access(sourceFile);
         return false;
       } catch {
         return true;

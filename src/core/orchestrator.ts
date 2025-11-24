@@ -817,8 +817,8 @@ export class Orchestrator {
         // Resolve prompt_file in evaluator config if present
         const evaluatorConfigWithResolvedPrompt = { ...evaluatorConfig.config };
         if (evaluatorConfig.config) {
-          const promptFromConfig = evaluatorConfigWithResolvedPrompt.prompt;
-          const promptFileFromConfig = evaluatorConfigWithResolvedPrompt.prompt_file;
+          const promptFromConfig = evaluatorConfigWithResolvedPrompt.prompt as string | undefined;
+          const promptFileFromConfig = evaluatorConfigWithResolvedPrompt.prompt_file as string | undefined;
           
           // Validate mutual exclusivity
           if (promptFromConfig && promptFileFromConfig) {

@@ -198,14 +198,14 @@ export class ScriptPreExecution implements PreExecution {
         }, 2000);
       }, timeoutMs);
 
-      child.stdout.on('data', (data) => {
+      child.stdout.on('data', (data: Buffer) => {
         const text = data.toString();
         stdout += text;
         // Display stdout in real-time
         process.stdout.write(text);
       });
 
-      child.stderr.on('data', (data) => {
+      child.stderr.on('data', (data: Buffer) => {
         const text = data.toString();
         stderr += text;
         // Display stderr in real-time

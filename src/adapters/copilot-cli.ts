@@ -297,7 +297,7 @@ export class CopilotCLIAdapter implements AgentAdapter {
       }
 
       // Capture stdout and stderr with real-time streaming
-      childProcess.stdout?.on('data', (data) => {
+      childProcess.stdout?.on('data', (data: Buffer) => {
         const text = data.toString();
         output += text;
         // Stream to console in real-time
@@ -308,7 +308,7 @@ export class CopilotCLIAdapter implements AgentAdapter {
         }
       });
 
-      childProcess.stderr?.on('data', (data) => {
+      childProcess.stderr?.on('data', (data: Buffer) => {
         const text = data.toString();
         output += text;
         // Stream to console in real-time
@@ -383,7 +383,7 @@ export class CopilotCLIAdapter implements AgentAdapter {
     });
 
     let currentMessageContent = '';
-    let currentToolCalls: any[] = [];
+    let currentToolCalls: Array<{ tool: string; args: string }> = [];
     
     for (const line of lines) {
       const trimmed = line.trim();
@@ -516,8 +516,9 @@ export class CopilotCLIAdapter implements AgentAdapter {
     try {
       // Try to read version from package.json
       const packageJsonPath = path.join(process.cwd(), 'package.json');
-      const fs = require('fs');
-      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { readFileSync } = require('fs') as { readFileSync: (path: string, encoding: string) => string };
+      const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8')) as { version?: string };
       return packageJson.version || '1.0.0';
     } catch {
       return '1.0.0';
