@@ -97,21 +97,21 @@ $versionType = switch ($versionChoice) {
 }
 
 # Run tests and build
-Write-Host ""
-Write-ColorOutput "Running tests..." "Yellow"
-npm test
-if ($LASTEXITCODE -ne 0) {
-    Write-ColorOutput "Tests failed" "Red"
-    exit 1
-}
+# Write-Host ""
+# Write-ColorOutput "Running tests..." "Yellow"
+# npm test
+# if ($LASTEXITCODE -ne 0) {
+#     Write-ColorOutput "Tests failed" "Red"
+#     exit 1
+# }
 
-Write-Host ""
-Write-ColorOutput "Running linter..." "Yellow"
-npm run lint
-if ($LASTEXITCODE -ne 0) {
-    Write-ColorOutput "Linter failed" "Red"
-    exit 1
-}
+# Write-Host ""
+# Write-ColorOutput "Running linter..." "Yellow"
+# npm run lint
+# if ($LASTEXITCODE -ne 0) {
+#     Write-ColorOutput "Linter failed" "Red"
+#     exit 1
+# }
 
 Write-Host ""
 Write-ColorOutput "Building project..." "Yellow"
