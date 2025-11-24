@@ -692,31 +692,19 @@ export class Orchestrator {
       const fs = await import('fs-extra');
       
       // Determine source and destination directories based on agent type
-      let sourceAgentsDir: string;
-      let destAgentsDir: string;
+      const sourceAgentsDir = testCaseConfig.agent.type === 'copilot-cli'
+        ? path.join(process.cwd(), '.github', 'agents')
+        : path.join(process.cwd(), '.claude', 'agents');
       
-      if (testCaseConfig.agent.type === 'copilot-cli') {
-        // Copilot uses .github/agents/
-        sourceAgentsDir = path.join(process.cwd(), '.github', 'agents');
-        destAgentsDir = path.join(workspace.paths.modifiedDir, '.github', 'agents');
-      } else if (testCaseConfig.agent.type === 'claude-code') {
-        // Claude Code uses .claude/agents/
-        sourceAgentsDir = path.join(process.cwd(), '.claude', 'agents');
-        destAgentsDir = path.join(workspace.paths.modifiedDir, '.claude', 'agents');
-      } else {
-        // Skip copying for unknown agent types
-        logger.warn(`Agent type ${testCaseConfig.agent.type} does not support agent files`);
-        sourceAgentsDir = '';
-        destAgentsDir = '';
-      }
+      const destAgentsDir = testCaseConfig.agent.type === 'copilot-cli'
+        ? path.join(workspace.paths.modifiedDir, '.github', 'agents')
+        : path.join(workspace.paths.modifiedDir, '.claude', 'agents');
       
-      if (sourceAgentsDir && destAgentsDir) {
-        try {
-          await fs.default.copy(sourceAgentsDir, destAgentsDir);
-          logger.info('Agent files copied successfully');
-        } catch (error) {
-          logger.warn(`Failed to copy agent files: ${error instanceof Error ? error.message : String(error)}`);
-        }
+      try {
+        await fs.default.copy(sourceAgentsDir, destAgentsDir);
+        logger.info('Agent files copied successfully');
+      } catch (error) {
+        logger.warn(`Failed to copy agent files: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 
