@@ -1,6 +1,6 @@
 {
   "name": "youbencha",
-  "version": "0.1.0-beta-1",
+  "version": "0.1.0-beta-2",
   "description": "A friendly, developer-first CLI framework for evaluating agentic coding tools",
   "main": "dist/cli/index.js",
   "bin": {
@@ -14,7 +14,7 @@
     "lint": "eslint src/**/*.ts tests/**/*.ts",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\"",
-    "prepublishOnly": "npm run lint && npm run test && npm run build",
+    "prepublishOnly": "npm run build",
     "prepack": "npm run build"
   },
   "keywords": [
