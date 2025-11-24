@@ -113,10 +113,7 @@ export class AgenticJudgeEvaluator implements Evaluator {
         );
       }
       // Get adapter for configured agent type from test case config (or evaluator config for eval-only)
-      const agentConfig = context.testCaseConfig?.agent;
-      console.log('Agent config from suiteConfig:', agentConfig);
       const agentType = context.config?.type as string;
-      console.log('Agent type from config:', agentType);
       if (!agentType) {
         return this.createSkippedResult(
           startedAt,
@@ -132,19 +129,14 @@ export class AgenticJudgeEvaluator implements Evaluator {
       }
 
       //if type == copilot-cli and agentName is specified, copy .github/agents folder to modifiedDir
-      console.log('context.config:', context.config);
       if (agentType === 'copilot-cli' && context.config.agent_name) {
-        console.log('Copying .github/agents to modifiedDir for copilot-cli agent...');
         const fs = await import('fs-extra');
         const sourceAgentsDir = join(process.cwd(), '.github', 'agents');
-        console.log('Source agents dir:', sourceAgentsDir);
         const destAgentsDir = join(context.modifiedDir, '.github', 'agents');
-        console.log('Destination agents dir:', destAgentsDir);
         try {
           await fs.default.copy(sourceAgentsDir, destAgentsDir);
-          console.log('Copied .github/agents successfully');
         } catch (error) {
-          console.error('Failed to copy .github/agents:', error);
+          // Ignore copy errors - agent may still work without custom agents
         }
       }
 

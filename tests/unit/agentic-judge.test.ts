@@ -48,6 +48,7 @@ describe('AgenticJudgeEvaluator', () => {
         },
       },
       config: {
+        type: 'copilot-cli',
         criteria: [
           'Error handling completeness',
           'Test coverage adequacy',
@@ -198,7 +199,12 @@ describe('AgenticJudgeEvaluator', () => {
       const result = await evaluator.evaluate(mockContext);
 
       expect(result.status).toBe('passed');
-      expect(result.metrics).toMatchObject(expectedResult.metrics);
+      // The evaluator moves assertion scores to the assertions field, not metrics
+      expect(result.assertions).toMatchObject(expectedResult.metrics);
+      expect(result.metrics).toMatchObject({
+        agent_type: 'copilot-cli',
+        agent_duration_ms: 2000,
+      });
       expect(result.message).toBe(expectedResult.message);
     });
 
