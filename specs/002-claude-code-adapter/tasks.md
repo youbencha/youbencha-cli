@@ -17,11 +17,11 @@
 
 **Purpose**: Project initialization and basic structure
 
-- [ ] T001 Review existing AgentAdapter interface in src/adapters/base.ts
-- [ ] T002 Review copilot-cli.ts reference implementation in src/adapters/copilot-cli.ts
-- [ ] T003 [P] Review YouBenchaLog schema in src/schemas/youbenchalog.schema.ts
-- [ ] T004 [P] Verify Claude Code CLI is installed and authenticated (run `claude --version`)
-- [ ] T005 [P] Create test fixtures directory for adapter tests at tests/fixtures/claude-code/
+- [x] T001 Review existing AgentAdapter interface in src/adapters/base.ts
+- [x] T002 Review copilot-cli.ts reference implementation in src/adapters/copilot-cli.ts
+- [x] T003 [P] Review YouBenchaLog schema in src/schemas/youbenchalog.schema.ts
+- [x] T004 [P] Verify Claude Code CLI is installed and authenticated (run `claude --version`)
+- [x] T005 [P] Create test fixtures directory for adapter tests at tests/fixtures/claude-code/
 
 ---
 
@@ -31,12 +31,12 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
-- [ ] T006 Create shell utility module in src/lib/shell-utils.ts with escapeShellArg() for cross-platform prompt escaping
-- [ ] T007 [P] Write unit tests for shell-utils.ts in tests/unit/shell-utils.test.ts (test PowerShell and bash escaping)
-- [ ] T008 Create Claude Code adapter skeleton class in src/adapters/claude-code.ts implementing AgentAdapter interface
-- [ ] T009 Register ClaudeCodeAdapter in orchestrator switch statement in src/core/orchestrator.ts (getAgentAdapter function)
-- [ ] T010 [P] Create example test case configuration in examples/testcase-claude-code.yaml
-- [ ] T011 [P] Create advanced example test case in examples/testcase-claude-code-advanced.yaml
+- [x] T006 Create shell utility module in src/lib/shell-utils.ts with escapeShellArg() for cross-platform prompt escaping
+- [x] T007 [P] Write unit tests for shell-utils.ts in tests/unit/shell-utils.test.ts (test PowerShell and bash escaping)
+- [x] T008 Create Claude Code adapter skeleton class in src/adapters/claude-code.ts implementing AgentAdapter interface
+- [x] T009 Register ClaudeCodeAdapter in orchestrator switch statement in src/core/orchestrator.ts (getAgentAdapter function)
+- [x] T010 [P] Create example test case configuration in examples/testcase-claude-code.yaml
+- [x] T011 [P] Create advanced example test case in examples/testcase-claude-code-advanced.yaml
 
 **Checkpoint**: Foundation ready - user story implementation can now begin in parallel
 
@@ -52,30 +52,30 @@
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T012 [P] [US1] Write contract tests for checkAvailability() in tests/contract/adapter.test.ts (CR-1.1 through CR-1.5)
-- [ ] T013 [P] [US1] Write contract tests for execute() basic execution in tests/contract/adapter.test.ts (CR-2.1, CR-2.2, CR-2.8)
-- [ ] T014 [P] [US1] Write contract tests for execute() prompt configuration in tests/contract/adapter.test.ts (CR-2.4)
-- [ ] T015 [P] [US1] Write contract tests for execute() working directory in tests/contract/adapter.test.ts (CR-2.10)
-- [ ] T016 [P] [US1] Write contract tests for normalizeLog() basic structure in tests/contract/adapter.test.ts (CR-3.1, CR-3.2, CR-3.3)
-- [ ] T017 [P] [US1] Write integration test for end-to-end execution in tests/integration/claude-code-e2e.test.ts
-- [ ] T018 [US1] Run test suite and verify all US1 tests fail with "not implemented" errors (npm test -- claude-code)
+- [x] T012 [P] [US1] Write contract tests for checkAvailability() in tests/contract/adapter.test.ts (CR-1.1 through CR-1.5)
+- [x] T013 [P] [US1] Write contract tests for execute() basic execution in tests/contract/adapter.test.ts (CR-2.1, CR-2.2, CR-2.8)
+- [x] T014 [P] [US1] Write contract tests for execute() prompt configuration in tests/contract/adapter.test.ts (CR-2.4)
+- [x] T015 [P] [US1] Write contract tests for execute() working directory in tests/contract/adapter.test.ts (CR-2.10)
+- [x] T016 [P] [US1] Write contract tests for normalizeLog() basic structure in tests/contract/adapter.test.ts (CR-3.1, CR-3.2, CR-3.3)
+- [x] T017 [P] [US1] Write integration test for end-to-end execution in tests/integration/claude-code-e2e.test.ts
+- [x] T018 [US1] Run test suite and verify all US1 tests fail with "not implemented" errors (npm test -- claude-code)
 
 ### Implementation for User Story 1
 
-- [ ] T019 [P] [US1] Implement checkAvailability() method in src/adapters/claude-code.ts with CLI detection and auth verification
-- [ ] T020 [P] [US1] Implement buildClaudeCommand() private helper in src/adapters/claude-code.ts for command construction
-- [ ] T021 [US1] Implement executeWithTimeout() private helper in src/adapters/claude-code.ts using child_process.spawn and AbortController
-- [ ] T022 [US1] Implement execute() main method in src/adapters/claude-code.ts orchestrating command building and execution
-- [ ] T023 [US1] Implement output capture logic in execute() method to save raw output to artifacts/claude-code-logs/
-- [ ] T023a [US1] Verify artifacts/claude-code-logs/ directory is created with proper structure and timestamped log files (FR-016)
-- [ ] T024 [P] [US1] Implement stripAnsiCodes() helper function in src/adapters/claude-code.ts
-- [ ] T025 [P] [US1] Implement parseModel() helper function in src/adapters/claude-code.ts
-- [ ] T026 [P] [US1] Implement parseVersion() helper function in src/adapters/claude-code.ts
-- [ ] T026a [US1] Verify parseVersion() correctly extracts Claude Code CLI version from output and includes in normalized log (FR-014)
-- [ ] T027 [US1] Implement normalizeLog() method skeleton in src/adapters/claude-code.ts with basic structure
-- [ ] T028 [US1] Verify all US1 contract tests pass (npm test -- contract/adapter)
-- [ ] T029 [US1] Verify US1 integration test passes (npm test -- integration/claude-code-e2e)
-- [ ] T030 [US1] Manual validation: Run examples/testcase-claude-code.yaml and verify output
+- [x] T019 [P] [US1] Implement checkAvailability() method in src/adapters/claude-code.ts with CLI detection and auth verification
+- [x] T020 [P] [US1] Implement buildClaudeCommand() private helper in src/adapters/claude-code.ts for command construction
+- [x] T021 [US1] Implement executeWithTimeout() private helper in src/adapters/claude-code.ts using child_process.spawn and AbortController
+- [x] T022 [US1] Implement execute() main method in src/adapters/claude-code.ts orchestrating command building and execution
+- [x] T023 [US1] Implement output capture logic in execute() method to save raw output to artifacts/claude-code-logs/
+- [x] T023a [US1] Verify artifacts/claude-code-logs/ directory is created with proper structure and timestamped log files (FR-016)
+- [x] T024 [P] [US1] Implement stripAnsiCodes() helper function in src/adapters/claude-code.ts
+- [x] T025 [P] [US1] Implement parseModel() helper function in src/adapters/claude-code.ts
+- [x] T026 [P] [US1] Implement parseVersion() helper function in src/adapters/claude-code.ts
+- [x] T026a [US1] Verify parseVersion() correctly extracts Claude Code CLI version from output and includes in normalized log (FR-014)
+- [x] T027 [US1] Implement normalizeLog() method skeleton in src/adapters/claude-code.ts with basic structure
+- [x] T028 [US1] Verify all US1 contract tests pass (npm test -- contract/adapter)
+- [x] T029 [US1] Verify US1 integration test passes (npm test -- integration/claude-code-e2e)
+- [x] T030 [US1] Manual validation: Run examples/testcase-claude-code.yaml and verify output
 
 **Checkpoint**: At this point, User Story 1 should be fully functional and testable independently - basic Claude Code execution works
 
