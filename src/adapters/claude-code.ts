@@ -19,6 +19,7 @@ import {
 } from './base.js';
 import { YouBenchaLog } from '../schemas/youbenchalog.schema.js';
 import { stripAnsiCodes, escapeShellArg, isPathSafe } from '../lib/shell-utils.js';
+import * as logger from '../lib/logger.js';
 
 const execAsync = promisify(exec);
 
@@ -88,11 +89,10 @@ export class ClaudeCodeAdapter implements AgentAdapter {
       const { command, args } = this.buildClaudeCommand(context);
 
       // Log the command being executed for debugging
-      console.log('[DEBUG] Claude Code CLI Command:');
-      console.log(`  Command: ${command}`);
-      console.log(`  Args: ${JSON.stringify(args)}`);
-      console.log(`  CWD: ${context.workspaceDir}`);
-      console.log(`  Terminal output log: ${terminalLogPath}`);
+      logger.debug(`Claude Code CLI Command: ${command}`);
+      logger.debug(`  Args: ${JSON.stringify(args)}`);
+      logger.debug(`  CWD: ${context.workspaceDir}`);
+      logger.debug(`  Terminal output log: ${terminalLogPath}`);
 
       // Execute Claude with timeout
       const result = await this.executeWithTimeout(
@@ -391,8 +391,10 @@ export class ClaudeCodeAdapter implements AgentAdapter {
           outputSize += textSize;
         }
 
-        // Stream to console in real-time
-        process.stdout.write(text);
+        // Stream to console in real-time (unless in test environment)
+        if (!process.env.JEST_WORKER_ID) {
+          process.stdout.write(text);
+        }
 
         // Write to log file
         if (logStream) {
