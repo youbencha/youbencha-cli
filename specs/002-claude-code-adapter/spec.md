@@ -9,8 +9,8 @@
 
 ### Session 2025-11-25
 
-- Q: When Claude Code exceeds configured timeout, should the adapter: A) Immediately kill process with no output capture, B) Allow grace period for cleanup, C) Terminate process but capture output up to termination point, or D) Retry with extended timeout? → A: C - Terminate process; capture output up to termination point; mark as timeout with details
-- Q: When Claude Code produces extremely large output (>100MB), should the adapter: A) Capture unlimited output, B) Stop at 10MB with truncation warning, C) Stream with no limit, or D) Stop at 50MB and compress if >10MB? → A: B - Stop capturing at 10MB; append truncation warning to log
+- Q: When Claude Code exceeds configured timeout, should the adapter: A) Immediately kill process with no output capture, B) Allow grace period for cleanup, C) Terminate process but capture output up to termination point, or D) Retry with extended timeout? → A: C - Terminate process immediately with SIGTERM (no grace period); capture output up to termination point; mark as timeout with details
+- Q: When Claude Code produces extremely large output (>100MB), should the adapter: A) Capture unlimited output, B) Stop at 10MB with truncation warning, C) Stream with no limit, or D) Stop at 50MB and compress if >10MB? → A: B - Stop capturing at 10,485,760 bytes (10MB) of combined stdout+stderr; append truncation warning to log
 - Q: When authentication fails (no API key, invalid credentials), should the adapter: A) Retry with backoff, B) Fail immediately with clear error message, C) Prompt for authentication, or D) Continue with warning? → A: B - Fail immediately with clear error message about authentication requirement
 - Q: When Claude Code crashes mid-execution without proper exit code, should the adapter: A) Mark as "unknown" and skip evaluation, B) Mark as failed with OS exit code and stderr, C) Parse partial output heuristically, or D) Treat as timeout? → A: B - Mark as "failed"; capture whatever exit code OS provided plus stderr
 - Q: How should the adapter handle special characters or quotes in prompts: A) Pass as-is, B) Escape per shell rules with validation, C) Base64-encode prompts, or D) Require prompt_file for complex prompts? → A: B - Escape special characters according to shell rules; validate before execution
@@ -120,7 +120,7 @@ A youBencha user wants to leverage Claude Code's advanced features like custom s
 - **FR-005**: System MUST support inline prompt configuration via `agent.config.prompt`
 - **FR-006**: System MUST support external prompt files via `agent.config.prompt_file`
 - **FR-007**: System MUST enforce mutual exclusivity of `prompt` and `prompt_file` configuration options
-- **FR-008**: System MUST pass agent_name parameter to Claude Code via `--agents` flag when specified
+- **FR-008**: System MUST pass agent_name parameter to Claude Code via `--agents` flag when specified (flag naming verified in Claude Code CLI documentation)
 - **FR-009**: System MUST pass model parameter to Claude Code via `--model` flag when specified
 - **FR-010**: System MUST respect timeout configuration and terminate Claude Code process if exceeded
 - **FR-011**: System MUST return execution status as "success", "failed", or "timeout" based on exit code and timing
@@ -131,9 +131,9 @@ A youBencha user wants to leverage Claude Code's advanced features like custom s
 - **FR-016**: System MUST write raw terminal output to timestamped log file in artifacts/claude-code-logs/ directory
 - **FR-017**: System MUST provide clear error messages when Claude Code is not installed or authentication fails
 - **FR-018**: System MUST handle workspace directory parameter by setting working directory for Claude Code execution
-- **FR-019**: System MUST support Windows (PowerShell), macOS, and Linux execution environments
-- **FR-020**: System MUST validate that at least one of `prompt` or `prompt_file` is provided in configuration
-- **FR-021**: System MUST escape special characters and quotes in prompts according to shell-specific rules (PowerShell, bash, zsh) and validate escaped prompts before execution to prevent injection vulnerabilities
+- **FR-019**: System MUST support Windows (PowerShell), macOS, and Linux execution environments (cross-platform testing covered by T117)
+- **FR-020**: ~~System MUST validate that at least one of `prompt` or `prompt_file` is provided in configuration~~ *[REMOVED: Duplicate of FR-007]*
+- **FR-021**: System MUST escape special characters and quotes in prompts using the shell-quote library (or equivalent cross-platform escaping library) and validate escaped prompts before execution to prevent injection vulnerabilities
 
 ### Key Entities
 
@@ -152,7 +152,7 @@ A youBencha user wants to leverage Claude Code's advanced features like custom s
 - **SC-003**: Adapter generates valid youbencha-log.json files that pass schema validation for all executions (success, failure, timeout)
 - **SC-004**: Adapter handles execution timeouts within 5 seconds of configured timeout threshold
 - **SC-005**: Users receive clear, actionable error messages when prerequisites are not met (CLI not installed, authentication failed)
-- **SC-006**: Adapter execution completes within 500ms overhead (excluding Claude Code runtime) for typical workloads
+- **SC-006**: Adapter execution completes within 500ms overhead (excluding Claude Code runtime) for typical workloads, measured as: (Total execution time) - (Claude Code process runtime) for repos <1000 LOC with simple prompts
 - **SC-007**: System correctly identifies and reports the model used in 100% of executions
 - **SC-008**: Adapter works identically across Windows, macOS, and Linux environments with same test case configuration
 - **SC-009**: Users can switch between copilot-cli and claude-code agents by only changing `agent.type` in configuration

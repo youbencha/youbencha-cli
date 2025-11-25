@@ -65,6 +65,7 @@ interface ClaudeCodeConfig {
 **Validation Rules**:
 - **MUST**: Exactly one of `prompt` or `prompt_file` must be provided
 - **prompt**: Non-empty string, max 1,000,000 chars
+- **prompt_escaped**: After shell escaping via shell-quote library, resulting string must not contain unescaped shell metacharacters (`, $, &, |, ;, <, >, (, ), {, })
 - **prompt_file**: Valid relative path, no `..`, must exist and be readable
 - **agent_name**: Alphanumeric + hyphens/underscores, max 100 chars
 - **model**: Must match pattern `claude-[\w\-\.]+` if provided
@@ -146,7 +147,7 @@ interface ClaudeCodeCommand {
 ```
 
 **Validation Rules**:
-- `command` must be 'claude'
+- `command` must be 'claude' (executable name is 'claude', not 'claude-code', across all platforms)
 - `args` array length > 0 (at minimum: ['-p', '<prompt>'])
 - `cwd` must be absolute path, must exist
 - `timeout` >= 0 (0 = no timeout)

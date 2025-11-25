@@ -30,7 +30,7 @@ Develop a Claude Code CLI adapter for youBencha that enables evaluation of Anthr
 **Project Type**: Single project - new adapter module in existing src/adapters/ directory  
 
 **Performance Goals**: 
-  - Adapter execution overhead <500ms (excluding Claude Code runtime)
+  - Adapter execution overhead <500ms (excluding Claude Code runtime), measured as: (Total execution time) - (Claude Code process runtime) for repos <1000 LOC with simple prompts
   - Timeout enforcement within 5 seconds of configured threshold
   - Log normalization <5% of total evaluation time
 
@@ -38,7 +38,8 @@ Develop a Claude Code CLI adapter for youBencha that enables evaluation of Anthr
   - Must maintain interface compatibility with existing AgentAdapter contract
   - Must produce youBencha Log conforming to existing schema (backward-compatible)
   - Must work identically across Windows/macOS/Linux environments
-  - Must handle 10MB output limit with truncation warning
+  - Must handle 10MB (10,485,760 bytes) output limit with truncation warning
+  - Timeout enforcement: Immediate SIGTERM with no grace period; capture partial output
   - Rate limiting handled by failing fast with clear error (no retry logic in adapter)
 
 **Scale/Scope**: 
