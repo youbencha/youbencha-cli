@@ -310,5 +310,76 @@ describe('AgentAdapter Contract', () => {
         expect(result.status).toBe('timeout');
       }
     });
+
+    // Phase 4: Model parameter support (CR-2.6)
+    it('should accept model parameter in config', async () => {
+      const contextWithModel: AgentExecutionContext = {
+        workspaceDir: '/tmp/workspace',
+        repoDir: '/tmp/workspace/src-modified',
+        artifactsDir: '/tmp/workspace/artifacts',
+        config: {
+          prompt: 'Test prompt',
+          model: 'claude-sonnet-4',
+        },
+        timeout: 60000,
+        env: {},
+      };
+
+      await expect(adapter.execute(contextWithModel)).resolves.toBeDefined();
+    });
+
+    // Phase 4: Agent name parameter support (CR-2.7)
+    it('should accept agent_name parameter in config', async () => {
+      const contextWithAgentName: AgentExecutionContext = {
+        workspaceDir: '/tmp/workspace',
+        repoDir: '/tmp/workspace/src-modified',
+        artifactsDir: '/tmp/workspace/artifacts',
+        config: {
+          prompt: 'Test prompt',
+          agent_name: 'code-reviewer',
+        },
+        timeout: 60000,
+        env: {},
+      };
+
+      await expect(adapter.execute(contextWithAgentName)).resolves.toBeDefined();
+    });
+
+    // Phase 5: Prompt file support (CR-2.5)
+    it('should accept prompt_file parameter in config', async () => {
+      const contextWithPromptFile: AgentExecutionContext = {
+        workspaceDir: '/tmp/workspace',
+        repoDir: '/tmp/workspace/src-modified',
+        artifactsDir: '/tmp/workspace/artifacts',
+        config: {
+          prompt_file: './prompts/task.md',
+        },
+        timeout: 60000,
+        env: {},
+      };
+
+      // This should be accepted by the interface even if file doesn't exist
+      // (file validation is implementation-specific)
+      await expect(adapter.execute(contextWithPromptFile)).resolves.toBeDefined();
+    });
+
+    // Phase 5: Mutual exclusivity of prompt and prompt_file (CR-4.1)
+    it('should handle mutually exclusive prompt and prompt_file', async () => {
+      const contextWithBoth: AgentExecutionContext = {
+        workspaceDir: '/tmp/workspace',
+        repoDir: '/tmp/workspace/src-modified',
+        artifactsDir: '/tmp/workspace/artifacts',
+        config: {
+          prompt: 'Inline prompt',
+          prompt_file: './prompts/task.md',
+        },
+        timeout: 60000,
+        env: {},
+      };
+
+      // Implementation should handle this gracefully - either succeed or fail
+      // but should not throw an unhandled exception
+      await expect(adapter.execute(contextWithBoth)).resolves.toBeDefined();
+    });
   });
 });

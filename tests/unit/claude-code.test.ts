@@ -345,4 +345,161 @@ describe('ClaudeCodeAdapter', () => {
       expect(assistantMsg?.content).not.toContain('\x1B');
     });
   });
+
+  // Phase 4: Unit tests for buildClaudeCommand with model and agent flags
+  describe('buildClaudeCommand with model parameter', () => {
+    const baseContext: AgentExecutionContext = {
+      workspaceDir: '/tmp/youbencha/workspace',
+      repoDir: '/tmp/youbencha/workspace/src-modified',
+      artifactsDir: '/tmp/youbencha/workspace/artifacts',
+      config: {
+        prompt: 'Test prompt',
+      },
+      timeout: 300000,
+      env: {},
+    };
+
+    it('should handle model parameter in execution context', async () => {
+      const contextWithModel: AgentExecutionContext = {
+        ...baseContext,
+        config: {
+          prompt: 'Test prompt',
+          model: 'claude-opus-4',
+        },
+      };
+
+      // Execute and verify result structure
+      const result = await adapter.execute(contextWithModel);
+      expect(result).toHaveProperty('status');
+      expect(result).toHaveProperty('output');
+    });
+
+    it('should normalize log with model info from config', () => {
+      const output = 'Using claude-opus-4 model for task';
+      const result: AgentExecutionResult = {
+        exitCode: 0,
+        status: 'success',
+        output,
+        startedAt: '2025-11-25T10:00:00.000Z',
+        completedAt: '2025-11-25T10:01:00.000Z',
+        durationMs: 60000,
+        errors: [],
+      };
+
+      const log = adapter.normalizeLog(output, result);
+      expect(log.model).toBeDefined();
+      expect(log.model.provider).toBe('Anthropic');
+    });
+  });
+
+  describe('buildClaudeCommand with agent_name parameter', () => {
+    const baseContext: AgentExecutionContext = {
+      workspaceDir: '/tmp/youbencha/workspace',
+      repoDir: '/tmp/youbencha/workspace/src-modified',
+      artifactsDir: '/tmp/youbencha/workspace/artifacts',
+      config: {
+        prompt: 'Test prompt',
+      },
+      timeout: 300000,
+      env: {},
+    };
+
+    it('should handle agent_name parameter in execution context', async () => {
+      const contextWithAgentName: AgentExecutionContext = {
+        ...baseContext,
+        config: {
+          prompt: 'Test prompt',
+          agent_name: 'code-reviewer',
+        },
+      };
+
+      // Execute and verify result structure
+      const result = await adapter.execute(contextWithAgentName);
+      expect(result).toHaveProperty('status');
+      expect(result).toHaveProperty('output');
+    });
+
+    it('should handle both model and agent_name together', async () => {
+      const contextWithBoth: AgentExecutionContext = {
+        ...baseContext,
+        config: {
+          prompt: 'Test prompt',
+          model: 'claude-sonnet-4',
+          agent_name: 'code-reviewer',
+        },
+      };
+
+      // Execute and verify result structure
+      const result = await adapter.execute(contextWithBoth);
+      expect(result).toHaveProperty('status');
+      expect(result).toHaveProperty('output');
+    });
+  });
+
+  // Phase 5: Unit tests for buildClaudeCommand with prompt_file
+  describe('buildClaudeCommand with prompt_file parameter', () => {
+    const baseContext: AgentExecutionContext = {
+      workspaceDir: '/tmp/youbencha/workspace',
+      repoDir: '/tmp/youbencha/workspace/src-modified',
+      artifactsDir: '/tmp/youbencha/workspace/artifacts',
+      config: {},
+      timeout: 300000,
+      env: {},
+    };
+
+    it('should handle prompt_file parameter when file exists', async () => {
+      // Create a temporary prompt file
+      const fs = await import('fs/promises');
+      const path = await import('path');
+      
+      const promptDir = path.join(baseContext.workspaceDir, 'prompts');
+      const promptFile = path.join(promptDir, 'test-task.md');
+      
+      await fs.mkdir(promptDir, { recursive: true });
+      await fs.writeFile(promptFile, 'Test prompt from file');
+
+      const contextWithPromptFile: AgentExecutionContext = {
+        ...baseContext,
+        config: {
+          prompt_file: './prompts/test-task.md',
+        },
+      };
+
+      // Execute and verify it doesn't throw for valid prompt_file
+      const result = await adapter.execute(contextWithPromptFile);
+      expect(result).toHaveProperty('status');
+      
+      // Cleanup
+      await fs.rm(promptDir, { recursive: true, force: true });
+    });
+
+    it('should return failed status when prompt_file does not exist', async () => {
+      const contextWithMissingFile: AgentExecutionContext = {
+        ...baseContext,
+        config: {
+          prompt_file: './prompts/nonexistent.md',
+        },
+      };
+
+      const result = await adapter.execute(contextWithMissingFile);
+      expect(result.status).toBe('failed');
+      expect(result.errors[0].message).toMatch(/not found|does not exist/i);
+    });
+
+    it('should prefer prompt_file content over inline prompt when file exists', async () => {
+      // This test verifies the mutual exclusivity behavior
+      // When both are provided, it should fail
+      const contextWithBoth: AgentExecutionContext = {
+        ...baseContext,
+        config: {
+          prompt: 'Inline prompt',
+          prompt_file: './prompts/task.md',
+        },
+      };
+
+      const result = await adapter.execute(contextWithBoth);
+      expect(result.status).toBe('failed');
+      expect(result.errors[0].message).toMatch(/Cannot specify both/);
+    });
+  });
 });

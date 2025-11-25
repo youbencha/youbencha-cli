@@ -89,22 +89,22 @@
 
 ### Contract Tests for User Story 2 (TDD FIRST - MUST FAIL)
 
-- [ ] T031 [P] [US2] Write contract tests for execute() with model parameter in tests/contract/adapter.test.ts (CR-2.6)
-- [ ] T032 [P] [US2] Write contract tests for execute() with agent_name parameter in tests/contract/adapter.test.ts (CR-2.7)
-- [ ] T033 [P] [US2] Write unit tests for buildClaudeCommand() with model flag in tests/unit/claude-code-adapter.test.ts
-- [ ] T034 [P] [US2] Write unit tests for buildClaudeCommand() with agent flag in tests/unit/claude-code-adapter.test.ts
-- [ ] T035 [US2] Run test suite and verify all US2 tests fail (npm test -- claude-code)
+- [x] T031 [P] [US2] Write contract tests for execute() with model parameter in tests/contract/adapter.test.ts (CR-2.6)
+- [x] T032 [P] [US2] Write contract tests for execute() with agent_name parameter in tests/contract/adapter.test.ts (CR-2.7)
+- [x] T033 [P] [US2] Write unit tests for buildClaudeCommand() with model flag in tests/unit/claude-code.test.ts
+- [x] T034 [P] [US2] Write unit tests for buildClaudeCommand() with agent flag in tests/unit/claude-code.test.ts
+- [x] T035 [US2] Run test suite and verify all US2 tests fail (npm test -- claude-code)
 
 ### Implementation for User Story 2
 
-- [ ] T036 [P] [US2] Update buildClaudeCommand() in src/adapters/claude-code.ts to handle model parameter with --model flag
-- [ ] T037 [P] [US2] Update buildClaudeCommand() in src/adapters/claude-code.ts to handle agent_name parameter with --agents flag
-- [ ] T038 [US2] Update parseModel() helper in src/adapters/claude-code.ts to detect model from config if not in output
-- [ ] T039 [US2] Update normalizeLog() in src/adapters/claude-code.ts to populate model_info with provider: 'anthropic'
-- [ ] T040 [US2] Verify all US2 contract tests pass (npm test -- contract/adapter)
-- [ ] T041 [US2] Verify US2 unit tests pass (npm test -- unit/claude-code-adapter)
-- [ ] T042 [US2] Update examples/testcase-claude-code-advanced.yaml to demonstrate agent_name and model usage
-- [ ] T043 [US2] Manual validation: Run advanced example and verify agent/model parameters honored
+- [x] T036 [P] [US2] Update buildClaudeCommand() in src/adapters/claude-code.ts to handle model parameter with --model flag
+- [x] T037 [P] [US2] Update buildClaudeCommand() in src/adapters/claude-code.ts to handle agent_name parameter with --agents flag
+- [x] T038 [US2] Update parseModel() helper in src/adapters/claude-code.ts to detect model from config if not in output
+- [x] T039 [US2] Update normalizeLog() in src/adapters/claude-code.ts to populate model_info with provider: 'anthropic'
+- [x] T040 [US2] Verify all US2 contract tests pass (npm test -- contract/adapter)
+- [x] T041 [US2] Verify US2 unit tests pass (npm test -- unit/claude-code)
+- [x] T042 [US2] Update examples/testcase-claude-code-advanced.yaml to demonstrate agent_name and model usage
+- [x] T043 [US2] Manual validation: Run advanced example and verify agent/model parameters honored
 
 **Checkpoint**: At this point, User Stories 1 AND 2 should both work independently - agent/model selection functional
 
@@ -118,23 +118,23 @@
 
 ### Contract Tests for User Story 3 (TDD FIRST - MUST FAIL)
 
-- [ ] T044 [P] [US3] Write contract tests for execute() with prompt_file in tests/contract/adapter.test.ts (CR-2.5)
-- [ ] T045 [P] [US3] Write contract tests for prompt/prompt_file mutual exclusivity in tests/contract/adapter.test.ts (CR-4.1)
-- [ ] T046 [P] [US3] Write contract tests for prompt_file validation in tests/contract/adapter.test.ts (CR-4.2, CR-4.3)
-- [ ] T047 [P] [US3] Write unit tests for buildClaudeCommand() with prompt_file in tests/unit/claude-code-adapter.test.ts
-- [ ] T048 [US3] Run test suite and verify all US3 tests fail (npm test -- claude-code)
+- [x] T044 [P] [US3] Write contract tests for execute() with prompt_file in tests/contract/adapter.test.ts (CR-2.5)
+- [x] T045 [P] [US3] Write contract tests for prompt/prompt_file mutual exclusivity in tests/contract/adapter.test.ts (CR-4.1)
+- [x] T046 [P] [US3] Write contract tests for prompt_file validation in tests/contract/adapter.test.ts (CR-4.2, CR-4.3)
+- [x] T047 [P] [US3] Write unit tests for buildClaudeCommand() with prompt_file in tests/unit/claude-code.test.ts
+- [x] T048 [US3] Run test suite and verify all US3 tests fail (npm test -- claude-code)
 
 ### Implementation for User Story 3
 
-- [ ] T049 [US3] Update buildClaudeCommand() in src/adapters/claude-code.ts to handle prompt_file: read file and use contents
-- [ ] T050 [US3] Add validation in buildClaudeCommand() to enforce mutual exclusivity of prompt and prompt_file
-- [ ] T051 [US3] Add validation in buildClaudeCommand() to validate prompt_file path (reject .., absolute paths)
-- [ ] T052 [US3] Add error handling for missing/unreadable prompt_file with clear error message
-- [ ] T053 [US3] Verify all US3 contract tests pass (npm test -- contract/adapter)
-- [ ] T054 [US3] Verify US3 unit tests pass (npm test -- unit/claude-code-adapter)
-- [ ] T055 [P] [US3] Create example prompt file in examples/prompts/claude-code-task.md
-- [ ] T056 [US3] Update examples/testcase-claude-code-advanced.yaml to demonstrate prompt_file usage
-- [ ] T057 [US3] Manual validation: Run example with prompt_file and verify file contents used
+- [x] T049 [US3] Update buildClaudeCommand() in src/adapters/claude-code.ts to handle prompt_file: read file and use contents
+- [x] T050 [US3] Add validation in buildClaudeCommand() to enforce mutual exclusivity of prompt and prompt_file
+- [x] T051 [US3] Add validation in buildClaudeCommand() to validate prompt_file path (reject .., absolute paths)
+- [x] T052 [US3] Add error handling for missing/unreadable prompt_file with clear error message
+- [x] T053 [US3] Verify all US3 contract tests pass (npm test -- contract/adapter)
+- [x] T054 [US3] Verify US3 unit tests pass (npm test -- unit/claude-code)
+- [x] T055 [P] [US3] Create example prompt file in examples/prompts/claude-code-task.md
+- [x] T056 [US3] Update examples/testcase-claude-code-advanced.yaml to demonstrate prompt_file usage
+- [x] T057 [US3] Manual validation: Run example with prompt_file and verify file contents used
 
 **Checkpoint**: All three priority user stories (P1, P2, P2) are now independently functional
 
