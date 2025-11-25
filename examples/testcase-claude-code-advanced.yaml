@@ -1,0 +1,63 @@
+# Example: Advanced Claude Code Test Case
+#
+# Demonstrates advanced Claude Code agent configuration including:
+# - Custom model selection
+# - Agent name (custom subagent)
+# - Prompt file usage
+# - Advanced CLI options
+#
+# Note: Some options require specific Claude Code CLI versions
+
+name: "Advanced Claude Code Evaluation"
+description: "Comprehensive evaluation with custom model, agent, and advanced options"
+
+# Repository configuration
+repo: "https://github.com/youbencha/sample-project.git"
+branch: "main"
+
+# Agent configuration with all available options
+agent:
+  type: claude-code
+  # Optional: Specify a custom Claude Code agent/subagent
+  agent_name: code-reviewer
+  # Optional: Override the default model
+  model: claude-sonnet-4
+  config:
+    # Use an external prompt file (mutually exclusive with 'prompt')
+    prompt_file: ./prompts/code-review-task.md
+    
+    # Optional: Append additional system instructions
+    append_system_prompt: |
+      Focus on code quality, security vulnerabilities, and performance issues.
+      Provide actionable recommendations for each finding.
+    
+    # Optional: Set permission mode (auto, plan, ask)
+    permission_mode: auto
+    
+    # Optional: Restrict which tools Claude Code can use
+    allowed_tools:
+      - Read
+      - Write
+      - ListDirectory
+    
+    # Optional: Limit response length
+    max_tokens: 8192
+
+# Evaluators to run
+evaluators:
+  - name: git-diff
+    config:
+      # Track specific metrics
+      include_entropy: true
+  
+  - name: agentic-judge
+    config:
+      # Define assertions for evaluation
+      assertions:
+        - description: "Code review is comprehensive"
+          severity: high
+        - description: "Security issues are identified"
+          severity: medium
+
+# Timeout in milliseconds (10 minutes for complex evaluations)
+timeout: 600000

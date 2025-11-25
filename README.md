@@ -17,7 +17,9 @@ youBencha is a testing and benchmarking framework designed to help developers ev
 
 - **Node.js 20+** - youBencha requires Node.js version 20 or higher
 - **Git** - For cloning repositories during evaluation
-- **GitHub Copilot CLI** - Currently the only supported agent adapter (MVP)
+- **Agent CLI** - At least one of:
+  - **GitHub Copilot CLI** - For copilot-cli agent type
+  - **Claude Code CLI** - For claude-code agent type (install via `npm install -g @anthropic-ai/claude-code`)
 
 ## Installation
 
@@ -519,6 +521,7 @@ See `examples/scripts/` for ready-to-use scripts:
 - [Prompt Files Guide](docs/prompt-files.md) - Loading prompts from external files
 - [Reusable Evaluators Guide](docs/reusable-evaluators.md) - Sharing evaluator configurations
 - [Multiple Agentic Judges Guide](docs/multiple-agentic-judges.md) - Using multiple focused evaluators
+- [Claude Code Adapter](docs/claude-code-adapter.md) - Using Claude Code as an agent
 
 ### Project Structure
 

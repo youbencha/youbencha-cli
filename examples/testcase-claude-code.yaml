@@ -1,0 +1,27 @@
+# Example: Basic Claude Code Test Case
+#
+# Demonstrates basic Claude Code agent configuration with inline prompt.
+# Use this as a template for simple evaluation scenarios.
+
+name: "Basic Claude Code Evaluation"
+description: "Run Claude Code to analyze a repository and generate evaluation results"
+
+# Repository configuration
+repo: "https://github.com/youbencha/sample-project.git"
+branch: "main"
+
+# Agent configuration
+agent:
+  type: claude-code
+  config:
+    prompt: |
+      Analyze this repository and list the main files and their purposes.
+      Provide a brief summary of the project structure.
+
+# Evaluators to run
+evaluators:
+  - name: git-diff
+    config: {}
+
+# Optional: Timeout in milliseconds (default: 5 minutes)
+timeout: 300000
