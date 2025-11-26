@@ -18,8 +18,7 @@ import {
   AgentExecutionResult,
 } from './base.js';
 import { YouBenchaLog } from '../schemas/youbenchalog.schema.js';
-import { stripAnsiCodes, escapeShellArg, isPathSafe } from '../lib/shell-utils.js';
-import * as logger from '../lib/logger.js';
+import { stripAnsiCodes, isPathSafe } from '../lib/shell-utils.js';
 
 const execAsync = promisify(exec);
 
@@ -89,10 +88,11 @@ export class ClaudeCodeAdapter implements AgentAdapter {
       const { command, args } = this.buildClaudeCommand(context);
 
       // Log the command being executed for debugging
-      logger.debug(`Claude Code CLI Command: ${command}`);
-      logger.debug(`  Args: ${JSON.stringify(args)}`);
-      logger.debug(`  CWD: ${context.workspaceDir}`);
-      logger.debug(`  Terminal output log: ${terminalLogPath}`);
+      console.log('[DEBUG] Claude Code CLI Command:');
+      console.log(`  Command: ${command}`);
+      console.log(`  Args: ${JSON.stringify(args)}`);
+      console.log(`  CWD: ${context.workspaceDir}`);
+      console.log(`  Terminal output log: ${terminalLogPath}`);
 
       // Execute Claude with timeout
       const result = await this.executeWithTimeout(
@@ -103,6 +103,13 @@ export class ClaudeCodeAdapter implements AgentAdapter {
         context.timeout,
         terminalLogPath
       );
+
+      console.log('[DEBUG] Execution result:');
+      console.log(`  Exit code: ${result.exitCode}`);
+      console.log(`  Timed out: ${result.timedOut}`);
+      console.log(`  Truncated: ${result.truncated}`);
+      console.log(`  Output length: ${result.output.length} bytes`);
+      console.log(`  First 500 chars of output: ${result.output.substring(0, 500)}`);
 
       output = result.output;
       exitCode = result.exitCode;
@@ -269,7 +276,18 @@ export class ClaudeCodeAdapter implements AgentAdapter {
     }
 
     // Build base args - use print mode for non-interactive execution
-    const args = ['-p', prompt];
+    // -p is a flag, prompt goes at the end as a positional argument
+    const args = ['-p'];
+
+    // Add output format for structured response
+    args.push('--output-format', 'text');
+
+    // Add permission bypass for non-interactive execution
+    // This prevents Claude from waiting for permission prompts
+    args.push('--dangerously-skip-permissions');
+
+    // Enable verbose logging for better debugging
+    args.push('--verbose');
 
     // Add model if specified
     const model = context.config.model as string | undefined;
@@ -319,13 +337,33 @@ export class ClaudeCodeAdapter implements AgentAdapter {
       args.push('--temperature', String(temperature));
     }
 
-    // On Windows, we may need to use PowerShell for proper command execution
-    // But first, try direct execution which is safer
-    if (process.platform === 'win32') {
-      // For Windows, use PowerShell to invoke Claude
-      const escapedArgs = args.map(arg => escapeShellArg(arg, 'powershell'));
-      const claudeCommand = `& claude ${escapedArgs.join(' ')}`;
+    // Prompt must be the last argument (positional argument)
+    args.push(prompt);
 
+    // On Windows, use PowerShell with the & call operator to invoke claude
+    // This properly handles the command execution in PowerShell
+    if (process.platform === 'win32') {
+      // Build the PowerShell command using the call operator (&)
+      // Only quote arguments that contain spaces or special characters
+      const escapedArgs = args.map(arg => {
+        // Check if argument needs quoting (contains spaces, special chars, or is empty)
+        const needsQuoting = /[\s`$"']/.test(arg) || arg.length === 0;
+        
+        if (needsQuoting) {
+          // Escape special PowerShell characters and wrap in double quotes
+          const escaped = arg
+            .replace(/`/g, '``')
+            .replace(/\$/g, '`$')
+            .replace(/"/g, '`"');
+          return `"${escaped}"`;
+        }
+        
+        return arg;
+      });
+      
+      // Use & operator to call claude with arguments
+      const claudeCommand = `& claude ${escapedArgs.join(' ')}`;
+      
       return {
         command: 'powershell.exe',
         args: ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', claudeCommand],
@@ -366,6 +404,7 @@ export class ClaudeCodeAdapter implements AgentAdapter {
         cwd,
         env: { ...process.env, ...env },
         shell: false,
+        stdio: ['ignore', 'pipe', 'pipe'], // Close stdin, pipe stdout/stderr
       });
 
       // Set timeout if specified
