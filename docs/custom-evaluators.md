@@ -285,6 +285,8 @@ Here's a complete example of a code-based evaluator that measures code complexit
 
 ```typescript
 // src/evaluators/complexity.ts
+// Note: Import paths are relative to the src/evaluators/ directory
+// Use .js extensions for ES module compatibility
 
 import { Evaluator, EvaluationContext } from './base.js';
 import { EvaluationResult } from '../schemas/result.schema.js';

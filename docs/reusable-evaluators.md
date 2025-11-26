@@ -316,6 +316,7 @@ evaluators:
 
 ## See Also
 
+- [Custom Evaluators Guide](./custom-evaluators.md) - Creating custom code and LLM-based evaluators
 - [Multiple Agentic Judges Guide](./multiple-agentic-judges.md) - Using multiple specialized agentic judge evaluators
 - [Agent Name Configuration](./agent-name-configuration.md) - Configuring custom agents
 - Example evaluator definitions in `examples/evaluators/`
