@@ -684,12 +684,10 @@ interface ResultsBundle {
 
 Prevents access to internal/localhost URLs:
 
-```typescript
-// Blocked hostnames
-- localhost
-- 127.0.0.1, 0.0.0.0, ::1
-- 192.168.*, 10.*, 172.16.*
-```
+**Blocked hostnames:**
+- `localhost`
+- `127.0.0.1`, `0.0.0.0`, `::1`
+- `192.168.*`, `10.*`, `172.16.*`
 
 ### Workspace Isolation
 
