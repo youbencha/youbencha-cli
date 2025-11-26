@@ -26,7 +26,10 @@ agent:
     # Use an external prompt file (mutually exclusive with 'prompt')
     prompt_file: ./prompts/code-review-task.md
     
-    # Optional: Append additional system instructions
+    # Optional: Override the default system prompt entirely
+    # system_prompt: "You are an expert code reviewer specialized in security and performance."
+    
+    # Optional: Append additional system instructions (preferred over system_prompt)
     append_system_prompt: |
       Focus on code quality, security vulnerabilities, and performance issues.
       Provide actionable recommendations for each finding.
@@ -42,6 +45,9 @@ agent:
     
     # Optional: Limit response length
     max_tokens: 8192
+    
+    # Optional: Set temperature for response generation (0.0 = deterministic, 1.0 = creative)
+    temperature: 0.0
 
 # Evaluators to run
 evaluators:

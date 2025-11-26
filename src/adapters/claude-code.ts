@@ -283,6 +283,12 @@ export class ClaudeCodeAdapter implements AgentAdapter {
       args.push('--agents', agentName);
     }
 
+    // Add system_prompt if specified (replaces default system prompt)
+    const systemPrompt = context.config.system_prompt as string | undefined;
+    if (systemPrompt) {
+      args.push('--system-prompt', systemPrompt);
+    }
+
     // Add append_system_prompt if specified
     const appendSystemPrompt = context.config.append_system_prompt as string | undefined;
     if (appendSystemPrompt) {
@@ -305,6 +311,12 @@ export class ClaudeCodeAdapter implements AgentAdapter {
     const maxTokens = context.config.max_tokens as number | undefined;
     if (maxTokens !== undefined) {
       args.push('--max-tokens', String(maxTokens));
+    }
+
+    // Add temperature if specified
+    const temperature = context.config.temperature as number | undefined;
+    if (temperature !== undefined) {
+      args.push('--temperature', String(temperature));
     }
 
     // On Windows, we may need to use PowerShell for proper command execution
