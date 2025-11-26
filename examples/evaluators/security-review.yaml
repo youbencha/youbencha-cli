@@ -1,0 +1,29 @@
+# Reusable Evaluator: Security Review
+#
+# This evaluator reviews code changes for common security vulnerabilities
+# following OWASP guidelines and best practices.
+#
+# Usage in test case:
+#   evaluators:
+#     - file: ./evaluators/security-review.yaml
+
+name: agentic-judge:security-review
+description: "Reviews code changes for common security vulnerabilities including injection, XSS, and authentication issues"
+
+config:
+  type: copilot-cli
+  agent_name: agentic-judge
+  timeout: 300000  # 5 minutes
+  
+  # Additional instructions for the security review
+  prompt: |
+    Focus on OWASP Top 10 vulnerabilities. Be thorough but fair.
+    Only flag genuine security issues, not false positives.
+    Consider the context - some patterns may be acceptable in certain situations.
+  
+  assertions:
+    no_sql_injection: "No SQL injection vulnerabilities. Score 1 if parameterized queries/ORM used, 0.5 if partially safe, 0 if raw string concatenation with user input."
+    no_xss: "No XSS vulnerabilities. Score 1 if user outputs properly escaped/sanitized, 0.5 if partially safe, 0 if raw user input rendered."
+    secure_auth: "Authentication is secure. Score 1 if proper hashing/tokens/sessions used, 0.5 if mostly secure, 0 if weak patterns like plaintext passwords."
+    no_hardcoded_secrets: "No hardcoded secrets. Score 1 if no API keys/passwords/tokens in code, 0 if secrets found in source files."
+    input_validation: "User inputs are validated. Score 1 if comprehensive validation, 0.5 if partial validation, 0 if no validation."
