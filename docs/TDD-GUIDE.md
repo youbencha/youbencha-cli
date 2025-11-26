@@ -876,7 +876,7 @@ code .  # Open in VS Code
 **Solutions:**
 1. Reduce assertion count per test case
 2. Split into multiple smaller test cases
-3. Use `yb eval` for evaluator development (no agent execution)
+3. Use `yb eval` for evaluator development - it runs evaluators on existing directories without executing an agent, making it much faster for testing evaluator configurations (see [Run vs Eval Commands](./run-vs-eval.md))
 4. Cache repository clones
 
 ---
@@ -1085,8 +1085,8 @@ Happy evaluating! 🚀
 
 ## Additional Resources
 
-- [Getting Started Guide](./GETTING-STARTED.md) - Quick start for youBencha
-- [Multiple Agentic Judges](./multiple-agentic-judges.md) - Using multiple evaluators
-- [Post-Evaluation Hooks](./post-evaluation.md) - CI/CD and notifications
-- [Reusable Evaluators](./reusable-evaluators.md) - Sharing evaluator configs
-- [Run vs Eval Commands](./run-vs-eval.md) - When to use each command
+- [Getting Started Guide](GETTING-STARTED.md) - Quick start for youBencha
+- [Multiple Agentic Judges](multiple-agentic-judges.md) - Using multiple evaluators
+- [Post-Evaluation Hooks](post-evaluation.md) - CI/CD and notifications
+- [Reusable Evaluators](reusable-evaluators.md) - Sharing evaluator configs
+- [Run vs Eval Commands](run-vs-eval.md) - When to use each command
