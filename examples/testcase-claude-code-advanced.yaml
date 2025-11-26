@@ -12,8 +12,8 @@ name: "Advanced Claude Code Evaluation"
 description: "Comprehensive evaluation with custom model, agent, and advanced options"
 
 # Repository configuration
-repo: "https://github.com/youbencha/sample-project.git"
-branch: "main"
+repo: "https://github.com/octocat/Hello-World.git"
+branch: "master"
 
 # Agent configuration with all available options
 agent:
@@ -21,10 +21,9 @@ agent:
   # Optional: Specify a custom Claude Code agent/subagent
   agent_name: code-reviewer
   # Optional: Override the default model
-  model: claude-sonnet-4
+  model: claude-sonnet-4-5-20250929
   config:
-    # Use an external prompt file (mutually exclusive with 'prompt')
-    prompt_file: ./prompts/code-review-task.md
+    prompt: "Add a comment to README explaining what this repository is about"
     
     # Optional: Override the default system prompt entirely
     # system_prompt: "You are an expert code reviewer specialized in security and performance."
@@ -33,21 +32,6 @@ agent:
     append_system_prompt: |
       Focus on code quality, security vulnerabilities, and performance issues.
       Provide actionable recommendations for each finding.
-    
-    # Optional: Set permission mode (auto, plan, ask)
-    permission_mode: auto
-    
-    # Optional: Restrict which tools Claude Code can use
-    allowed_tools:
-      - Read
-      - Write
-      - ListDirectory
-    
-    # Optional: Limit response length
-    max_tokens: 8192
-    
-    # Optional: Set temperature for response generation (0.0 = deterministic, 1.0 = creative)
-    temperature: 0.0
 
 # Evaluators to run
 evaluators:

@@ -24,6 +24,7 @@ const agentConfigSchema = z.object({
     'gpt-5.1-codex-mini',
     'gpt-5.1-codex',
     'gemini-3-pro-preview',
+    'claude-sonnet-4-5-20250929'
   ]).optional(), // Optional model name
   config: z
     .object({
