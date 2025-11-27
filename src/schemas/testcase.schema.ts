@@ -13,7 +13,7 @@ import { preExecutionConfigSchema } from './pre-execution.schema.js';
  * Agent configuration schema
  */
 const agentConfigSchema = z.object({
-  type: z.literal('copilot-cli'), // MVP: only copilot-cli supported
+  type: z.enum(['copilot-cli', 'claude-code']), // Supported agent types
   agent_name: z.string().optional(), // Optional agent name (e.g., for copilot-cli agents in .github/agents/)
   model: z.enum([
     'claude-sonnet-4.5',
@@ -24,6 +24,7 @@ const agentConfigSchema = z.object({
     'gpt-5.1-codex-mini',
     'gpt-5.1-codex',
     'gemini-3-pro-preview',
+    'claude-sonnet-4-5-20250929'
   ]).optional(), // Optional model name
   config: z
     .object({

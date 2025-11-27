@@ -5,7 +5,7 @@
  */
 
 import { Orchestrator } from '../../src/core/orchestrator.js';
-import { SuiteConfig } from '../../src/schemas/suite.schema.js';
+import { TestCaseConfig } from '../../src/schemas/testcase.schema.js';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
@@ -13,7 +13,8 @@ import * as os from 'os';
 describe('Orchestrator', () => {
   let orchestrator: Orchestrator;
   let tempDir: string;
-  let mockSuiteConfig: SuiteConfig;
+  let mockTestCaseConfig: TestCaseConfig;
+  let mockConfigFile: string;
 
   beforeEach(async () => {
     orchestrator = new Orchestrator();
@@ -21,7 +22,12 @@ describe('Orchestrator', () => {
     // Create temporary test directory
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'orchestrator-test-'));
     
-    mockSuiteConfig = {
+    // Create a mock config file
+    mockConfigFile = path.join(tempDir, 'testcase.yaml');
+    
+    mockTestCaseConfig = {
+      name: 'Test Case',
+      description: 'Test description',
       repo: 'https://github.com/octocat/Hello-World.git',
       branch: 'master',
       agent: {
@@ -40,6 +46,9 @@ describe('Orchestrator', () => {
       workspace_dir: tempDir,
       timeout: 60000,
     };
+    
+    // Write a placeholder config file (required by orchestrator)
+    await fs.writeFile(mockConfigFile, 'name: Test Case\n', 'utf-8');
   });
 
   afterEach(async () => {
@@ -51,7 +60,7 @@ describe('Orchestrator', () => {
     test('returns a ResultsBundle', async () => {
       // This test will fail until orchestrator is implemented
       // Skip git cloning by mocking workspace
-      const result = await orchestrator.runEvaluation(mockSuiteConfig);
+      const result = await orchestrator.runEvaluation(mockTestCaseConfig, mockConfigFile);
       
       expect(result).toBeDefined();
       expect(result.version).toBe('1.0.0');
@@ -64,15 +73,15 @@ describe('Orchestrator', () => {
     }, 120000); // 2 min timeout for potential git operations
 
     test('includes test case metadata', async () => {
-      const result = await orchestrator.runEvaluation(mockSuiteConfig);
+      const result = await orchestrator.runEvaluation(mockTestCaseConfig, mockConfigFile);
       
-      expect(result.test_case.repo).toBe(mockSuiteConfig.repo);
-      expect(result.test_case.branch).toBe(mockSuiteConfig.branch);
+      expect(result.test_case.repo).toBe(mockTestCaseConfig.repo);
+      expect(result.test_case.branch).toBe(mockTestCaseConfig.branch);
       expect(result.test_case.commit).toBeDefined();
     }, 120000);
 
     test('includes execution metadata', async () => {
-      const result = await orchestrator.runEvaluation(mockSuiteConfig);
+      const result = await orchestrator.runEvaluation(mockTestCaseConfig, mockConfigFile);
       
       expect(result.execution.started_at).toBeDefined();
       expect(result.execution.completed_at).toBeDefined();
@@ -82,7 +91,7 @@ describe('Orchestrator', () => {
     }, 120000);
 
     test('includes agent execution metadata', async () => {
-      const result = await orchestrator.runEvaluation(mockSuiteConfig);
+      const result = await orchestrator.runEvaluation(mockTestCaseConfig, mockConfigFile);
       
       expect(result.agent.type).toBe('copilot-cli');
       expect(result.agent.status).toMatch(/^(success|failed|timeout)$/);
@@ -91,22 +100,22 @@ describe('Orchestrator', () => {
     }, 120000);
 
     test('runs configured evaluators', async () => {
-      const configWithMultipleEvaluators: SuiteConfig = {
-        ...mockSuiteConfig,
+      const configWithMultipleEvaluators: TestCaseConfig = {
+        ...mockTestCaseConfig,
         evaluators: [
           { name: 'git-diff', config: {} },
           { name: 'agentic-judge', config: { agent: { type: 'copilot-cli', config: {} } } },
         ],
       };
 
-      const result = await orchestrator.runEvaluation(configWithMultipleEvaluators);
+      const result = await orchestrator.runEvaluation(configWithMultipleEvaluators, mockConfigFile);
       
       expect(result.evaluators.length).toBeGreaterThan(0);
       expect(result.evaluators.some(e => e.evaluator === 'git-diff')).toBe(true);
     }, 120000);
 
     test('includes summary statistics', async () => {
-      const result = await orchestrator.runEvaluation(mockSuiteConfig);
+      const result = await orchestrator.runEvaluation(mockTestCaseConfig, mockConfigFile);
       
       expect(result.summary.total_evaluators).toBeDefined();
       expect(result.summary.passed).toBeDefined();
@@ -116,7 +125,7 @@ describe('Orchestrator', () => {
     }, 120000);
 
     test('includes artifacts manifest', async () => {
-      const result = await orchestrator.runEvaluation(mockSuiteConfig);
+      const result = await orchestrator.runEvaluation(mockTestCaseConfig, mockConfigFile);
       
       expect(result.artifacts.agent_log).toBeDefined();
       expect(Array.isArray(result.artifacts.reports)).toBe(true);
@@ -126,23 +135,23 @@ describe('Orchestrator', () => {
 
   describe('Error Handling', () => {
     test('handles invalid repository URL gracefully', async () => {
-      const invalidConfig: SuiteConfig = {
-        ...mockSuiteConfig,
+      const invalidConfig: TestCaseConfig = {
+        ...mockTestCaseConfig,
         repo: 'not-a-valid-url',
       };
 
-      await expect(orchestrator.runEvaluation(invalidConfig)).rejects.toThrow();
+      await expect(orchestrator.runEvaluation(invalidConfig, mockConfigFile)).rejects.toThrow();
     });
 
     test('handles evaluator errors gracefully', async () => {
-      const configWithInvalidEvaluator: SuiteConfig = {
-        ...mockSuiteConfig,
+      const configWithInvalidEvaluator: TestCaseConfig = {
+        ...mockTestCaseConfig,
         evaluators: [
           { name: 'non-existent-evaluator', config: {} },
         ],
       };
 
-      const result = await orchestrator.runEvaluation(configWithInvalidEvaluator);
+      const result = await orchestrator.runEvaluation(configWithInvalidEvaluator, mockConfigFile);
       
       // Should complete but mark evaluator as skipped
       expect(result).toBeDefined();
@@ -152,14 +161,14 @@ describe('Orchestrator', () => {
 
   describe('Workspace Management', () => {
     test('creates workspace directory', async () => {
-      const result = await orchestrator.runEvaluation(mockSuiteConfig);
+      const result = await orchestrator.runEvaluation(mockTestCaseConfig, mockConfigFile);
       
       expect(result).toBeDefined();
       // Workspace should exist during evaluation
     }, 120000);
 
     test('cleans up workspace after evaluation', async () => {
-      const result = await orchestrator.runEvaluation(mockSuiteConfig);
+      const result = await orchestrator.runEvaluation(mockTestCaseConfig, mockConfigFile);
       
       // Workspace should be cleaned up unless configured to keep
       expect(result).toBeDefined();
@@ -168,15 +177,15 @@ describe('Orchestrator', () => {
 
   describe('Evaluator Execution', () => {
     test('runs evaluators in parallel by default', async () => {
-      const configWithMultiple: SuiteConfig = {
-        ...mockSuiteConfig,
+      const configWithMultiple: TestCaseConfig = {
+        ...mockTestCaseConfig,
         evaluators: [
           { name: 'git-diff', config: {} },
           { name: 'agentic-judge', config: { agent: { type: 'copilot-cli', config: {} } } },
         ],
       };
 
-      const result = await orchestrator.runEvaluation(configWithMultiple);
+      const result = await orchestrator.runEvaluation(configWithMultiple, mockConfigFile);
 
       expect(result.evaluators.length).toBeGreaterThanOrEqual(2);
       // Parallel execution should be faster than sequential
@@ -184,15 +193,15 @@ describe('Orchestrator', () => {
     }, 120000);
 
     test('continues evaluation even if one evaluator fails', async () => {
-      const configWithMixed: SuiteConfig = {
-        ...mockSuiteConfig,
+      const configWithMixed: TestCaseConfig = {
+        ...mockTestCaseConfig,
         evaluators: [
           { name: 'git-diff', config: {} },
           { name: 'invalid-evaluator', config: {} },
         ],
       };
 
-      const result = await orchestrator.runEvaluation(configWithMixed);
+      const result = await orchestrator.runEvaluation(configWithMixed, mockConfigFile);
       
       expect(result.evaluators.length).toBeGreaterThan(0);
       // Should have at least one result even if others fail
@@ -201,38 +210,38 @@ describe('Orchestrator', () => {
 
   describe('Expected Reference Support', () => {
     test('clones expected branch when configured', async () => {
-      const configWithExpected: SuiteConfig = {
-        ...mockSuiteConfig,
+      const configWithExpected: TestCaseConfig = {
+        ...mockTestCaseConfig,
         expected_source: 'branch',
         expected: 'master', // Use master branch which exists
       };
 
-      const result = await orchestrator.runEvaluation(configWithExpected);
+      const result = await orchestrator.runEvaluation(configWithExpected, mockConfigFile);
       
       expect(result.test_case.expected_branch).toBe('master');
       expect(result).toBeDefined();
     }, 120000);
 
     test('validates expected branch exists', async () => {
-      const configWithInvalidExpected: SuiteConfig = {
-        ...mockSuiteConfig,
+      const configWithInvalidExpected: TestCaseConfig = {
+        ...mockTestCaseConfig,
         expected_source: 'branch',
         expected: 'nonexistent-branch-xyz',
       };
 
-      await expect(orchestrator.runEvaluation(configWithInvalidExpected)).rejects.toThrow();
+      await expect(orchestrator.runEvaluation(configWithInvalidExpected, mockConfigFile)).rejects.toThrow();
     });
   });
 
   describe('Results Persistence', () => {
     it('should save youBencha log to artifacts', async () => {
-      const result = await orchestrator.runEvaluation(mockSuiteConfig);
+      const result = await orchestrator.runEvaluation(mockTestCaseConfig, mockConfigFile);
       
       expect(result.artifacts.agent_log).toContain('youbencha.log.json');
     }, 120000);
 
     test('saves results bundle to artifacts', async () => {
-      const result = await orchestrator.runEvaluation(mockSuiteConfig);
+      const result = await orchestrator.runEvaluation(mockTestCaseConfig, mockConfigFile);
       
       expect(result).toBeDefined();
       // Results bundle should be saved

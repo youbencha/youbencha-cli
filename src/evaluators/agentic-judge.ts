@@ -7,19 +7,23 @@
  */
 
 import { readFileSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
+import { join } from 'path';
 import { Evaluator, EvaluationContext } from './base.js';
 import { EvaluationResult } from '../schemas/result.schema.js';
 import { AgentAdapter, AgentExecutionContext } from '../adapters/base.js';
 import { CopilotCLIAdapter } from '../adapters/copilot-cli.js';
 
+// Use the built template file in the prompts directory
+// When running from compiled dist/, the prompts directory is a sibling
+// When running from source, we need to find the dist directory
+const PROMPTS_DIR = join(process.cwd(), 'dist', 'evaluators', 'prompts');
+
 /**
- * Get the directory path for this module (ES module equivalent of __dirname)
+ * Get the directory path for prompts
+ * Uses a fixed path relative to cwd since this is simpler and works in all environments
  */
-function getModuleDirname(): string {
-  const _filename = fileURLToPath(import.meta.url);
-  return dirname(_filename);
+function getPromptsDir(): string {
+  return PROMPTS_DIR;
 }
 
 /**
@@ -268,7 +272,7 @@ export class AgenticJudgeEvaluator implements Evaluator {
       return `# Evaluation Assertions:\n${assertionsList}`;
     }
     // Mode 2: Use default markdown template
-    const templatePath = join(getModuleDirname(), 'prompts', 'agentic-judge.template.md');
+    const templatePath = join(getPromptsDir(), 'agentic-judge.template.md');
     const template = readFileSync(templatePath, 'utf-8');
     
     // Build combined content with prompt prepended to assertions

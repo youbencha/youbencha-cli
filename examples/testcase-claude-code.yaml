@@ -1,0 +1,25 @@
+# Example: Basic Claude Code Test Case
+#
+# Demonstrates basic Claude Code agent configuration with inline prompt.
+# Use this as a template for simple evaluation scenarios.
+
+name: "Basic Claude Code Evaluation"
+description: "Run Claude Code to analyze a repository and generate evaluation results"
+
+# Repository configuration
+repo: https://github.com/octocat/Hello-World.git
+branch: master
+
+# Agent configuration
+agent:
+  type: claude-code
+  config:
+    prompt: "Add a comment to README explaining what this repository is about"
+
+# Evaluators to run
+evaluators:
+  - name: git-diff
+    config: {}
+
+# Optional: Timeout in milliseconds (default: 5 minutes)
+timeout: 300000

@@ -311,4 +311,174 @@ describe('AgentAdapter Contract', () => {
       }
     });
   });
+
+  describe('Advanced Configuration (User Story 5)', () => {
+    // CR-2.12: append_system_prompt parameter
+    it('should accept append_system_prompt configuration', async () => {
+      const contextWithAppendSystemPrompt: AgentExecutionContext = {
+        workspaceDir: '/tmp/workspace',
+        repoDir: '/tmp/workspace/src-modified',
+        artifactsDir: '/tmp/workspace/artifacts',
+        config: {
+          prompt: 'Test task',
+          append_system_prompt: 'You are an expert TypeScript developer',
+        },
+        timeout: 60000,
+        env: {},
+      };
+
+      await expect(adapter.execute(contextWithAppendSystemPrompt)).resolves.toBeDefined();
+    });
+
+    // CR-2.13: permission_mode parameter
+    it('should accept permission_mode configuration', async () => {
+      const contextWithPermissionMode: AgentExecutionContext = {
+        workspaceDir: '/tmp/workspace',
+        repoDir: '/tmp/workspace/src-modified',
+        artifactsDir: '/tmp/workspace/artifacts',
+        config: {
+          prompt: 'Test task',
+          permission_mode: 'auto',
+        },
+        timeout: 60000,
+        env: {},
+      };
+
+      await expect(adapter.execute(contextWithPermissionMode)).resolves.toBeDefined();
+    });
+
+    it('should accept permission_mode with plan value', async () => {
+      const contextWithPlanMode: AgentExecutionContext = {
+        workspaceDir: '/tmp/workspace',
+        repoDir: '/tmp/workspace/src-modified',
+        artifactsDir: '/tmp/workspace/artifacts',
+        config: {
+          prompt: 'Test task',
+          permission_mode: 'plan',
+        },
+        timeout: 60000,
+        env: {},
+      };
+
+      await expect(adapter.execute(contextWithPlanMode)).resolves.toBeDefined();
+    });
+
+    it('should accept permission_mode with ask value', async () => {
+      const contextWithAskMode: AgentExecutionContext = {
+        workspaceDir: '/tmp/workspace',
+        repoDir: '/tmp/workspace/src-modified',
+        artifactsDir: '/tmp/workspace/artifacts',
+        config: {
+          prompt: 'Test task',
+          permission_mode: 'ask',
+        },
+        timeout: 60000,
+        env: {},
+      };
+
+      await expect(adapter.execute(contextWithAskMode)).resolves.toBeDefined();
+    });
+
+    // CR-2.14: allowed_tools parameter
+    it('should accept allowed_tools configuration', async () => {
+      const contextWithAllowedTools: AgentExecutionContext = {
+        workspaceDir: '/tmp/workspace',
+        repoDir: '/tmp/workspace/src-modified',
+        artifactsDir: '/tmp/workspace/artifacts',
+        config: {
+          prompt: 'Test task',
+          allowed_tools: ['Read', 'Write', 'Execute'],
+        },
+        timeout: 60000,
+        env: {},
+      };
+
+      await expect(adapter.execute(contextWithAllowedTools)).resolves.toBeDefined();
+    });
+
+    it('should accept empty allowed_tools array', async () => {
+      const contextWithEmptyTools: AgentExecutionContext = {
+        workspaceDir: '/tmp/workspace',
+        repoDir: '/tmp/workspace/src-modified',
+        artifactsDir: '/tmp/workspace/artifacts',
+        config: {
+          prompt: 'Test task',
+          allowed_tools: [],
+        },
+        timeout: 60000,
+        env: {},
+      };
+
+      await expect(adapter.execute(contextWithEmptyTools)).resolves.toBeDefined();
+    });
+
+    // Additional advanced parameters
+    it('should accept system_prompt configuration', async () => {
+      const contextWithSystemPrompt: AgentExecutionContext = {
+        workspaceDir: '/tmp/workspace',
+        repoDir: '/tmp/workspace/src-modified',
+        artifactsDir: '/tmp/workspace/artifacts',
+        config: {
+          prompt: 'Test task',
+          system_prompt: 'Custom system instructions',
+        },
+        timeout: 60000,
+        env: {},
+      };
+
+      await expect(adapter.execute(contextWithSystemPrompt)).resolves.toBeDefined();
+    });
+
+    it('should accept max_tokens configuration', async () => {
+      const contextWithMaxTokens: AgentExecutionContext = {
+        workspaceDir: '/tmp/workspace',
+        repoDir: '/tmp/workspace/src-modified',
+        artifactsDir: '/tmp/workspace/artifacts',
+        config: {
+          prompt: 'Test task',
+          max_tokens: 4096,
+        },
+        timeout: 60000,
+        env: {},
+      };
+
+      await expect(adapter.execute(contextWithMaxTokens)).resolves.toBeDefined();
+    });
+
+    it('should accept temperature configuration', async () => {
+      const contextWithTemperature: AgentExecutionContext = {
+        workspaceDir: '/tmp/workspace',
+        repoDir: '/tmp/workspace/src-modified',
+        artifactsDir: '/tmp/workspace/artifacts',
+        config: {
+          prompt: 'Test task',
+          temperature: 0.7,
+        },
+        timeout: 60000,
+        env: {},
+      };
+
+      await expect(adapter.execute(contextWithTemperature)).resolves.toBeDefined();
+    });
+
+    it('should accept combined advanced configuration', async () => {
+      const contextWithAllAdvanced: AgentExecutionContext = {
+        workspaceDir: '/tmp/workspace',
+        repoDir: '/tmp/workspace/src-modified',
+        artifactsDir: '/tmp/workspace/artifacts',
+        config: {
+          prompt: 'Test task',
+          append_system_prompt: 'You are an expert',
+          permission_mode: 'auto',
+          allowed_tools: ['Read', 'Write'],
+          max_tokens: 8000,
+          temperature: 0.0,
+        },
+        timeout: 60000,
+        env: {},
+      };
+
+      await expect(adapter.execute(contextWithAllAdvanced)).resolves.toBeDefined();
+    });
+  });
 });
