@@ -22,7 +22,7 @@ branch: master
 agent:
   type: copilot-cli
   config:
-    prompt: "create a snake game in javascript, css, and html only. the game should be a beautiful design and should be playable in a web browser."
+    prompt_file: ./iteration-2-prompt.md
 
 # Evaluators - multiple agentic-judge instances with different focuses
 evaluators:

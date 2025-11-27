@@ -1,0 +1,1 @@
+Create a snake game in javascript, css, and html only. the game should be a beautiful design and should be playable in a web browser.

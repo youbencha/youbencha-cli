@@ -1,0 +1,140 @@
+{
+  "version": "1.0.0",
+  "test_case": {
+    "name": "Add error handling to API client",
+    "description": "Tests the agent's ability to add comprehensive error handling to an API client with good practices",
+    "config_file": ".\\demo\\iteration-1\\testcase-iteration-1.yaml",
+    "config_hash": "238e4cdabf68a817",
+    "repo": "https://github.com/octocat/Hello-World.git",
+    "branch": "master",
+    "commit": "7fd1a60b01f91b314f59955a4e4d4e80d8edf11d"
+  },
+  "execution": {
+    "started_at": "2025-11-27T01:03:55.204Z",
+    "completed_at": "2025-11-27T01:05:19.967Z",
+    "duration_ms": 84763,
+    "youbencha_version": "0.1.0",
+    "environment": {
+      "os": "win32 10.0.26200",
+      "node_version": "22.21.0",
+      "workspace_dir": ".youbencha-workspace\\run-2025-11-27-1764205435206"
+    }
+  },
+  "agent": {
+    "type": "copilot-cli",
+    "youbencha_log_path": "youbencha.log.json",
+    "status": "success",
+    "exit_code": 0
+  },
+  "evaluators": [
+    {
+      "evaluator": "git-diff",
+      "status": "failed",
+      "metrics": {
+        "files_changed": 2,
+        "lines_added": 989,
+        "lines_removed": 0,
+        "total_changes": 989,
+        "change_entropy": 0.9873067858081641,
+        "changed_files": [
+          {
+            "path": ".youbencha-workspace/run-2025-11-27-1764205435206/artifacts/copilot-logs/session-8cb55ebe-92a3-42ae-a6db-b48c0aaea387.log",
+            "additions": 560,
+            "deletions": 0,
+            "changes": 560
+          },
+          {
+            "path": "snake-game.html",
+            "additions": 429,
+            "deletions": 0,
+            "changes": 429
+          }
+        ],
+        "base_commit": "HEAD",
+        "current_commit": "7fd1a60b01f91b314f59955a4e4d4e80d8edf11d",
+        "violations": [
+          "total_changes (989) exceeds max_total_changes (200)"
+        ]
+      },
+      "message": "✗ 2 changed files (+989/-0 lines) | Violations: total_changes (989) exceeds max_total_changes (200)",
+      "duration_ms": 523,
+      "timestamp": "2025-11-27T01:04:47.999Z",
+      "assertions": {
+        "max_files_changed": 5,
+        "max_total_changes": 200
+      },
+      "artifacts": [
+        {
+          "type": "diff",
+          "path": "git-diff.patch",
+          "description": "Git diff patch showing all changes"
+        }
+      ]
+    },
+    {
+      "evaluator": "agentic-judge-error-handling",
+      "status": "failed",
+      "metrics": {
+        "agent_type": "copilot-cli",
+        "agent_duration_ms": 30016
+      },
+      "message": "No error handling found in snake-game.html. The code contains no try-catch blocks, no error messages, and no error logging. Functions like localStorage.getItem, canvas.getContext, and DOM queries could fail without any error handling.",
+      "duration_ms": 30312,
+      "timestamp": "2025-11-27T01:05:17.788Z",
+      "assertions": {
+        "has_try_catch": 0,
+        "error_messages_clear": 0,
+        "errors_logged": 0
+      }
+    },
+    {
+      "evaluator": "agentic-judge-documentation",
+      "status": "failed",
+      "metrics": {
+        "agent_type": "copilot-cli",
+        "agent_duration_ms": 27998
+      },
+      "message": "No function documentation found. The snake-game.html file contains 8 functions (setDifficulty, startGame, pauseGame, generateFood, update, checkCollision, draw, endGame) but none have JSDoc or any documentation comments. Additionally, there is no error handling or documentation of error types/scenarios - no try-catch blocks, error type definitions, or documentation about potential failures.",
+      "duration_ms": 28234,
+      "timestamp": "2025-11-27T01:05:15.710Z",
+      "assertions": {
+        "functions_documented": 0,
+        "error_types_documented": 0
+      }
+    },
+    {
+      "evaluator": "agentic-judge-best-practices",
+      "status": "passed",
+      "metrics": {
+        "agent_type": "copilot-cli",
+        "agent_duration_ms": 32253
+      },
+      "message": "Code is clean with no console.log statements found. No error handling is implemented (which is acceptable for a simple browser game with no async operations or external dependencies). Code follows consistent JavaScript conventions with proper use of const/let, camelCase naming, consistent indentation, and modern ES6 syntax throughout.",
+      "duration_ms": 32491,
+      "timestamp": "2025-11-27T01:05:19.967Z",
+      "assertions": {
+        "no_console_log": 1,
+        "proper_error_types": 1,
+        "follows_conventions": 1
+      }
+    }
+  ],
+  "summary": {
+    "total_evaluators": 4,
+    "passed": 1,
+    "failed": 3,
+    "skipped": 0,
+    "overall_status": "failed"
+  },
+  "artifacts": {
+    "agent_log": "youbencha.log.json",
+    "reports": [],
+    "evaluator_artifacts": [
+      "copilot-logs\\terminal-output-2025-11-27T01-03-56-049Z.log",
+      "copilot-logs\\terminal-output-2025-11-27T01-04-47-715Z.log",
+      "copilot-logs\\terminal-output-2025-11-27T01-04-47-738Z.log",
+      "copilot-logs\\terminal-output-2025-11-27T01-04-47-772Z.log",
+      "git-diff.patch"
+    ]
+  }
+}
