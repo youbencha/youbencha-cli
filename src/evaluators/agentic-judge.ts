@@ -124,21 +124,36 @@ export class AgenticJudgeEvaluator implements Evaluator {
         );
       }
 
-      //if agent name is specified, copy .github/agents folder to modifiedDir
-      // This works for both copilot-cli and claude-code
+      // If agent name is specified, copy agent folders to modifiedDir
+      // Copy both .github/agents (for copilot-cli) and .claude/agents (for claude-code)
       console.log('context.config:', context.config);
       if (context.config.agent_name) {
-        console.log(`Copying .github/agents to modifiedDir for ${agentType} agent...`);
         const fs = await import('fs-extra');
-        const sourceAgentsDir = join(process.cwd(), '.github', 'agents');
-        console.log('Source agents dir:', sourceAgentsDir);
-        const destAgentsDir = join(context.modifiedDir, '.github', 'agents');
-        console.log('Destination agents dir:', destAgentsDir);
+        
+        // Copy .github/agents folder (for copilot-cli)
+        console.log(`Copying .github/agents to modifiedDir for ${agentType} agent...`);
+        const sourceGithubAgentsDir = join(process.cwd(), '.github', 'agents');
+        console.log('Source .github/agents dir:', sourceGithubAgentsDir);
+        const destGithubAgentsDir = join(context.modifiedDir, '.github', 'agents');
+        console.log('Destination .github/agents dir:', destGithubAgentsDir);
         try {
-          await fs.default.copy(sourceAgentsDir, destAgentsDir);
+          await fs.default.copy(sourceGithubAgentsDir, destGithubAgentsDir);
           console.log('Copied .github/agents successfully');
         } catch (error) {
           console.error('Failed to copy .github/agents:', error);
+        }
+        
+        // Copy .claude/agents folder (for claude-code)
+        console.log(`Copying .claude/agents to modifiedDir for ${agentType} agent...`);
+        const sourceClaudeAgentsDir = join(process.cwd(), '.claude', 'agents');
+        console.log('Source .claude/agents dir:', sourceClaudeAgentsDir);
+        const destClaudeAgentsDir = join(context.modifiedDir, '.claude', 'agents');
+        console.log('Destination .claude/agents dir:', destClaudeAgentsDir);
+        try {
+          await fs.default.copy(sourceClaudeAgentsDir, destClaudeAgentsDir);
+          console.log('Copied .claude/agents successfully');
+        } catch (error) {
+          console.error('Failed to copy .claude/agents:', error);
         }
       }
 
