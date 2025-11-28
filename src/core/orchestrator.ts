@@ -758,7 +758,7 @@ export class Orchestrator {
         // Remove prompt_file from config since we've resolved it
         prompt_file: undefined,
         // Pass agent name if specified in test case config
-        agent: testCaseConfig.agent.agent_name,
+        agent_name: testCaseConfig.agent.agent_name,
         // Pass model if specified in test case config
         model: testCaseConfig.agent.model,
       },

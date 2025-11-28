@@ -295,11 +295,8 @@ export class ClaudeCodeAdapter implements AgentAdapter {
       args.push('--model', model);
     }
 
-    // Add agent if specified (agent_name maps to --agents flag per research.md)
+    // Store agent name for later use in prompt modification
     const agentName = context.config.agent_name as string | undefined;
-    if (agentName) {
-      args.push('--agents', agentName);
-    }
 
     // Add system_prompt if specified (replaces default system prompt)
     const systemPrompt = context.config.system_prompt as string | undefined;
@@ -337,8 +334,16 @@ export class ClaudeCodeAdapter implements AgentAdapter {
       args.push('--temperature', String(temperature));
     }
 
+    // Build the final prompt, prepending agent invocation if agent_name is specified
+    // Claude Code auto-discovers agents from .claude/agents/ directory
+    // We just need to tell it to use the agent by name
+    let finalPrompt = prompt;
+    if (agentName) {
+      finalPrompt = `Use the "${agentName}" agent for this task.\n\n${prompt}`;
+    }
+
     // Prompt must be the last argument (positional argument)
-    args.push(prompt);
+    args.push(finalPrompt);
 
     // On Windows, use PowerShell with the & call operator to invoke claude
     // This properly handles the command execution in PowerShell
