@@ -686,17 +686,29 @@ export class Orchestrator {
     agentLog: YouBenchaLog;
     agentExecution: ResultsBundle['agent'];
   }> {
-    // Copy agent files if agent name is specified and type is copilot-cli
-    if (testCaseConfig.agent.type === 'copilot-cli' && testCaseConfig.agent.agent_name) {
+    // Copy agent files if agent name is specified
+    if (testCaseConfig.agent.agent_name) {
       logger.info(`Copying agent definition for: ${testCaseConfig.agent.agent_name}`);
       const fs = await import('fs-extra');
-      const sourceAgentsDir = path.join(process.cwd(), '.github', 'agents');
-      const destAgentsDir = path.join(workspace.paths.modifiedDir, '.github', 'agents');
+      
+      // Copy .github/agents folder (for copilot-cli)
+      const sourceGithubAgentsDir = path.join(process.cwd(), '.github', 'agents');
+      const destGithubAgentsDir = path.join(workspace.paths.modifiedDir, '.github', 'agents');
       try {
-        await fs.default.copy(sourceAgentsDir, destAgentsDir);
-        logger.info('Agent files copied successfully');
+        await fs.default.copy(sourceGithubAgentsDir, destGithubAgentsDir);
+        logger.info('.github/agents copied successfully');
       } catch (error) {
-        logger.warn(`Failed to copy agent files: ${error instanceof Error ? error.message : String(error)}`);
+        logger.warn(`Failed to copy .github/agents: ${error instanceof Error ? error.message : String(error)}`);
+      }
+      
+      // Copy .claude/agents folder (for claude-code)
+      const sourceClaudeAgentsDir = path.join(process.cwd(), '.claude', 'agents');
+      const destClaudeAgentsDir = path.join(workspace.paths.modifiedDir, '.claude', 'agents');
+      try {
+        await fs.default.copy(sourceClaudeAgentsDir, destClaudeAgentsDir);
+        logger.info('.claude/agents copied successfully');
+      } catch (error) {
+        logger.warn(`Failed to copy .claude/agents: ${error instanceof Error ? error.message : String(error)}`);
       }
     }
 
@@ -746,7 +758,7 @@ export class Orchestrator {
         // Remove prompt_file from config since we've resolved it
         prompt_file: undefined,
         // Pass agent name if specified in test case config
-        agent: testCaseConfig.agent.agent_name,
+        agent_name: testCaseConfig.agent.agent_name,
         // Pass model if specified in test case config
         model: testCaseConfig.agent.model,
       },

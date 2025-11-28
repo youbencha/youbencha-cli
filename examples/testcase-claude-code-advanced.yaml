@@ -12,9 +12,8 @@ name: "Advanced Claude Code Evaluation"
 description: "Comprehensive evaluation with custom model, agent, and advanced options"
 
 # Repository configuration
-repo: "https://github.com/youbencha/hello-world.git
-"
-branch: "master"
+repo: "https://github.com/youbencha/hello-world.git"
+branch: "main"
 
 # Agent configuration with all available options
 agent:
@@ -43,12 +42,13 @@ evaluators:
   
   - name: agentic-judge
     config:
-      # Define assertions for evaluation
+      type: claude-code
+      agent_name: agentic-judge  # Uses the built-in evaluation agent
+      # Define explicit pass/fail assertions (keys become metric names in the report)
       assertions:
-        - description: "Code review is comprehensive"
-          severity: high
-        - description: "Security issues are identified"
-          severity: medium
+        readme_was_modified: "The README.md file was modified. Score 1 if true, 0 if false."
+        message_is_friendly: "A friendly welcome message was added. Score 1 if friendly, 0.5 if neutral, 0 if absent or unfriendly."
+        no_errors: "No syntax errors or broken markdown. Score 1 if valid, 0 if broken."
 
 # Timeout in milliseconds (10 minutes for complex evaluations)
 timeout: 600000

@@ -2,7 +2,7 @@
 name: "Software Security Analyst on .NET Vulnerable"
 description: "Tests the software-security-analyst agent's ability to analyze a .NET vulnerable codebase for security issues"
 
-repo: https://github.com/vangjv/dotnetvulnerable.git
+repo: https://github.com/youbencha/dotnetvulnerable.git
 branch: vulnerable
 
 agent:

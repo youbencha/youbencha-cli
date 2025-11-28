@@ -99,7 +99,22 @@ describe('ClaudeCodeAdapter Unit Tests', () => {
   });
 
   describe('buildClaudeCommand() with agent flag', () => {
-    it('should include --agents flag when agent_name is specified', async () => {
+    // Helper to create an agent file in the test workspace
+    const createAgentFile = async (name: string, content?: string) => {
+      const agentDir = path.join(tempWorkspace, '.claude', 'agents');
+      await fs.mkdir(agentDir, { recursive: true });
+      const agentContent = content || `---
+name: ${name}
+description: Test agent for ${name}
+---
+
+You are a test agent called ${name}.`;
+      await fs.writeFile(path.join(agentDir, `${name}.md`), agentContent);
+    };
+
+    it('should include --append-system-prompt with agent prompt when agent_name is specified', async () => {
+      await createAgentFile('code-reviewer');
+
       const context: AgentExecutionContext = {
         workspaceDir: tempWorkspace,
         repoDir: path.join(tempWorkspace, 'src-modified'),
@@ -139,6 +154,11 @@ describe('ClaudeCodeAdapter Unit Tests', () => {
         'my-code-reviewer',
       ];
 
+      // Create agent files for each
+      for (const agent_name of agentNames) {
+        await createAgentFile(agent_name);
+      }
+
       for (const agent_name of agentNames) {
         const context: AgentExecutionContext = {
           workspaceDir: tempWorkspace,
@@ -158,6 +178,8 @@ describe('ClaudeCodeAdapter Unit Tests', () => {
     });
 
     it('should handle both model and agent_name together', async () => {
+      await createAgentFile('code-reviewer');
+
       const context: AgentExecutionContext = {
         workspaceDir: tempWorkspace,
         repoDir: path.join(tempWorkspace, 'src-modified'),
@@ -173,6 +195,24 @@ describe('ClaudeCodeAdapter Unit Tests', () => {
 
       const result = await adapter.execute(context);
       expect(result).toBeDefined();
+    });
+
+    it('should throw error when agent_name is specified but agent file not found', async () => {
+      const context: AgentExecutionContext = {
+        workspaceDir: tempWorkspace,
+        repoDir: path.join(tempWorkspace, 'src-modified'),
+        artifactsDir: path.join(tempWorkspace, 'artifacts'),
+        config: {
+          prompt: 'Test prompt',
+          agent_name: 'non-existent-agent',
+        },
+        timeout: 5000,
+        env: {},
+      };
+
+      const result = await adapter.execute(context);
+      expect(result.status).toBe('failed');
+      expect(result.errors[0]?.message).toContain('non-existent-agent');
     });
   });
 
