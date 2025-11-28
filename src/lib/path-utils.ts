@@ -36,19 +36,55 @@ export interface WorkspacePaths {
 }
 
 /**
+ * Sanitize a workspace name to ensure it's safe for use as a directory name.
+ * Removes or replaces any characters that could cause issues.
+ * 
+ * @param name - The workspace name to sanitize
+ * @returns Sanitized workspace name
+ */
+export function sanitizeWorkspaceName(name: string): string {
+  // Replace spaces with hyphens
+  let sanitized = name.replace(/\s+/g, '-');
+  // Remove any characters that aren't alphanumeric, dots, underscores, or hyphens
+  sanitized = sanitized.replace(/[^a-zA-Z0-9._-]/g, '');
+  // Ensure it starts with an alphanumeric character
+  sanitized = sanitized.replace(/^[^a-zA-Z0-9]+/, '');
+  // Limit length to 100 characters
+  sanitized = sanitized.slice(0, 100);
+  // If empty after sanitization, return a default
+  return sanitized || 'workspace';
+}
+
+/**
  * Generate workspace paths for a new evaluation run
  * 
  * @param workspaceRoot - Root workspace directory (default: .youbencha-workspace)
  * @param runId - Unique run identifier (default: timestamp-based)
+ * @param workspaceName - Custom workspace name (optional, creates human-readable folder)
  * @returns Workspace path structure
  */
 export function generateWorkspacePaths(
   workspaceRoot?: string,
-  runId?: string
+  runId?: string,
+  workspaceName?: string
 ): WorkspacePaths {
   const root = workspaceRoot || path.join(process.cwd(), '.youbencha-workspace');
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
-  const id = runId || `run-${timestamp}-${Date.now()}`;
+  const uniqueSuffix = Date.now();
+  
+  // Determine the run ID based on configuration
+  let id: string;
+  if (runId) {
+    // Use explicit runId if provided (for backward compatibility)
+    id = runId;
+  } else if (workspaceName) {
+    // Use sanitized workspace name with timestamp for uniqueness
+    const sanitized = sanitizeWorkspaceName(workspaceName);
+    id = `${sanitized}-${timestamp}-${uniqueSuffix}`;
+  } else {
+    // Default: use generic run-{timestamp} format
+    id = `run-${timestamp}-${uniqueSuffix}`;
+  }
   
   const runDir = path.join(root, id);
   const modifiedDir = path.join(runDir, 'src-modified');
@@ -262,4 +298,5 @@ export default {
   createTempDir,
   removeDirectory,
   getDirectorySize,
+  sanitizeWorkspaceName,
 };

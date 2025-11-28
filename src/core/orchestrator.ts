@@ -568,6 +568,7 @@ export class Orchestrator {
       commit: testCaseConfig.commit,
       expectedBranch: testCaseConfig.expected,
       workspaceRoot: testCaseConfig.workspace_dir,
+      workspaceName: testCaseConfig.workspace_name,
       timeout: testCaseConfig.timeout,
     };
 

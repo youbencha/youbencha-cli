@@ -38,6 +38,9 @@ export interface WorkspaceConfig {
   /** Custom run ID (optional - defaults to timestamp-based) */
   runId?: string;
   
+  /** Custom workspace name for human-readable folder names (optional) */
+  workspaceName?: string;
+  
   /** Timeout for Git operations in milliseconds (default: 300000 = 5 min) */
   timeout?: number;
 }
@@ -140,7 +143,8 @@ export class WorkspaceManager {
     // Generate workspace paths
     const paths = generateWorkspacePaths(
       config.workspaceRoot || this.workspaceRoot,
-      config.runId
+      config.runId,
+      config.workspaceName
     );
     
     const runId = path.basename(paths.runDir);
