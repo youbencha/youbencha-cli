@@ -1,0 +1,146 @@
+{
+  "version": "1.0.0",
+  "test_case": {
+    "name": "Add error handling to API client",
+    "description": "Tests the agent's ability to add comprehensive error handling to an API client with good practices",
+    "config_file": ".\\demo\\claude\\testcase-iteration-1.yaml",
+    "config_hash": "e648eaea6eb47f17",
+    "repo": "https://github.com/octocat/Hello-World.git",
+    "branch": "master",
+    "commit": "7fd1a60b01f91b314f59955a4e4d4e80d8edf11d"
+  },
+  "execution": {
+    "started_at": "2025-11-27T07:14:50.768Z",
+    "completed_at": "2025-11-27T07:16:46.383Z",
+    "duration_ms": 115615,
+    "youbencha_version": "0.1.0",
+    "environment": {
+      "os": "win32 10.0.26200",
+      "node_version": "22.21.0",
+      "workspace_dir": ".youbencha-workspace\\run-2025-11-27-1764227690770"
+    }
+  },
+  "agent": {
+    "type": "claude-code",
+    "youbencha_log_path": "youbencha.log.json",
+    "status": "success",
+    "exit_code": 0
+  },
+  "evaluators": [
+    {
+      "evaluator": "git-diff",
+      "status": "failed",
+      "metrics": {
+        "files_changed": 3,
+        "lines_added": 536,
+        "lines_removed": 0,
+        "total_changes": 536,
+        "change_entropy": 1.3457822853901877,
+        "changed_files": [
+          {
+            "path": "snake-game.css",
+            "additions": 209,
+            "deletions": 0,
+            "changes": 209
+          },
+          {
+            "path": "snake-game.html",
+            "additions": 51,
+            "deletions": 0,
+            "changes": 51
+          },
+          {
+            "path": "snake-game.js",
+            "additions": 276,
+            "deletions": 0,
+            "changes": 276
+          }
+        ],
+        "base_commit": "HEAD",
+        "current_commit": "7fd1a60b01f91b314f59955a4e4d4e80d8edf11d",
+        "violations": [
+          "total_changes (536) exceeds max_total_changes (200)"
+        ]
+      },
+      "message": "✗ 3 changed files (+536/-0 lines) | Violations: total_changes (536) exceeds max_total_changes (200)",
+      "duration_ms": 342,
+      "timestamp": "2025-11-27T07:16:19.658Z",
+      "assertions": {
+        "max_files_changed": 5,
+        "max_total_changes": 200
+      },
+      "artifacts": [
+        {
+          "type": "diff",
+          "path": "git-diff.patch",
+          "description": "Git diff patch showing all changes"
+        }
+      ]
+    },
+    {
+      "evaluator": "agentic-judge-error-handling",
+      "status": "failed",
+      "metrics": {
+        "agent_type": "claude-code",
+        "agent_duration_ms": 18540
+      },
+      "message": "The code lacks all error handling requirements. No try-catch blocks are present, no error messages are defined, and no error logging is implemented. The snake game code operates without any defensive error handling for potential runtime issues such as localStorage failures, canvas context errors, or DOM element access failures.",
+      "duration_ms": 19391,
+      "timestamp": "2025-11-27T07:16:38.707Z",
+      "assertions": {
+        "has_try_catch": 0,
+        "error_messages_clear": 0,
+        "errors_logged": 0
+      }
+    },
+    {
+      "evaluator": "agentic-judge-documentation",
+      "status": "failed",
+      "metrics": {
+        "agent_type": "claude-code",
+        "agent_duration_ms": 25226
+      },
+      "message": "The Snake game implementation lacks function documentation and error handling documentation. All 16 functions in snake-game.js have no JSDoc or documentation comments. There is no documentation of error types, error scenarios, or error handling mechanisms throughout the codebase.",
+      "duration_ms": 26075,
+      "timestamp": "2025-11-27T07:16:45.391Z",
+      "assertions": {
+        "functions_documented": 0,
+        "error_types_documented": 0
+      }
+    },
+    {
+      "evaluator": "agentic-judge-best-practices",
+      "status": "passed",
+      "metrics": {
+        "agent_type": "claude-code",
+        "agent_duration_ms": 26177
+      },
+      "message": "All assertions passed. The code is clean with no console.log statements, no generic Error types found, and follows consistent coding conventions with proper structure and style.",
+      "duration_ms": 27066,
+      "timestamp": "2025-11-27T07:16:46.382Z",
+      "assertions": {
+        "no_console_log": 1,
+        "proper_error_types": 1,
+        "follows_conventions": 1
+      }
+    }
+  ],
+  "summary": {
+    "total_evaluators": 4,
+    "passed": 1,
+    "failed": 3,
+    "skipped": 0,
+    "overall_status": "failed"
+  },
+  "artifacts": {
+    "agent_log": "youbencha.log.json",
+    "reports": [],
+    "evaluator_artifacts": [
+      "claude-code-logs\\terminal-output-2025-11-27T07-14-51-884Z.log",
+      "claude-code-logs\\terminal-output-2025-11-27T07-16-20-166Z.log",
+      "claude-code-logs\\terminal-output-2025-11-27T07-16-20-183Z.log",
+      "claude-code-logs\\terminal-output-2025-11-27T07-16-20-205Z.log",
+      "git-diff.patch"
+    ]
+  }
+}
