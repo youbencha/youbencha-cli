@@ -7,8 +7,8 @@ name: "Basic Claude Code Evaluation"
 description: "Run Claude Code to analyze a repository and generate evaluation results"
 
 # Repository configuration
-repo: https://github.com/octocat/Hello-World.git
-branch: master
+repo: https://github.com/youbencha/hello-world.git
+branch: main
 
 # Agent configuration
 agent:

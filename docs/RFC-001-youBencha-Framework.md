@@ -192,7 +192,8 @@ Defines **what to evaluate** and **how**:
 
 ```yaml
 # Repository to evaluate
-repo: https://github.com/octocat/Hello-World.git
+repo: https://github.com/youbencha/hello-world.git
+
 branch: main
 
 # Agent configuration

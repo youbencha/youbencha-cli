@@ -5,8 +5,8 @@
 name: "Code review with custom agent"
 description: "Tests a custom code-reviewer agent's ability to review code and suggest improvements"
 
-repo: https://github.com/octocat/Hello-World.git
-branch: master
+repo: https://github.com/youbencha/hello-world.git
+branch: main
 
 agent:
   type: copilot-cli

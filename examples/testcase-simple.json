@@ -1,7 +1,8 @@
 {
   "name": "Add friendly welcome message to README",
   "description": "Tests the agent's ability to add a friendly welcome message to the README file with good formatting",
-  "repo": "https://github.com/octocat/Hello-World.git",
+  "repo": "https://github.com/youbencha/hello-world.git
+",
   "branch": "master",
   "agent": {
     "type": "copilot-cli",

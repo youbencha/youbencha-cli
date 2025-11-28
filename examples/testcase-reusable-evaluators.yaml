@@ -13,8 +13,8 @@ name: "Add README comment with reusable evaluators"
 description: "Tests the agent's ability to add a helpful comment to README using reusable evaluator definitions"
 
 # Repository configuration
-repo: https://github.com/octocat/Hello-World.git
-branch: master
+repo: https://github.com/youbencha/hello-world.git
+branch: main
 
 # Agent configuration
 agent:

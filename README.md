@@ -70,8 +70,8 @@ youBencha supports both **YAML** and **JSON** formats for configuration files.
 name: "README Comment Addition"
 description: "Tests the agent's ability to add a helpful comment explaining the repository purpose"
 
-repo: https://github.com/octocat/Hello-World.git
-branch: master
+repo: https://github.com/youbencha/hello-world.git
+branch: main
 
 agent:
   type: copilot-cli
@@ -95,8 +95,9 @@ evaluators:
 {
   "name": "README Comment Addition",
   "description": "Tests the agent's ability to add a helpful comment explaining the repository purpose",
-  "repo": "https://github.com/octocat/Hello-World.git",
-  "branch": "master",
+  "repo": "https://github.com/youbencha/hello-world.git
+",
+  "branch": "main",
   "agent": {
     "type": "copilot-cli",
     "config": {
@@ -269,7 +270,8 @@ Add an expected reference to your test case configuration:
 name: "Feature Implementation"
 description: "Tests the agent's ability to implement a feature matching the reference implementation"
 
-repo: https://github.com/octocat/Hello-World.git
+repo: https://github.com/youbencha/hello-world.git
+
 branch: main
 expected_source: branch
 expected: feature/completed  # The reference branch

@@ -50,8 +50,8 @@ name: "Add README comment"
 description: "Tests the agent's ability to add a helpful comment explaining the repository's purpose to the README file"
 
 # Repository configuration (test data)
-repo: https://github.com/octocat/Hello-World.git
-branch: master
+repo: https://github.com/youbencha/hello-world.git
+branch: main
 
 # Agent configuration
 agent:

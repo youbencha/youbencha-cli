@@ -15,8 +15,8 @@ name: "Add error handling to API client"
 description: "Tests the agent's ability to add comprehensive error handling to an API client with good practices"
 
 # Repository configuration
-repo: https://github.com/octocat/Hello-World.git
-branch: master
+repo: https://github.com/youbencha/hello-world.git
+branch: main
 
 # Agent configuration
 agent:

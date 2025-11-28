@@ -79,8 +79,8 @@ See `examples/testcase-multiple-judges.yaml` for a complete example:
 name: "Add error handling to API client"
 description: "Comprehensive evaluation with multiple focused judges"
 
-repo: https://github.com/octocat/Hello-World.git
-branch: master
+repo: https://github.com/youbencha/hello-world.git
+branch: main
 
 agent:
   type: copilot-cli
