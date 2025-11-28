@@ -12,6 +12,7 @@ import { Evaluator, EvaluationContext } from './base.js';
 import { EvaluationResult } from '../schemas/result.schema.js';
 import { AgentAdapter, AgentExecutionContext } from '../adapters/base.js';
 import { CopilotCLIAdapter } from '../adapters/copilot-cli.js';
+import { ClaudeCodeAdapter } from '../adapters/claude-code.js';
 
 // Use the built template file in the prompts directory
 // When running from compiled dist/, the prompts directory is a sibling
@@ -399,6 +400,8 @@ export class AgenticJudgeEvaluator implements Evaluator {
     switch (adapterType) {
       case 'copilot-cli':
         return new CopilotCLIAdapter();
+      case 'claude-code':
+        return new ClaudeCodeAdapter();
       // Add more adapters here as they're implemented
       default:
         return null;

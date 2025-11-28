@@ -20,9 +20,9 @@ branch: master
 
 # Agent configuration
 agent:
-  type: claude
+  type: claude-code
   config:
-    prompt_file: ./iteration-1-prompt.md
+    prompt_file: ./iteration-2-prompt.md
 
 # Evaluators - multiple agentic-judge instances with different focuses
 evaluators:
@@ -37,8 +37,7 @@ evaluators:
   # Focused evaluation of error handling implementation
   - name: agentic-judge-error-handling
     config:
-      type: copilot-cli
-      agent_name: agentic-judge
+      type: claude-code
       timeout: 300000  # 5 minutes
       
       assertions:
@@ -50,8 +49,7 @@ evaluators:
   # Separate evaluation of documentation quality
   - name: agentic-judge-documentation
     config:
-      type: copilot-cli
-      agent_name: agentic-judge
+      type: claude-code
       timeout: 300000  # 5 minutes
       
       assertions:
@@ -62,8 +60,7 @@ evaluators:
   # Evaluation of coding standards and practices
   - name: agentic-judge-best-practices
     config:
-      type: copilot-cli
-      agent_name: agentic-judge
+      type: claude-code
       timeout: 300000  # 5 minutes
       
       assertions:
