@@ -6,8 +6,8 @@ name: "Add friendly welcome message to README with specific model"
 description: "Tests the agent's ability to add a friendly welcome message to the README file using a specific model"
 
 # Repository configuration (test data)
-repo: https://github.com/octocat/Hello-World.git
-branch: master
+repo: https://github.com/youbencha/hello-world.git
+branch: main
 
 # Agent configuration - what coding agent to use and what to ask it
 agent:

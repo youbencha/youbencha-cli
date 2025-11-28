@@ -20,8 +20,8 @@ name: "Welcome Message Addition"
 description: "Tests the agent's ability to add a friendly welcome message to the README file"
 
 # Repository to evaluate
-repo: https://github.com/octocat/Hello-World.git
-branch: master
+repo: https://github.com/youbencha/hello-world.git
+branch: main
 
 # Optional: Compare against a reference implementation
 # expected_source: branch

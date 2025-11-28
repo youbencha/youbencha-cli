@@ -5,7 +5,8 @@
     "description": "Tests the agent's ability to add comprehensive error handling to an API client with good practices",
     "config_file": ".\\demo\\claude\\iteration-2\\testcase-iteration-2.yaml",
     "config_hash": "808391944c0c46d3",
-    "repo": "https://github.com/octocat/Hello-World.git",
+    "repo": "https://github.com/youbencha/hello-world.git
+",
     "branch": "master",
     "commit": "7fd1a60b01f91b314f59955a4e4d4e80d8edf11d"
   },

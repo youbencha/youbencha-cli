@@ -27,8 +27,8 @@ Create a file called `my-first-testcase.yaml` (or `my-first-testcase.json` if yo
 name: "First Test Case"
 description: "A simple test case to verify the agent can add helpful comments"
 
-repo: https://github.com/octocat/Hello-World.git
-branch: master
+repo: https://github.com/youbencha/hello-world.git
+branch: main
 
 agent:
   type: copilot-cli
@@ -51,8 +51,9 @@ evaluators:
 {
   "name": "First Test Case",
   "description": "A simple test case to verify the agent can add helpful comments",
-  "repo": "https://github.com/octocat/Hello-World.git",
-  "branch": "master",
+  "repo": "https://github.com/youbencha/hello-world.git
+",
+  "branch": "main",
   "agent": {
     "type": "copilot-cli",
     "config": {

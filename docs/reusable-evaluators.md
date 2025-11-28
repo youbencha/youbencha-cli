@@ -36,8 +36,8 @@ In your test case YAML file:
 name: "Add README comment"
 description: "Tests the agent's ability to add a helpful comment to README"
 
-repo: https://github.com/octocat/Hello-World.git
-branch: master
+repo: https://github.com/youbencha/hello-world.git
+branch: main
 
 agent:
   type: copilot-cli

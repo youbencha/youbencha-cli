@@ -43,8 +43,8 @@ evaluators:
 name: "Code Review Test Case"
 description: "Tests code review improvements using a named agent"
 
-repo: https://github.com/octocat/Hello-World.git
-branch: master
+repo: https://github.com/youbencha/hello-world.git
+branch: main
 
 agent:
   type: copilot-cli

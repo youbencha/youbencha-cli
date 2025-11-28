@@ -5,8 +5,8 @@ name: "Add authentication middleware with environment setup"
 description: "Tests agent's ability to add authentication while using pre-execution to inject API keys and configuration"
 
 # Repository configuration
-repo: https://github.com/octocat/Hello-World.git
-branch: master
+repo: https://github.com/youbencha/hello-world.git
+branch: main
 
 # Pre-execution hooks - run BEFORE agent execution
 # Use cases:

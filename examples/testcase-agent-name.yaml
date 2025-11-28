@@ -2,8 +2,8 @@
 name: "Add README comment with custom agent"
 description: "Tests a custom agent's ability to add explanatory comments to README"
 
-repo: https://github.com/octocat/Hello-World.git
-branch: master
+repo: https://github.com/youbencha/hello-world.git
+branch: main
 
 agent:
   type: copilot-cli
