@@ -124,10 +124,11 @@ export class AgenticJudgeEvaluator implements Evaluator {
         );
       }
 
-      //if type == copilot-cli and agentName is specified, copy .github/agents folder to modifiedDir
+      //if agent name is specified, copy .github/agents folder to modifiedDir
+      // This works for both copilot-cli and claude-code
       console.log('context.config:', context.config);
-      if (agentType === 'copilot-cli' && context.config.agent_name) {
-        console.log('Copying .github/agents to modifiedDir for copilot-cli agent...');
+      if (context.config.agent_name) {
+        console.log(`Copying .github/agents to modifiedDir for ${agentType} agent...`);
         const fs = await import('fs-extra');
         const sourceAgentsDir = join(process.cwd(), '.github', 'agents');
         console.log('Source agents dir:', sourceAgentsDir);
@@ -151,8 +152,8 @@ export class AgenticJudgeEvaluator implements Evaluator {
         artifactsDir: context.artifactsDir,
         config: {
           prompt: evaluationPrompt,
-          // Pass through agent parameter if specified in evaluator config
-          agent: context.config.agent_name,
+          // Pass through agent_name parameter if specified in evaluator config
+          agent_name: context.config.agent_name,
           // Pass through model parameter if specified in evaluator config
           model: context.config.model,
         },
