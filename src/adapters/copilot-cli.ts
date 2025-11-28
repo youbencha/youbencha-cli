@@ -71,11 +71,15 @@ export class CopilotCLIAdapter implements AgentAdapter {
       // Build copilot command
       const { command, args } = this.buildCopilotCommand(context);
       
+      // Get agent name for logging
+      const agentName = (context.config.agent_name || context.config.agent) as string | undefined;
+      
       // Log the command being executed for debugging
       console.log('[DEBUG] Copilot CLI Command:');
       console.log(`  Command: ${command}`);
       console.log(`  Args: ${JSON.stringify(args)}`);
       console.log(`  CWD: ${context.workspaceDir}`);
+      console.log(`  Agent name: ${agentName || '(default)'}`);
       console.log(`  Prompt length: ${(context.config.prompt as string)?.length || 0} chars`);
       console.log(`  Terminal output log: ${terminalLogPath}`);
       
@@ -195,7 +199,8 @@ export class CopilotCLIAdapter implements AgentAdapter {
     context: AgentExecutionContext
   ): { command: string; args: string[] } {
     const prompt = context.config.prompt as string | undefined;
-    const agent = context.config.agent as string | undefined;
+    // Support both 'agent_name' (from test case config) and 'agent' (legacy/direct)
+    const agent = (context.config.agent_name || context.config.agent) as string | undefined;
     const model = context.config.model as string | undefined;
     
     if (!prompt) {
