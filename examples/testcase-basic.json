@@ -1,9 +1,8 @@
 {
   "name": "Implement Authentication Middleware",
   "description": "Tests the agent's ability to implement a complete JWT authentication middleware with proper error handling and security practices",
-  "repo": "https://github.com/youbencha/hello-world.git
-",
-  "branch": "master",
+  "repo": "https://github.com/youbencha/hello-world.git",
+  "branch": "main",
   "agent": {
     "type": "copilot-cli",
     "config": {

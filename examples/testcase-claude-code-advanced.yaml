@@ -12,9 +12,8 @@ name: "Advanced Claude Code Evaluation"
 description: "Comprehensive evaluation with custom model, agent, and advanced options"
 
 # Repository configuration
-repo: "https://github.com/youbencha/hello-world.git
-"
-branch: "master"
+repo: "https://github.com/youbencha/hello-world.git"
+branch: "main"
 
 # Agent configuration with all available options
 agent:
