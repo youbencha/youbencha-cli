@@ -28,8 +28,7 @@ describe('Orchestrator', () => {
     mockTestCaseConfig = {
       name: 'Test Case',
       description: 'Test description',
-      repo: 'https://github.com/youbencha/hello-world.git
-',
+      repo: 'https://github.com/youbencha/hello-world.git',
       branch: 'master',
       agent: {
         type: 'copilot-cli',

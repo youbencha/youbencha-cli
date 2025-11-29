@@ -198,8 +198,7 @@ describe('Integration: Prompt File Loading', () => {
       const config = {
         name: 'Add README comment using prompt file',
         description: 'Tests the agent\'s ability to add a comment to README using a prompt loaded from a file',
-        repo: 'https://github.com/youbencha/hello-world.git
-',
+        repo: 'https://github.com/youbencha/hello-world.git',
         branch: 'master',
         agent: {
           type: 'copilot-cli',
@@ -227,8 +226,7 @@ describe('Integration: Prompt File Loading', () => {
       const config = {
         name: 'Add README comment with file-based evaluation instructions',
         description: 'Tests the agent with evaluation instructions loaded from a file',
-        repo: 'https://github.com/youbencha/hello-world.git
-',
+        repo: 'https://github.com/youbencha/hello-world.git',
         branch: 'master',
         agent: {
           type: 'copilot-cli',

@@ -349,6 +349,128 @@ describe('Suite Configuration Schema Contract', () => {
     });
   });
 
+  describe('Workspace Name Validation', () => {
+    it('should accept valid workspace_name', () => {
+      const config = {
+        name: 'Test',
+        description: 'Test description',
+        repo: 'https://github.com/example/test-repo',
+        agent: {
+          type: 'copilot-cli',
+        },
+        evaluators: [
+          {
+            name: 'git-diff',
+          },
+        ],
+        workspace_name: 'my-test-case',
+      };
+
+      const result = suiteConfigSchema.safeParse(config);
+      expect(result.success).toBe(true);
+    });
+
+    it('should accept workspace_name with dots and underscores', () => {
+      const config = {
+        name: 'Test',
+        description: 'Test description',
+        repo: 'https://github.com/example/test-repo',
+        agent: {
+          type: 'copilot-cli',
+        },
+        evaluators: [
+          {
+            name: 'git-diff',
+          },
+        ],
+        workspace_name: 'test_case.v1',
+      };
+
+      const result = suiteConfigSchema.safeParse(config);
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject workspace_name starting with non-alphanumeric', () => {
+      const config = {
+        name: 'Test',
+        description: 'Test description',
+        repo: 'https://github.com/example/test-repo',
+        agent: {
+          type: 'copilot-cli',
+        },
+        evaluators: [
+          {
+            name: 'git-diff',
+          },
+        ],
+        workspace_name: '-invalid-start',
+      };
+
+      const result = suiteConfigSchema.safeParse(config);
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject workspace_name with special characters', () => {
+      const config = {
+        name: 'Test',
+        description: 'Test description',
+        repo: 'https://github.com/example/test-repo',
+        agent: {
+          type: 'copilot-cli',
+        },
+        evaluators: [
+          {
+            name: 'git-diff',
+          },
+        ],
+        workspace_name: 'test@case',
+      };
+
+      const result = suiteConfigSchema.safeParse(config);
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject workspace_name that is too long', () => {
+      const config = {
+        name: 'Test',
+        description: 'Test description',
+        repo: 'https://github.com/example/test-repo',
+        agent: {
+          type: 'copilot-cli',
+        },
+        evaluators: [
+          {
+            name: 'git-diff',
+          },
+        ],
+        workspace_name: 'a'.repeat(101),
+      };
+
+      const result = suiteConfigSchema.safeParse(config);
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject empty workspace_name', () => {
+      const config = {
+        name: 'Test',
+        description: 'Test description',
+        repo: 'https://github.com/example/test-repo',
+        agent: {
+          type: 'copilot-cli',
+        },
+        evaluators: [
+          {
+            name: 'git-diff',
+          },
+        ],
+        workspace_name: '',
+      };
+
+      const result = suiteConfigSchema.safeParse(config);
+      expect(result.success).toBe(false);
+    });
+  });
+
   describe('Type inference', () => {
     it('should infer correct TypeScript types', () => {
       const config: SuiteConfig = {

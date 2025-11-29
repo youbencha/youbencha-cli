@@ -51,8 +51,7 @@ evaluators:
 {
   "name": "First Test Case",
   "description": "A simple test case to verify the agent can add helpful comments",
-  "repo": "https://github.com/youbencha/hello-world.git
-",
+  "repo": "https://github.com/youbencha/hello-world.git",
   "branch": "main",
   "agent": {
     "type": "copilot-cli",
@@ -105,14 +104,37 @@ youBencha creates a workspace with:
 
 ```
 .youbencha-workspace/
-└── run-abc123/              # Unique ID for this run
-    ├── src-modified/         # What the agent changed
+└── run-2025-01-15-1705308400000/    # Default: run-{date}-{timestamp}
+    ├── src-modified/                 # What the agent changed
     ├── artifacts/
-    │   ├── results.json      # Machine-readable results
-    │   ├── report.md         # Human-readable report
-    │   └── agent-log.json    # Full agent execution log
-    └── .youbencha.lock       # Workspace metadata
+    │   ├── results.json              # Machine-readable results
+    │   ├── report.md                 # Human-readable report
+    │   └── agent-log.json            # Full agent execution log
+    └── .youbencha.lock               # Workspace metadata
 ```
+
+### Custom Workspace Names
+
+When running multiple tests, the default `run-{timestamp}` folders can be hard to distinguish. 
+Use `workspace_name` in your test case config to create more meaningful folder names:
+
+```yaml
+name: "Add README comment"
+workspace_name: add-readme-comment  # Creates: add-readme-comment-2025-01-15-1705308400000/
+```
+
+This produces clearer workspace organization:
+```
+.youbencha-workspace/
+├── add-readme-comment-2025-01-15-...     # Easy to identify!
+├── fix-security-bug-2025-01-15-...
+└── refactor-api-2025-01-15-...
+```
+
+**Rules for `workspace_name`:**
+- Must start with a letter or number
+- Can contain: letters, numbers, dots (.), underscores (_), hyphens (-)
+- Maximum length: 100 characters
 
 ## What Each Part Does
 
@@ -124,6 +146,7 @@ description: "What this tests" # Detailed description
 
 repo: <git-url>               # Where to get the code
 branch: <branch-name>         # Which branch to test
+workspace_name: my-test       # (Optional) Human-readable folder name
 
 agent:                        # What agent to use
   type: copilot-cli

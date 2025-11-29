@@ -6,6 +6,12 @@ description: "Tests the agent's ability to add a helpful comment explaining the 
 repo: https://github.com/youbencha/hello-world.git
 branch: main
 
+# Workspace configuration
+# Optional: Custom workspace folder name for better organization
+# Creates folders like: add-readme-comment-2025-01-15-1705308400000/
+# Instead of: run-2025-01-15-1705308400000/
+workspace_name: add-readme-comment
+
 # Agent configuration
 agent:
   type: copilot-cli

@@ -151,6 +151,15 @@ export const testCaseConfigSchema = z
 
     // Execution configuration (optional)
     workspace_dir: z.string().optional(),
+    workspace_name: z
+      .string()
+      .min(1, 'Workspace name cannot be empty')
+      .max(100, 'Workspace name exceeds maximum length of 100 characters')
+      .regex(
+        /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/,
+        'Workspace name must start with alphanumeric and contain only letters, numbers, dots, underscores, and hyphens'
+      )
+      .optional(),
     timeout: z.number().positive().optional(),
   })
   .refine(

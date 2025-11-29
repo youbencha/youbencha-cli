@@ -186,6 +186,43 @@ describe('WorkspaceManager', () => {
       expect(workspace).toBeDefined();
       expect(mockFs.unlink).toHaveBeenCalledWith(expect.stringMatching(/\.lock$/));
     });
+
+    it('should use custom workspaceName when provided', async () => {
+      const mockGit = {
+        clone: jest.fn().mockResolvedValue(undefined),
+        revparse: jest.fn().mockResolvedValue('abc123'),
+      };
+      mockSimpleGit.mockReturnValue(mockGit as any);
+      mockFs.writeFile.mockResolvedValue(undefined);
+      
+      // Mock path generation with custom workspace name
+      mockGenerateWorkspacePaths.mockReturnValue({
+        root: '/mock/.youbencha-workspace',
+        runDir: '/mock/.youbencha-workspace/my-test-case-2025-01-01-123456',
+        modifiedDir: '/mock/.youbencha-workspace/my-test-case-2025-01-01-123456/src-modified',
+        expectedDir: '/mock/.youbencha-workspace/my-test-case-2025-01-01-123456/src-expected',
+        artifactsDir: '/mock/.youbencha-workspace/my-test-case-2025-01-01-123456/artifacts',
+        evaluatorArtifactsDir: '/mock/.youbencha-workspace/my-test-case-2025-01-01-123456/artifacts/evaluators',
+        lockFile: '/mock/.youbencha-workspace/my-test-case-2025-01-01-123456/.lock',
+      });
+      
+      const manager = new WorkspaceManager();
+      const config: WorkspaceConfig = {
+        repo: 'https://github.com/test/repo.git',
+        branch: 'main',
+        workspaceName: 'my-test-case',
+      };
+      
+      const workspace = await manager.createWorkspace(config);
+      
+      // Verify generateWorkspacePaths was called with workspaceName
+      expect(mockGenerateWorkspacePaths).toHaveBeenCalledWith(
+        expect.any(String),
+        undefined,
+        'my-test-case'
+      );
+      expect(workspace.runId).toBe('my-test-case-2025-01-01-123456');
+    });
   });
   
   describe('cloneRepository', () => {
