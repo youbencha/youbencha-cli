@@ -2,12 +2,14 @@
  * Init Command
  * 
  * Creates a starter testcase.yaml configuration in the current directory.
+ * Also installs agent files for GitHub Copilot CLI and Claude Code.
  */
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as logger from '../../lib/logger.js';
 import { createSpinner } from '../../lib/progress.js';
+import { installAgentFiles } from '../../lib/agent-files.js';
 
 /**
  * Starter test case template
@@ -115,6 +117,34 @@ export async function initCommand(options: InitCommandOptions): Promise<void> {
     
     writeSpinner.succeed('Created testcase.yaml ✓');
     
+    // Install agent files
+    const agentSpinner = createSpinner('Installing agent files...');
+    agentSpinner.start();
+    
+    const agentResult = await installAgentFiles({ force: options.force });
+    agentSpinner.stop();
+    
+    // Display status for each agent file
+    for (const file of agentResult.files) {
+      switch (file.status) {
+        case 'created':
+          logger.info(`✓ Created ${file.file}`);
+          break;
+        case 'skipped':
+          logger.info(`- Skipped ${file.file} (already exists)`);
+          break;
+        case 'overwritten':
+          logger.info(`✓ Overwritten ${file.file}`);
+          break;
+        case 'error':
+          logger.error(`✗ Failed ${file.file}`);
+          if (file.error) {
+            logger.error(`  Error: ${file.error}`);
+          }
+          break;
+      }
+    }
+    
     logger.info('');
     logger.info('✨ Starter configuration created successfully!');
     logger.info('');
@@ -123,6 +153,10 @@ export async function initCommand(options: InitCommandOptions): Promise<void> {
     logger.info('   - Sample prompt for the agent');
     logger.info('   - Two evaluators: git-diff and agentic-judge');
     logger.info('   - Comments explaining each section');
+    logger.info('');
+    logger.info('🤖 Agent files installed:');
+    logger.info('   - .github/agents/agentic-judge.md (for GitHub Copilot CLI)');
+    logger.info('   - .claude/agents/agentic-judge.md (for Claude Code)');
     logger.info('');
     logger.info('📝 Next Steps:');
     logger.info('   1. Edit testcase.yaml to match your use case');
