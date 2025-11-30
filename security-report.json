@@ -1,0 +1,112 @@
+{
+  "scan_metadata": {
+    "repo": "youbencha/youbencha-cli",
+    "commit": "8f19849ee8a08fbf5c91d8a15e81aa2a6f9120f3",
+    "branch": "copilot/conduct-security-analysis-report",
+    "scan_started_at": "2025-11-30T04:42:34.000Z",
+    "scan_completed_at": "2025-11-30T04:55:00.000Z",
+    "files_scanned": 49
+  },
+  "vulnerabilities": [
+    {
+      "id": "VULN-001",
+      "cwe": "CWE-78",
+      "severity": "medium",
+      "title": "Shell Command Execution with shell:true in Pre-Execution Script",
+      "description": "The ScriptPreExecution class in src/pre-execution/script.ts uses spawn() with shell:true option (line 188). While commands come from configuration files, this could allow command injection if configuration files are not properly validated or come from untrusted sources. The code includes documentation noting this is intentional for shell features, but relies on the assumption that all config files are trusted.",
+      "file": "src/pre-execution/script.ts",
+      "line": 188,
+      "recommendation": "Consider implementing allowlist validation for permitted commands, or use spawn with shell:false and explicit argument arrays. If shell features are needed, sanitize and validate command inputs more strictly."
+    },
+    {
+      "id": "VULN-002",
+      "cwe": "CWE-78",
+      "severity": "medium",
+      "title": "Shell Command Execution with shell:true in Post-Evaluation Script",
+      "description": "The ScriptPostEvaluation class in src/post-evaluation/script.ts uses spawn() with shell:true option (line 166). Similar to the pre-execution script, this could allow command injection if configuration files are compromised or come from untrusted sources.",
+      "file": "src/post-evaluation/script.ts",
+      "line": 166,
+      "recommendation": "Implement command validation or use spawn with shell:false. Consider creating a restricted set of allowed operations for post-evaluation scripts."
+    },
+    {
+      "id": "VULN-003",
+      "cwe": "CWE-200",
+      "severity": "low",
+      "title": "Full Process Environment Inherited in Post-Evaluation Script",
+      "description": "In ScriptPostEvaluation (src/post-evaluation/script.ts), the runScript method spreads the full process.env into the child process environment (line 51-59). This could expose sensitive environment variables to scripts that don't need them.",
+      "file": "src/post-evaluation/script.ts",
+      "line": 51,
+      "recommendation": "Filter process.env to only include necessary environment variables, similar to how ScriptPreExecution does it (lines 53-67 in pre-execution/script.ts). The pre-execution script properly sanitizes environment variables - apply the same pattern here."
+    },
+    {
+      "id": "VULN-004",
+      "cwe": "CWE-22",
+      "severity": "low",
+      "title": "Incomplete Path Traversal Prevention in isPathSafe Function",
+      "description": "The isPathSafe function in src/lib/shell-utils.ts (lines 73-90) rejects paths containing '..' but doesn't handle all edge cases like encoded path traversal (e.g., URL-encoded '..' sequences) or symbolic link attacks. However, the function is used in combination with path.resolve() in calling code which mitigates most risks.",
+      "file": "src/lib/shell-utils.ts",
+      "line": 73,
+      "recommendation": "Consider using path.normalize() before checking for path traversal, and verify the resolved path stays within the expected directory using isPathWithinWorkspace from path-utils.ts."
+    },
+    {
+      "id": "VULN-005",
+      "cwe": "CWE-918",
+      "severity": "low",
+      "title": "Partial SSRF Protection in Repository URL Validation",
+      "description": "The testCaseConfigSchema in src/schemas/testcase.schema.ts blocks localhost and common private IP ranges (lines 109-121), but doesn't cover all RFC1918 ranges (e.g., 172.17-31.x.x), IPv6 private addresses beyond ::1, or DNS rebinding attacks.",
+      "file": "src/schemas/testcase.schema.ts",
+      "line": 109,
+      "recommendation": "Expand IP range blocking to cover all RFC1918 addresses (172.16.0.0 - 172.31.255.255), link-local addresses (169.254.x.x), and consider implementing DNS resolution validation to prevent rebinding attacks."
+    },
+    {
+      "id": "VULN-006",
+      "cwe": "CWE-400",
+      "severity": "low",
+      "title": "Large Output Buffer in Claude Code Adapter",
+      "description": "The ClaudeCodeAdapter in src/adapters/claude-code.ts has a MAX_OUTPUT_SIZE of 10MB (line 26). While this provides protection, large outputs could still consume significant memory before truncation.",
+      "file": "src/adapters/claude-code.ts",
+      "line": 26,
+      "recommendation": "Consider implementing streaming output handling with incremental truncation rather than accumulating in memory before truncating."
+    },
+    {
+      "id": "VULN-007",
+      "cwe": "CWE-352",
+      "severity": "informational",
+      "title": "Webhook Post-Evaluation Lacks Request Signing",
+      "description": "The WebhookPostEvaluation in src/post-evaluation/webhook.ts sends POST requests to configured URLs without request signing or HMAC authentication (lines 124-174). While the URL is configured by the user, webhook endpoints typically expect signed requests for verification.",
+      "file": "src/post-evaluation/webhook.ts",
+      "line": 124,
+      "recommendation": "Consider adding optional HMAC-SHA256 request signing with a configurable secret, similar to GitHub webhooks, to allow receivers to verify request authenticity."
+    },
+    {
+      "id": "VULN-008",
+      "cwe": "CWE-532",
+      "severity": "informational",
+      "title": "Debug Logging May Expose Sensitive Information",
+      "description": "The CopilotCLIAdapter and ClaudeCodeAdapter log debug information including prompts and command arguments (e.g., lines 77-84 in copilot-cli.ts). While useful for debugging, this could expose sensitive information in log files.",
+      "file": "src/adapters/copilot-cli.ts",
+      "line": 77,
+      "recommendation": "Consider implementing log level filtering to prevent prompt content from being logged at INFO level. Truncate or redact sensitive portions of prompts in logs."
+    },
+    {
+      "id": "VULN-009",
+      "cwe": "CWE-611",
+      "severity": "informational",
+      "title": "YAML Parsing Without Explicit Options",
+      "description": "The config-parser.ts uses the yaml library's parse function without explicit security options (line 29). Modern yaml packages are generally safe by default, but explicit configuration is a best practice.",
+      "file": "src/lib/config-parser.ts",
+      "line": 29,
+      "recommendation": "Consider using explicit parse options to disable potentially dangerous YAML features if not needed, such as custom types or anchors."
+    },
+    {
+      "id": "VULN-010",
+      "cwe": "CWE-94",
+      "severity": "informational",
+      "title": "AI Prompt Injection Considerations",
+      "description": "The agentic-judge evaluator in src/evaluators/agentic-judge.ts constructs prompts from user-provided assertions (lines 256-302). While this is the intended functionality, malicious assertions could potentially manipulate AI agent behavior.",
+      "file": "src/evaluators/agentic-judge.ts",
+      "line": 256,
+      "recommendation": "Document prompt injection risks in security documentation. Consider implementing assertion content validation or sandboxing for untrusted configurations."
+    }
+  ]
+}
