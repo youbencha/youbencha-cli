@@ -14,14 +14,14 @@ import * as os from 'os';
 const isWindows = process.platform === 'win32';
 
 // Commands that work on both platforms
-const getEnvVarCommand = () => isWindows ? 'cmd' : 'printenv';
-const getEnvVarArgs = (varName: string) => isWindows ? ['/c', `echo %${varName}%`] : [varName];
-const getPrintAllEnvCommand = () => isWindows ? 'cmd' : 'printenv';
-const getPrintAllEnvArgs = () => isWindows ? ['/c', 'set'] : [];
-const getPwdCommand = () => isWindows ? 'cmd' : 'pwd';
-const getPwdArgs = () => isWindows ? ['/c', 'cd'] : [];
-const getFalseCommand = () => isWindows ? 'cmd' : 'false';
-const getFalseArgs = () => isWindows ? ['/c', 'exit 1'] : [];
+const getEnvVarCommand = (): string => isWindows ? 'cmd' : 'printenv';
+const getEnvVarArgs = (varName: string): string[] => isWindows ? ['/c', `echo %${varName}%`] : [varName];
+const getPrintAllEnvCommand = (): string => isWindows ? 'cmd' : 'printenv';
+const getPrintAllEnvArgs = (): string[] => isWindows ? ['/c', 'set'] : [];
+const getPwdCommand = (): string => isWindows ? 'cmd' : 'pwd';
+const getPwdArgs = (): string[] => isWindows ? ['/c', 'cd'] : [];
+const getFalseCommand = (): string => isWindows ? 'cmd' : 'false';
+const getFalseArgs = (): string[] => isWindows ? ['/c', 'exit 1'] : [];
 
 describe('ScriptPreExecution', () => {
   let executor: ScriptPreExecution;

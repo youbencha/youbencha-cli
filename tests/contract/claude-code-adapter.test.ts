@@ -27,7 +27,7 @@ describe('ClaudeCodeAdapter Contract Tests', () => {
   jest.setTimeout(30000);
 
   // Helper to skip tests when Claude is not available or integration tests disabled
-  const skipIfNoClaude = () => {
+  const skipIfNoClaude = (): boolean => {
     if (!RUN_INTEGRATION_TESTS) {
       console.log('Skipping: Set CLAUDE_CODE_INTEGRATION_TESTS=1 to run Claude CLI tests');
       return true;

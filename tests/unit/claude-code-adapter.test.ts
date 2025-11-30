@@ -25,7 +25,7 @@ describe('ClaudeCodeAdapter Unit Tests', () => {
   jest.setTimeout(30000);
 
   // Helper to skip tests when Claude is not available or integration tests disabled
-  const skipIfNoClaude = () => {
+  const skipIfNoClaude = (): boolean => {
     if (!RUN_INTEGRATION_TESTS) {
       console.log('Skipping: Set CLAUDE_CODE_INTEGRATION_TESTS=1 to run Claude CLI tests');
       return true;
@@ -141,7 +141,7 @@ describe('ClaudeCodeAdapter Unit Tests', () => {
 
   describe('buildClaudeCommand() with agent flag', () => {
     // Helper to create an agent file in the test workspace
-    const createAgentFile = async (name: string, content?: string) => {
+    const createAgentFile = async (name: string, content?: string): Promise<void> => {
       const agentDir = path.join(tempWorkspace, '.claude', 'agents');
       await fs.mkdir(agentDir, { recursive: true });
       const agentContent = content || `---

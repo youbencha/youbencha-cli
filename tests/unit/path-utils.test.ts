@@ -12,7 +12,7 @@ import {
 } from '../../src/lib/path-utils';
 
 // Helper to normalize path separators for cross-platform testing
-const normalizePath = (p: string) => p.replace(/[\\/]/g, '/');
+const normalizePath = (p: string): string => p.replace(/[\\\\]/g, '/');
 
 describe('Path Utilities', () => {
   describe('sanitizeWorkspaceName', () => {
@@ -92,7 +92,8 @@ describe('Path Utilities', () => {
       expect(normalizePath(paths.root)).toBe('/test/workspace');
       expect(normalizePath(paths.runDir)).toBe('/test/workspace/test-run');
       expect(normalizePath(paths.modifiedDir)).toBe('/test/workspace/test-run/src-modified');
-      expect(normalizePath(paths.expectedDir!)).toBe('/test/workspace/test-run/src-expected');
+      expect(paths.expectedDir).toBeDefined();
+      expect(normalizePath(paths.expectedDir as string)).toBe('/test/workspace/test-run/src-expected');
       expect(normalizePath(paths.artifactsDir)).toBe('/test/workspace/test-run/artifacts');
       expect(normalizePath(paths.evaluatorArtifactsDir)).toBe('/test/workspace/test-run/artifacts/evaluators');
       expect(normalizePath(paths.lockFile)).toBe('/test/workspace/test-run/.lock');
