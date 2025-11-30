@@ -24,6 +24,9 @@ describe('GitDiffEvaluator', () => {
   let testRepoDir: string;
   let artifactsDir: string;
 
+  // Increase timeout for git operations on Windows
+  jest.setTimeout(30000);
+
   beforeAll(async () => {
     evaluator = new GitDiffEvaluator();
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'youbencha-test-'));

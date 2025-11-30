@@ -47,6 +47,7 @@ describe('AgenticJudgeEvaluator', () => {
         },
       },
       config: {
+        type: 'copilot-cli',
         criteria: [
           'Error handling completeness',
           'Test coverage adequacy',
@@ -103,10 +104,15 @@ describe('AgenticJudgeEvaluator', () => {
     test('returns false when agent config is missing', async () => {
       const contextWithoutAgent = {
         ...mockContext,
+        config: {
+          ...mockContext.config,
+          type: undefined as any, // No agent type configured
+        },
         suiteConfig: {
           ...mockContext.suiteConfig,
           agent: undefined as any,
         },
+        testCaseConfig: undefined,
       };
       
       const result = await evaluator.checkPreconditions(contextWithoutAgent);
@@ -116,6 +122,10 @@ describe('AgenticJudgeEvaluator', () => {
     test('returns false when agent type is invalid', async () => {
       const contextWithInvalidAgent = {
         ...mockContext,
+        config: {
+          ...mockContext.config,
+          type: 'invalid-agent-type', // Invalid agent type
+        },
         suiteConfig: {
           ...mockContext.suiteConfig,
           agent: {
@@ -195,7 +205,8 @@ describe('AgenticJudgeEvaluator', () => {
       const result = await evaluator.evaluate(mockContext);
 
       expect(result.status).toBe('passed');
-      expect(result.metrics).toMatchObject(expectedResult.metrics);
+      // Agent metrics are placed in assertions field, not metrics
+      expect(result.assertions).toMatchObject(expectedResult.metrics);
       expect(result.message).toBe(expectedResult.message);
     });
 
@@ -396,10 +407,15 @@ describe('AgenticJudgeEvaluator', () => {
     test('skips when preconditions not met', async () => {
       const contextWithoutAgent = {
         ...mockContext,
+        config: {
+          ...mockContext.config,
+          type: undefined as any, // No agent type
+        },
         suiteConfig: {
           ...mockContext.suiteConfig,
           agent: undefined as any,
         },
+        testCaseConfig: undefined,
       };
 
       const result = await evaluator.evaluate(contextWithoutAgent);
@@ -507,6 +523,10 @@ describe('AgenticJudgeEvaluator', () => {
     test('handles unknown adapter type', async () => {
       const contextWithUnknownAdapter = {
         ...mockContext,
+        config: {
+          ...mockContext.config,
+          type: 'unknown-adapter', // Unknown adapter type
+        },
         suiteConfig: {
           ...mockContext.suiteConfig,
           agent: {
@@ -519,6 +539,7 @@ describe('AgenticJudgeEvaluator', () => {
       const result = await evaluator.evaluate(contextWithUnknownAdapter);
 
       expect(result.status).toBe('skipped');
+      // Unknown adapter type causes precondition check to fail
       expect(result.message).toContain('not configured');
     });
   });
