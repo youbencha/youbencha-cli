@@ -12,6 +12,9 @@ import { execSync } from 'child_process';
 import { rimraf } from 'rimraf';
 
 describe('Integration: Expected Reference Workflow', () => {
+  // Increase timeout for integration tests that involve git operations and builds
+  jest.setTimeout(60000);
+
   const testWorkspaceDir = path.join(__dirname, '..', '..', '.test-workspace-expected-ref');
   const testRepoDir = path.join(testWorkspaceDir, 'test-repo');
   const testSuiteConfig = path.join(testWorkspaceDir, 'expected-ref-suite.yaml');

@@ -500,10 +500,11 @@ describe('ExpectedDiffEvaluator', () => {
     });
 
     it('should handle file read errors gracefully', async () => {
-      // Create a file that will cause read error (if possible on the platform)
+      // Create a file that will cause read error (using path that doesn't exist on any platform)
+      const nonexistentPath = path.join(os.tmpdir(), 'youbencha-test-nonexistent-' + Date.now(), 'dir');
       const context: EvaluationContext = {
-        modifiedDir: '/nonexistent',
-        expectedDir: '/nonexistent',
+        modifiedDir: nonexistentPath,
+        expectedDir: nonexistentPath,
         artifactsDir,
         agentLog: mockAgentLog,
         config: {},

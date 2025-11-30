@@ -16,7 +16,9 @@ describe('Integration: Report Generation', () => {
     // Create a mock results.json file matching the ResultsBundle schema
     const mockResults = {
       version: '1.0.0',
-      suite: {
+      test_case: {
+        name: 'test-case-1',
+        description: 'Test case for integration testing',
         config_file: 'test-suite.yaml',
         config_hash: 'abc123',
         repo: 'https://github.com/test/repo',
@@ -123,7 +125,7 @@ describe('Integration: Report Generation', () => {
     // Verify required sections are present
     expect(reportContent).toContain('# youBencha Evaluation Report');
     expect(reportContent).toContain('## Summary');
-    expect(reportContent).toContain('## Suite Configuration');
+    expect(reportContent).toContain('## Test Case Configuration');
     expect(reportContent).toContain('## Execution Details');
     expect(reportContent).toContain('## Agent Execution');
     expect(reportContent).toContain('## Evaluator Results');
@@ -183,7 +185,7 @@ describe('Integration: Report Generation', () => {
     const jsonData = JSON.parse(jsonContent);
     
     expect(jsonData).toHaveProperty('version');
-    expect(jsonData).toHaveProperty('suite');
+    expect(jsonData).toHaveProperty('test_case');
     expect(jsonData).toHaveProperty('evaluators');
   }, 30000);
 

@@ -29,14 +29,17 @@ describe('Integration: Run Command', () => {
     execSync('git commit -m "Initial commit"', { cwd: testRepoDir });
 
     // Create test suite configuration
+    // Note: Using a well-known public GitHub repo for schema validation
+    // The actual test will check workspace creation, not full execution
     const suiteYaml = `
-version: "1.0"
-repo: "${testRepoDir.replace(/\\/g, '/')}"
-branch: main
+name: run-command-integration-test
+description: Integration test for run command
+repo: "https://github.com/octocat/Hello-World.git"
+branch: master
 agent:
-  adapter: copilot-cli
-  version: 1.0
-  prompt: "Add a new line to test.txt"
+  type: copilot-cli
+  config:
+    prompt: "Add a new line to README"
 evaluators:
   - name: git-diff
     config: {}

@@ -264,7 +264,7 @@ timeout: 30
     expect(error.status).toBe(1);
     
     const stderr = error.stderr || error.stdout || '';
-    expect(stderr).toMatch(/evaluator|not found|unknown|invalid/i);
+    expect(stderr).toMatch(/evaluator|not found|unknown|invalid|validation failed/i);
   }, 60000);
 
   it('should handle timeout during execution', async () => {

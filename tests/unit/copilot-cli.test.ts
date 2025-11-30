@@ -37,7 +37,9 @@ describe('CopilotCLIAdapter', () => {
       expect(typeof isAvailable).toBe('boolean');
     });
 
-    it('should return false when copilot-cli is not in PATH', async () => {
+    // This test only works reliably on Unix-like systems where PATH controls binary lookup
+    // On Windows, 'where' can find executables through other means like App Paths registry
+    (process.platform === 'win32' ? it.skip : it)('should return false when copilot-cli is not in PATH', async () => {
       // Test with modified PATH that excludes copilot-cli
       const originalPath = process.env.PATH;
       process.env.PATH = '';
@@ -62,6 +64,16 @@ describe('CopilotCLIAdapter', () => {
   });
 
   describe('execute', () => {
+    // Skip execute tests unless COPILOT_CLI_INTEGRATION_TESTS env var is set
+    // These tests call the real CLI and will timeout in CI/development environments
+    const skipIfNoCopilotCLI = (): boolean => {
+      if (!process.env.COPILOT_CLI_INTEGRATION_TESTS) {
+        console.log('Skipping: Set COPILOT_CLI_INTEGRATION_TESTS=1 to run real CLI tests');
+        return true;
+      }
+      return false;
+    };
+
     const mockContext: AgentExecutionContext = {
       workspaceDir: '/tmp/youbencha/workspace',
       repoDir: '/tmp/youbencha/workspace/src-modified',
@@ -77,6 +89,7 @@ describe('CopilotCLIAdapter', () => {
     };
 
     it('should execute copilot-cli with correct parameters', async () => {
+      if (skipIfNoCopilotCLI()) return;
       // This test requires copilot-cli to be installed
       // Will be skipped in CI without proper setup
       try {
@@ -96,6 +109,7 @@ describe('CopilotCLIAdapter', () => {
     });
 
     it('should return success status on successful execution', async () => {
+      if (skipIfNoCopilotCLI()) return;
       // Mock successful execution
       const result = await adapter.execute(mockContext);
       
@@ -105,6 +119,7 @@ describe('CopilotCLIAdapter', () => {
     });
 
     it('should return failed status on non-zero exit code', async () => {
+      if (skipIfNoCopilotCLI()) return;
       // Test with invalid configuration to trigger failure
       const invalidContext: AgentExecutionContext = {
         ...mockContext,
@@ -124,6 +139,7 @@ describe('CopilotCLIAdapter', () => {
     });
 
     it('should handle timeout correctly', async () => {
+      if (skipIfNoCopilotCLI()) return;
       // Test with very short timeout
       const timeoutContext: AgentExecutionContext = {
         ...mockContext,
@@ -144,6 +160,7 @@ describe('CopilotCLIAdapter', () => {
     });
 
     it('should capture stdout and stderr', async () => {
+      if (skipIfNoCopilotCLI()) return;
       try {
         const result = await adapter.execute(mockContext);
         
@@ -155,6 +172,7 @@ describe('CopilotCLIAdapter', () => {
     });
 
     it('should respect environment variables', async () => {
+      if (skipIfNoCopilotCLI()) return;
       const envContext: AgentExecutionContext = {
         ...mockContext,
         env: {
@@ -172,6 +190,7 @@ describe('CopilotCLIAdapter', () => {
     });
 
     it('should calculate duration correctly', async () => {
+      if (skipIfNoCopilotCLI()) return;
       try {
         const result = await adapter.execute(mockContext);
         
@@ -369,7 +388,9 @@ describe('CopilotCLIAdapter', () => {
   });
 
   describe('error handling', () => {
-    it('should handle missing copilot-cli binary', async () => {
+    // This test only works reliably on Unix-like systems where PATH controls binary lookup
+    // On Windows, 'where' can find executables through other means like App Paths registry
+    (process.platform === 'win32' ? it.skip : it)('should handle missing copilot-cli binary', async () => {
       const originalPath = process.env.PATH;
       process.env.PATH = '';
       
