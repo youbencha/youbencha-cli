@@ -61,14 +61,21 @@ export function sanitizeWorkspaceName(name: string): string {
  * @param workspaceRoot - Root workspace directory (default: .youbencha-workspace)
  * @param runId - Unique run identifier (default: timestamp-based)
  * @param workspaceName - Custom workspace name (optional, creates human-readable folder)
- * @returns Workspace path structure
+ * @returns Workspace path structure with all absolute paths
  */
 export function generateWorkspacePaths(
   workspaceRoot?: string,
   runId?: string,
   workspaceName?: string
 ): WorkspacePaths {
-  const root = workspaceRoot || path.join(process.cwd(), '.youbencha-workspace');
+  // Default to .youbencha-workspace under current working directory
+  const rawRoot = workspaceRoot || path.join(process.cwd(), '.youbencha-workspace');
+  
+  // Ensure the root is an absolute path to guarantee consistent behavior
+  // regardless of which directory the agent runs from (e.g., src-modified).
+  // This fixes an issue where relative paths would cause session logs to be
+  // created inside src-modified when Copilot CLI runs with cwd set to that directory.
+  const root = path.isAbsolute(rawRoot) ? rawRoot : path.resolve(rawRoot);
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')[0];
   const uniqueSuffix = Date.now();
   

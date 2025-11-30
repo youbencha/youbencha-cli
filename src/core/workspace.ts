@@ -125,7 +125,12 @@ export class WorkspaceManager {
    * @param defaultTimeout - Default timeout for Git operations in ms (default: 300000)
    */
   constructor(workspaceRoot?: string, defaultTimeout: number = 300000) {
-    this.workspaceRoot = workspaceRoot || path.join(process.cwd(), '.youbencha-workspace');
+    // Default to .youbencha-workspace under current working directory
+    const rawRoot = workspaceRoot || path.join(process.cwd(), '.youbencha-workspace');
+    
+    // Ensure the root is an absolute path to guarantee consistent behavior
+    // regardless of which directory the agent runs from (e.g., src-modified)
+    this.workspaceRoot = path.isAbsolute(rawRoot) ? rawRoot : path.resolve(rawRoot);
     this.defaultTimeout = defaultTimeout;
   }
   
