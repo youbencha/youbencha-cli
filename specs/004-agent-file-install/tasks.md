@@ -53,11 +53,11 @@ Based on plan.md, this is a single-project TypeScript CLI at repository root wit
 
 ### Implementation for User Story 1
 
-- [ ] T011 [US1] Import `installAgentFiles` from `../../lib/agent-files.js` in `src/cli/commands/init.ts`
-- [ ] T012 [US1] Add agent file installation call after testcase.yaml creation in `src/cli/commands/init.ts`
-- [ ] T013 [US1] Display status for each agent file (created/skipped/overwritten) matching CLI contract output format in `src/cli/commands/init.ts`
-- [ ] T014 [US1] Update "Next Steps" output to mention agent files were installed in `src/cli/commands/init.ts`
-- [ ] T015 [US1] Handle agent installation errors gracefully - partial success should still report what was created in `src/cli/commands/init.ts`
+- [X] T011 [US1] Import `installAgentFiles` from `../../lib/agent-files.js` in `src/cli/commands/init.ts`
+- [X] T012 [US1] Add agent file installation call after testcase.yaml creation in `src/cli/commands/init.ts`
+- [X] T013 [US1] Display status for each agent file (created/skipped/overwritten) matching CLI contract output format in `src/cli/commands/init.ts`
+- [X] T014 [US1] Update "Next Steps" output to mention agent files were installed in `src/cli/commands/init.ts`
+- [X] T015 [US1] Handle agent installation errors gracefully - partial success should still report what was created in `src/cli/commands/init.ts`
 
 **Checkpoint**: `yb init` creates testcase.yaml AND both agent files. US1 is fully functional and testable.
 
@@ -71,15 +71,15 @@ Based on plan.md, this is a single-project TypeScript CLI at repository root wit
 
 ### Implementation for User Story 2
 
-- [ ] T016 [US2] Create `src/cli/commands/install-agents.ts` with `installAgentsCommand` handler function
-- [ ] T017 [US2] Implement "Installing agent files..." spinner message at start of command in `src/cli/commands/install-agents.ts`
-- [ ] T018 [US2] Call `installAgentFiles()` with force option from command options in `src/cli/commands/install-agents.ts`
-- [ ] T019 [US2] Display warning message when `--force` flag is used before installation in `src/cli/commands/install-agents.ts`
-- [ ] T020 [US2] Display status for each file per CLI contract output format (✓ Created, - Skipped, ✓ Overwritten, ✗ Failed) in `src/cli/commands/install-agents.ts`
-- [ ] T021 [US2] Display success message with explanation of what files do in `src/cli/commands/install-agents.ts`
-- [ ] T022 [US2] Display "use --force to overwrite" hint when files were skipped in `src/cli/commands/install-agents.ts`
-- [ ] T023 [US2] Exit with code 1 if any errors occurred, 0 otherwise in `src/cli/commands/install-agents.ts`
-- [ ] T024 [US2] Import and register `install-agents` command in `src/cli/index.ts` with `--force` option and help text
+- [X] T016 [US2] Create `src/cli/commands/install-agents.ts` with `installAgentsCommand` handler function
+- [X] T017 [US2] Implement "Installing agent files..." spinner message at start of command in `src/cli/commands/install-agents.ts`
+- [X] T018 [US2] Call `installAgentFiles()` with force option from command options in `src/cli/commands/install-agents.ts`
+- [X] T019 [US2] Display warning message when `--force` flag is used before installation in `src/cli/commands/install-agents.ts`
+- [X] T020 [US2] Display status for each file per CLI contract output format (✓ Created, - Skipped, ✓ Overwritten, ✗ Failed) in `src/cli/commands/install-agents.ts`
+- [X] T021 [US2] Display success message with explanation of what files do in `src/cli/commands/install-agents.ts`
+- [X] T022 [US2] Display "use --force to overwrite" hint when files were skipped in `src/cli/commands/install-agents.ts`
+- [X] T023 [US2] Exit with code 1 if any errors occurred, 0 otherwise in `src/cli/commands/install-agents.ts`
+- [X] T024 [US2] Import and register `install-agents` command in `src/cli/index.ts` with `--force` option and help text
 
 **Checkpoint**: `yb install-agents` and `yb install-agents --force` work independently. US2 is fully functional.
 

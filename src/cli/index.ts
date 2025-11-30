@@ -19,6 +19,7 @@ import { registerSuggestTestCaseCommand } from './commands/suggest-testcase.js';
 import { listCommand } from './commands/list.js';
 import { initCommand } from './commands/init.js';
 import { validateCommand } from './commands/validate.js';
+import { installAgentsCommand } from './commands/install-agents.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -61,6 +62,24 @@ Examples:
   This creates a fully-commented starter configuration you can customize.
     `)
     .action(initCommand);
+
+  // Register install-agents command (install agent files for agentic-judge)
+  program
+    .command('install-agents')
+    .description('Install agentic-judge agent files for GitHub Copilot CLI and Claude Code')
+    .option('--force', 'Overwrite existing agent files')
+    .addHelpText('after', `
+Examples:
+  $ ${commandName} install-agents                  # Install agent files (skip existing)
+  $ ${commandName} install-agents --force          # Overwrite existing agent files
+
+This installs the following files in your current directory:
+  - .github/agents/agentic-judge.md (for GitHub Copilot CLI)
+  - .claude/agents/agentic-judge.md (for Claude Code)
+
+These files are required for the agentic-judge evaluator to function.
+    `)
+    .action(installAgentsCommand);
 
   // Register commands
   program
