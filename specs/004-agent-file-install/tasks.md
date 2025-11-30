@@ -21,9 +21,9 @@ Based on plan.md, this is a single-project TypeScript CLI at repository root wit
 
 **Purpose**: Project initialization and core module structure
 
-- [ ] T001 Create agent content module directory at `src/agents/`
-- [ ] T002 [P] Create agent file content constants in `src/agents/agentic-judge.ts` with `GITHUB_AGENTIC_JUDGE_CONTENT` and `CLAUDE_AGENTIC_JUDGE_CONTENT` string exports
-- [ ] T003 [P] Create barrel export file `src/agents/index.ts` exporting all agent content constants
+- [X] T001 Create agent content module directory at `src/agents/`
+- [X] T002 [P] Create agent file content constants in `src/agents/agentic-judge.ts` with `GITHUB_AGENTIC_JUDGE_CONTENT` and `CLAUDE_AGENTIC_JUDGE_CONTENT` string exports
+- [X] T003 [P] Create barrel export file `src/agents/index.ts` exporting all agent content constants
 
 ---
 
@@ -33,13 +33,13 @@ Based on plan.md, this is a single-project TypeScript CLI at repository root wit
 
 **⚠️ CRITICAL**: User Stories 1 and 2 both depend on this phase
 
-- [ ] T004 Create `AgentFileDefinition`, `InstallResult`, `InstallAgentsOptions`, and `InstallAgentsResult` interfaces in `src/lib/agent-files.ts`
-- [ ] T005 Implement `AGENT_FILES` constant array with both GitHub and Claude agent file definitions in `src/lib/agent-files.ts`
-- [ ] T006 Implement `getAgentFiles()` function returning readonly agent file definitions in `src/lib/agent-files.ts`
-- [ ] T007 Implement helper `fileExists()` utility function using `fs.access()` in `src/lib/agent-files.ts`
-- [ ] T008 Implement helper `installSingleFile()` function with directory creation and conflict handling in `src/lib/agent-files.ts`
-- [ ] T009 Implement `installAgentFiles()` main function that iterates agent files and aggregates results in `src/lib/agent-files.ts`
-- [ ] T010 Add error code mapping for EACCES, ENOSPC, EROFS to user-friendly messages in `src/lib/agent-files.ts`
+- [X] T004 Create `AgentFileDefinition`, `InstallResult`, `InstallAgentsOptions`, and `InstallAgentsResult` interfaces in `src/lib/agent-files.ts`
+- [X] T005 Implement `AGENT_FILES` constant array with both GitHub and Claude agent file definitions in `src/lib/agent-files.ts`
+- [X] T006 Implement `getAgentFiles()` function returning readonly agent file definitions in `src/lib/agent-files.ts`
+- [X] T007 Implement helper `fileExists()` utility function using `fs.access()` in `src/lib/agent-files.ts`
+- [X] T008 Implement helper `installSingleFile()` function with directory creation and conflict handling in `src/lib/agent-files.ts`
+- [X] T009 Implement `installAgentFiles()` main function that iterates agent files and aggregates results in `src/lib/agent-files.ts`
+- [X] T010 Add error code mapping for EACCES, ENOSPC, EROFS to user-friendly messages in `src/lib/agent-files.ts`
 
 **Checkpoint**: Foundation ready - `installAgentFiles()` can be called by either command
 
