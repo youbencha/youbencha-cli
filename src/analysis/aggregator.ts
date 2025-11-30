@@ -256,8 +256,8 @@ export class Aggregator {
         overall_pass_rate: sorted.length > 0 ? passed / sorted.length : 0,
         evaluator_pass_rate: evalTotal > 0 ? evalPassed / evalTotal : 0,
         avg_duration_ms: sorted.length > 0 ? totalDuration / sorted.length : 0,
-        min_duration_ms: Math.min(...durations),
-        max_duration_ms: Math.max(...durations),
+        min_duration_ms: durations.length > 0 ? Math.min(...durations) : 0,
+        max_duration_ms: durations.length > 0 ? Math.max(...durations) : 0,
         agents_used: Array.from(agentStats.entries()).map(([type, stat]) => ({
           type,
           run_count: stat.runs,
@@ -377,8 +377,8 @@ export class Aggregator {
         timeout_count: timeoutCount,
         avg_exit_code: agentRecords.length > 0 ? totalExitCode / agentRecords.length : 0,
         avg_duration_ms: agentRecords.length > 0 ? totalDuration / agentRecords.length : 0,
-        min_duration_ms: Math.min(...durations),
-        max_duration_ms: Math.max(...durations),
+        min_duration_ms: durations.length > 0 ? Math.min(...durations) : 0,
+        max_duration_ms: durations.length > 0 ? Math.max(...durations) : 0,
         test_cases: Array.from(testCaseStats.entries()).map(([name, stat]) => ({
           name,
           run_count: stat.runs,
