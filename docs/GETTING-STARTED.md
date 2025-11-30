@@ -18,9 +18,24 @@ youBencha helps you evaluate AI coding agents objectively. This guide will get y
 npm install -g youbencha
 ```
 
-### 2. Create a simple evaluation
+### 2. Initialize your project
 
-Create a file called `my-first-testcase.yaml` (or `my-first-testcase.json` if you prefer JSON):
+Create a starter configuration and install agent files with a single command:
+
+```bash
+yb init
+```
+
+This creates:
+- `testcase.yaml` - A starter test case configuration
+- `.github/agents/agentic-judge.md` - Agent file for GitHub Copilot CLI
+- `.claude/agents/agentic-judge.md` - Agent file for Claude Code
+
+The agent files enable the `agentic-judge` evaluator to work with your preferred coding agent.
+
+### 3. Customize and run
+
+Edit `testcase.yaml` for your use case, or create a new file like `my-first-testcase.yaml`:
 
 **YAML format:**
 ```yaml
@@ -76,14 +91,14 @@ evaluators:
 }
 ```
 
-### 3. Run it!
+### 4. Run it!
 
 ```bash
-# If using YAML
-yb run -c my-first-testcase.yaml
+# Run the default testcase.yaml created by init
+yb run -c testcase.yaml
 
-# If using JSON
-yb run -c my-first-testcase.json
+# Or run a custom configuration
+yb run -c my-first-testcase.yaml
 ```
 
 You'll see:
@@ -92,7 +107,7 @@ You'll see:
 3. Evaluators analyze the output
 4. Results are saved to `.youbencha-workspace/`
 
-### 4. View the report
+### 5. View the report
 
 ```bash
 yb report --from .youbencha-workspace/run-*/artifacts/results.json
@@ -193,6 +208,18 @@ evaluators:
 ```
 
 ## Common Tasks
+
+### Updating agent files
+
+When youBencha is updated with new agent file versions, you can update them without reinitializing:
+
+```bash
+# Skip existing files (safe)
+yb install-agents
+
+# Force overwrite existing files
+yb install-agents --force
+```
 
 ### Workspace cleanup
 

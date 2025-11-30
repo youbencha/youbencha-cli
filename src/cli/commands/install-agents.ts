@@ -10,19 +10,32 @@ import { createSpinner } from '../../lib/progress.js';
 import { installAgentFiles } from '../../lib/agent-files.js';
 
 /**
- * Options for install-agents command
+ * Options for the install-agents command.
+ * 
+ * @interface InstallAgentsCommandOptions
  */
 interface InstallAgentsCommandOptions {
+  /** Whether to overwrite existing agent files */
   force?: boolean;
 }
 
 /**
- * Install-agents command handler
+ * Install-agents command handler.
  * 
- * Installs agent files for GitHub Copilot CLI and Claude Code.
- * Creates parent directories as needed and handles existing files.
+ * Installs agentic-judge agent files for GitHub Copilot CLI and Claude Code.
+ * Creates parent directories as needed and handles existing files with
+ * appropriate skip/overwrite behavior.
  * 
- * @param options - Command options
+ * @param options - Command options controlling installation behavior
+ * @returns Promise that resolves when installation is complete
+ * 
+ * @example
+ * // Install agent files (skip existing)
+ * await installAgentsCommand({});
+ * 
+ * @example
+ * // Force overwrite existing files
+ * await installAgentsCommand({ force: true });
  */
 export async function installAgentsCommand(options: InstallAgentsCommandOptions): Promise<void> {
   const spinner = createSpinner('Installing agent files...');
@@ -62,16 +75,30 @@ export async function installAgentsCommand(options: InstallAgentsCommandOptions)
   
   logger.info('');
   
+  // Display summary counts when there are mixed results
+  const totalFiles = result.files.length;
+  const { created, skipped, overwritten, errors } = result.summary;
+  
+  if (errors > 0 || (skipped > 0 && (created > 0 || overwritten > 0))) {
+    // Show summary counts for mixed results
+    logger.info(`Summary: ${totalFiles} files processed`);
+    if (created > 0) logger.info(`  ✓ Created: ${created}`);
+    if (overwritten > 0) logger.info(`  ✓ Overwritten: ${overwritten}`);
+    if (skipped > 0) logger.info(`  - Skipped: ${skipped}`);
+    if (errors > 0) logger.error(`  ✗ Failed: ${errors}`);
+    logger.info('');
+  }
+  
   // Display appropriate success/hint messages
   if (result.success) {
-    if (result.summary.skipped > 0 && result.summary.created === 0 && result.summary.overwritten === 0) {
+    if (skipped > 0 && created === 0 && overwritten === 0) {
       // All files were skipped
       logger.info('ℹ️  Agent files already exist. Use --force to overwrite.');
-    } else if (result.summary.skipped > 0) {
+    } else if (skipped > 0) {
       // Some files were created/overwritten, some skipped
       logger.info('✨ Agent files installed successfully!');
-      logger.info(`ℹ️  ${result.summary.skipped} file${result.summary.skipped > 1 ? 's' : ''} skipped (use --force to overwrite)`);
-    } else if (result.summary.overwritten > 0) {
+      logger.info(`ℹ️  ${skipped} file${skipped > 1 ? 's' : ''} skipped (use --force to overwrite)`);
+    } else if (overwritten > 0) {
       // Files were overwritten
       logger.info('✨ Agent files updated successfully!');
     } else {

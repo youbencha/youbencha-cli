@@ -93,9 +93,9 @@ Based on plan.md, this is a single-project TypeScript CLI at repository root wit
 
 ### Implementation for User Story 3
 
-- [ ] T025 [US3] Ensure consistent status indicators across both commands: ✓ for success, - for skip, ✗ for error in `src/cli/commands/init.ts` and `src/cli/commands/install-agents.ts`
-- [ ] T026 [US3] Add summary counts output when some files were skipped or had errors in `src/cli/commands/install-agents.ts`
-- [ ] T027 [US3] Add file path in output messages uses relative paths for readability in both commands
+- [X] T025 [US3] Ensure consistent status indicators across both commands: ✓ for success, - for skip, ✗ for error in `src/cli/commands/init.ts` and `src/cli/commands/install-agents.ts`
+- [X] T026 [US3] Add summary counts output when some files were skipped or had errors in `src/cli/commands/install-agents.ts`
+- [X] T027 [US3] Add file path in output messages uses relative paths for readability in both commands
 
 **Checkpoint**: All output follows consistent format. US3 complete.
 
@@ -105,11 +105,11 @@ Based on plan.md, this is a single-project TypeScript CLI at repository root wit
 
 **Purpose**: Documentation, cleanup, and final validation
 
-- [ ] T028 [P] Add JSDoc comments to all exported functions and interfaces in `src/lib/agent-files.ts`
-- [ ] T029 [P] Add JSDoc comments to `installAgentsCommand` in `src/cli/commands/install-agents.ts`
-- [ ] T030 Verify quickstart.md scenarios work end-to-end (new user init, existing user install-agents, force update)
-- [ ] T031 Run `npm run build` and verify `src/agents/` module is correctly compiled to `dist/agents/`
-- [ ] T032 [P] Update GETTING-STARTED.md to mention agent file installation during init
+- [X] T028 [P] Add JSDoc comments to all exported functions and interfaces in `src/lib/agent-files.ts`
+- [X] T029 [P] Add JSDoc comments to `installAgentsCommand` in `src/cli/commands/install-agents.ts`
+- [X] T030 Verify quickstart.md scenarios work end-to-end (new user init, existing user install-agents, force update)
+- [X] T031 Run `npm run build` and verify `src/agents/` module is correctly compiled to `dist/agents/`
+- [X] T032 [P] Update GETTING-STARTED.md to mention agent file installation during init
 
 ---
 

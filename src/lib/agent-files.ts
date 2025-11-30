@@ -13,7 +13,10 @@ import {
 } from '../agents/index.js';
 
 /**
- * Definition of an agent file that can be installed
+ * Definition of an agent file that can be installed.
+ * Contains the file path, content, and metadata for installation.
+ * 
+ * @interface AgentFileDefinition
  */
 export interface AgentFileDefinition {
   /** Relative path from target directory (e.g., ".github/agents/agentic-judge.md") */
@@ -27,7 +30,10 @@ export interface AgentFileDefinition {
 }
 
 /**
- * Result of attempting to install an agent file
+ * Result of attempting to install a single agent file.
+ * Reports the outcome of the installation operation.
+ * 
+ * @interface InstallResult
  */
 export interface InstallResult {
   /** The file path that was processed */
@@ -41,7 +47,10 @@ export interface InstallResult {
 }
 
 /**
- * Options for agent file installation
+ * Options for agent file installation.
+ * Controls installation behavior such as force overwrite and target directory.
+ * 
+ * @interface InstallAgentsOptions
  */
 export interface InstallAgentsOptions {
   /** Overwrite existing files if true */
@@ -52,7 +61,10 @@ export interface InstallAgentsOptions {
 }
 
 /**
- * Complete result of install-agents operation
+ * Complete result of the install-agents operation.
+ * Contains individual file results, summary counts, and overall success status.
+ * 
+ * @interface InstallAgentsResult
  */
 export interface InstallAgentsResult {
   /** Results for each agent file */
