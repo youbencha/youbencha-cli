@@ -159,6 +159,35 @@ yb report --from .youbencha-workspace/run-*/artifacts/results.json
 - **Developer-Friendly**: Clear error messages, helpful CLI, extensive examples
 - **Comprehensive Reports**: From metrics to human-readable insights
 
+## Configuration
+
+youBencha supports configuration files to customize default behavior and define reusable variables.
+
+### Quick Start
+
+```bash
+# Create project-level config (.youbencharc)
+yb config init
+
+# Create user-level config (~/.youbencharc)
+yb config init --global
+
+# View current configuration
+yb config list
+
+# Set a configuration value
+yb config set workspace_dir /tmp/my-workspace
+```
+
+### Key Features
+
+- **Default Workspace Location**: Set default workspace and output directories
+- **Variable Substitution**: Define reusable variables for test case configs
+- **Default Timeouts**: Configure default timeouts for agents and operations
+- **Environment-Specific Settings**: Separate user and project configurations
+
+See the [Configuration Guide](docs/configuration.md) for complete documentation.
+
 ## Commands
 
 ### `yb run`
@@ -198,6 +227,35 @@ Options:
   --format <format>  Report format: json, markdown (default: markdown)
   --output <path>    Output path (optional)
 ```
+
+### `yb config`
+
+Manage youBencha configuration files.
+
+```bash
+# Initialize configuration
+yb config init                      # Create .youbencharc in current directory
+yb config init --global             # Create ~/.youbencharc in home directory
+
+# View configuration
+yb config list                      # Show all settings
+yb config get workspace_dir         # Get specific setting
+yb config get agent.timeout_ms      # Get nested setting (dot notation)
+
+# Modify configuration
+yb config set workspace_dir /tmp/ws # Set a value
+yb config set log_level debug       # Values auto-convert to correct type
+yb config unset workspace_dir       # Remove a setting
+```
+
+**Use Cases:**
+
+- Set default workspace location for all projects
+- Define reusable variables for test case configurations
+- Configure default timeouts and concurrency settings
+- Separate user preferences from project settings
+
+See the [Configuration Guide](docs/configuration.md) for complete documentation.
 
 ### `yb suggest-testcase`
 

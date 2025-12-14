@@ -5,7 +5,7 @@
  */
 
 import * as fs from 'fs/promises';
-import { stringify as stringifyYaml } from 'yaml';
+import { stringify as stringifyYaml, parse as parseYaml } from 'yaml';
 import { 
   loadConfig, 
   getDefaultConfigPath, 
@@ -185,8 +185,7 @@ export async function configSetCommand(
     
     // Read existing config
     const content = await fs.readFile(activeFile, 'utf-8');
-    const yaml = require('yaml');
-    config = yaml.parse(content) || {};
+    config = parseYaml(content) || {};
   } else {
     // Start with empty config
     config = {};
@@ -245,8 +244,7 @@ export async function configUnsetCommand(
   
   // Read existing config
   const content = await fs.readFile(activeFile, 'utf-8');
-  const yaml = require('yaml');
-  const config = yaml.parse(content) || {};
+  const config = parseYaml(content) || {};
   
   // Parse key path and remove value
   const keys = key.split('.');
