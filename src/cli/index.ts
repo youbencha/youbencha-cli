@@ -20,6 +20,13 @@ import { listCommand } from './commands/list.js';
 import { initCommand } from './commands/init.js';
 import { validateCommand } from './commands/validate.js';
 import { installAgentsCommand } from './commands/install-agents.js';
+import { 
+  configInitCommand, 
+  configListCommand, 
+  configGetCommand, 
+  configSetCommand,
+  configUnsetCommand 
+} from './commands/config.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -165,6 +172,80 @@ Examples:
   Use this to check your configuration before committing or running.
     `)
     .action(validateCommand);
+
+  // Register config command (manage configuration)
+  const configCmd = program
+    .command('config')
+    .description('Manage youBencha configuration');
+
+  configCmd
+    .command('init')
+    .description('Create a configuration file')
+    .option('--global', 'Create user-level config (~/.youbencharc) instead of project-level')
+    .option('--force', 'Overwrite existing configuration file')
+    .addHelpText('after', `
+Examples:
+  $ ${commandName} config init                     # Create .youbencharc in current directory
+  $ ${commandName} config init --global            # Create ~/.youbencharc
+  $ ${commandName} config init --force             # Overwrite existing config
+  
+  Configuration files use YAML format and support settings like:
+  - workspace_dir: Default workspace location
+  - output_dir: Default evaluator output location
+  - variables: Environment variables for config substitution
+    `)
+    .action(configInitCommand);
+
+  configCmd
+    .command('list')
+    .description('Show current configuration')
+    .addHelpText('after', `
+Examples:
+  $ ${commandName} config list                     # Show merged configuration from all sources
+  
+  This displays the effective configuration after merging:
+  - Default values
+  - User-level config (~/.youbencharc)
+  - Project-level config (.youbencharc)
+    `)
+    .action(configListCommand);
+
+  configCmd
+    .command('get')
+    .description('Get a configuration value')
+    .argument('<key>', 'Configuration key (supports dot notation)')
+    .addHelpText('after', `
+Examples:
+  $ ${commandName} config get workspace_dir        # Get workspace directory
+  $ ${commandName} config get agent.timeout_ms     # Get nested value with dot notation
+    `)
+    .action(configGetCommand);
+
+  configCmd
+    .command('set')
+    .description('Set a configuration value')
+    .argument('<key>', 'Configuration key')
+    .argument('<value>', 'Value to set')
+    .option('--global', 'Set in user-level config instead of project-level')
+    .addHelpText('after', `
+Examples:
+  $ ${commandName} config set workspace_dir /tmp/yb-workspace
+  $ ${commandName} config set agent.timeout_ms 900000
+  $ ${commandName} config set log_level debug --global
+    `)
+    .action(configSetCommand);
+
+  configCmd
+    .command('unset')
+    .description('Remove a configuration value')
+    .argument('<key>', 'Configuration key to remove')
+    .option('--global', 'Remove from user-level config instead of project-level')
+    .addHelpText('after', `
+Examples:
+  $ ${commandName} config unset workspace_dir
+  $ ${commandName} config unset agent.model --global
+    `)
+    .action(configUnsetCommand);
 
   // Parse arguments
   await program.parseAsync(process.argv);

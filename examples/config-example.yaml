@@ -1,0 +1,46 @@
+# youBencha Configuration File Example
+#
+# This file demonstrates all available configuration options.
+# Place this file as:
+# - .youbencharc (project-level) in your project directory
+# - ~/.youbencharc (user-level) in your home directory
+#
+# Priority: CLI flags > project config > user config > defaults
+
+# Default workspace directory for evaluation runs
+# Can be absolute path or relative to project root
+workspace_dir: .youbencha-workspace
+
+# Default output directory for eval-only runs
+# Can be absolute path or relative to project root
+output_dir: .youbencha-eval
+
+# Default timeout for operations in milliseconds (5 minutes)
+timeout_ms: 300000
+
+# Default log level (debug, info, warn, error)
+log_level: info
+
+# Whether to keep workspace after evaluation by default
+# Can be overridden by --delete-workspace flag
+keep_workspace: true
+
+# Environment variables for substitution in configuration files
+# These can be referenced using ${VAR_NAME} syntax in testcase.yaml
+variables:
+  PROJECT_NAME: my-project
+  REPO_BASE: https://github.com/myorg
+  DEFAULT_BRANCH: main
+
+# Default agent configuration
+agent:
+  # Default timeout for agent execution in milliseconds (10 minutes)
+  timeout_ms: 600000
+  
+  # Default model for agents that support model selection
+  # model: gpt-4o
+
+# Default evaluator configuration
+evaluators:
+  # Maximum number of concurrent evaluators
+  max_concurrent: 4
