@@ -174,20 +174,15 @@ export async function configSetCommand(
   
   // Load existing config or create new one
   let config: Config;
-  const exists = await configExists(level);
   
-  if (exists) {
-    const activeFile = await findActiveConfigFile();
-    if (!activeFile) {
-      logger.error('Failed to find config file');
-      process.exit(1);
-    }
-    
-    // Read existing config
-    const content = await fs.readFile(activeFile, 'utf-8');
+  // Check if config exists at the specific level
+  try {
+    await fs.access(configPath);
+    // Read existing config from the specific level's config file
+    const content = await fs.readFile(configPath, 'utf-8');
     config = parseYaml(content) || {};
-  } else {
-    // Start with empty config
+  } catch {
+    // Config doesn't exist at this level, start with empty config
     config = {};
   }
   
@@ -229,21 +224,18 @@ export async function configUnsetCommand(
   options: ConfigSetOptions
 ): Promise<void> {
   const level = options.global ? 'user' : 'project';
-  const exists = await configExists(level);
+  const configPath = getDefaultConfigPath(level);
   
-  if (!exists) {
-    logger.error(`No ${level}-level config file found`);
+  // Check if config exists at the specific level
+  try {
+    await fs.access(configPath);
+  } catch {
+    logger.error(`No ${level}-level config file found at ${configPath}`);
     process.exit(1);
   }
   
-  const activeFile = await findActiveConfigFile();
-  if (!activeFile) {
-    logger.error('Failed to find config file');
-    process.exit(1);
-  }
-  
-  // Read existing config
-  const content = await fs.readFile(activeFile, 'utf-8');
+  // Read existing config from the specific level's config file
+  const content = await fs.readFile(configPath, 'utf-8');
   const config = parseYaml(content) || {};
   
   // Parse key path and remove value
@@ -268,6 +260,7 @@ export async function configUnsetCommand(
   delete current[lastKey];
   
   // Write config file
-  await fs.writeFile(activeFile, stringifyYaml(config), 'utf-8');
+  await fs.writeFile(configPath, stringifyYaml(config), 'utf-8');
   logger.info(`✓ Removed ${key} from ${level}-level config`);
+  logger.info(`Config file: ${configPath}`);
 }
