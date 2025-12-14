@@ -202,9 +202,14 @@ export async function configSetCommand(
   
   // Try to parse value as number or boolean
   let parsedValue: string | number | boolean = value;
-  if (value === 'true') parsedValue = true;
-  else if (value === 'false') parsedValue = false;
-  else if (!isNaN(Number(value))) parsedValue = Number(value);
+  if (value === 'true') {
+    parsedValue = true;
+  } else if (value === 'false') {
+    parsedValue = false;
+  } else if (value.trim() !== '' && !isNaN(Number(value)) && /^-?\d+\.?\d*$/.test(value)) {
+    // Only convert to number if it looks like a valid number (digits, optional decimal, optional minus)
+    parsedValue = Number(value);
+  }
   
   current[lastKey] = parsedValue;
   
