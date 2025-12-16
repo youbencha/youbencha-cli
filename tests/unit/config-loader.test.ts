@@ -4,9 +4,6 @@
  * Unit tests for configuration loading, merging, and variable substitution.
  */
 
-import * as fs from 'fs/promises';
-import * as path from 'path';
-import * as os from 'os';
 import {
   substituteVariables,
   substituteVariablesInObject,

@@ -180,7 +180,7 @@ export async function configSetCommand(
     await fs.access(configPath);
     // Read existing config from the specific level's config file
     const content = await fs.readFile(configPath, 'utf-8');
-    config = parseYaml(content) || {};
+    config = (parseYaml(content) || {}) as Config;
   } catch {
     // Config doesn't exist at this level, start with empty config
     config = {};
@@ -188,7 +188,7 @@ export async function configSetCommand(
   
   // Parse key path and set value
   const keys = key.split('.');
-  let current: Record<string, unknown> = config as unknown as Record<string, unknown>;
+  let current = config as unknown as Record<string, unknown>;
   
   for (let i = 0; i < keys.length - 1; i++) {
     const k = keys[i];
@@ -241,11 +241,11 @@ export async function configUnsetCommand(
   
   // Read existing config from the specific level's config file
   const content = await fs.readFile(configPath, 'utf-8');
-  const config = parseYaml(content) || {};
+  const config = (parseYaml(content) || {}) as Record<string, unknown>;
   
   // Parse key path and remove value
   const keys = key.split('.');
-  let current: Record<string, unknown> = config;
+  let current = config;
   
   for (let i = 0; i < keys.length - 1; i++) {
     const k = keys[i];

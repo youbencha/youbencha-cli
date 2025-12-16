@@ -138,7 +138,7 @@ function mergeConfigs(...configs: (Config | null)[]): Config {
  * @returns String with variables substituted
  */
 export function substituteVariables(value: string, variables: Record<string, string>): string {
-  return value.replace(/\$\{([^}]+)\}/g, (match, varName) => {
+  return value.replace(/\$\{([^}]+)\}/g, (match, varName: string) => {
     if (varName in variables) {
       return variables[varName];
     }
@@ -160,12 +160,14 @@ export function substituteVariablesInObject<T>(obj: T, variables: Record<string,
   }
   
   if (Array.isArray(obj)) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return obj.map(item => substituteVariablesInObject(item, variables)) as T;
   }
   
   if (obj !== null && typeof obj === 'object') {
     const result: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(obj)) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       result[key] = substituteVariablesInObject(value, variables);
     }
     return result as T;

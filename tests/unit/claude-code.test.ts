@@ -14,11 +14,18 @@
 import { ClaudeCodeAdapter } from '../../src/adapters/claude-code.js';
 import { AgentExecutionContext, AgentExecutionResult } from '../../src/adapters/base.js';
 
+// Mock child_process to avoid real system calls in unit tests
+jest.mock('child_process', () => ({
+  exec: jest.fn(),
+  spawn: jest.fn(),
+}));
+
 describe('ClaudeCodeAdapter', () => {
   let adapter: ClaudeCodeAdapter;
 
   beforeEach(() => {
     adapter = new ClaudeCodeAdapter();
+    jest.clearAllMocks();
   });
 
   describe('metadata', () => {
@@ -32,22 +39,54 @@ describe('ClaudeCodeAdapter', () => {
   });
 
   describe('checkAvailability', () => {
-    it('should return boolean', async () => {
+    it('should return true when claude CLI is available and authenticated', async () => {
+      const mockExec = exec as jest.MockedFunction<typeof exec>;
+      
+      // Mock successful which/where command
+      mockExec.mockImplementationOnce((cmd, callback) => {
+        callback?.(null, { stdout: '/usr/local/bin/claude', stderr: '' } as any, '');
+        return {} as any;
+      });
+      
+      // Mock successful --version command
+      mockExec.mockImplementationOnce((cmd, callback) => {
+        callback?.(null, { stdout: 'Claude Code CLI 1.0.0', stderr: '' } as any, '');
+        return {} as any;
+      });
+
       const isAvailable = await adapter.checkAvailability();
-      expect(typeof isAvailable).toBe('boolean');
+      expect(isAvailable).toBe(true);
     });
 
-    // This test only works reliably on Unix-like systems where PATH controls binary lookup
-    // On Windows, 'where' can find executables through other means like App Paths registry
-    (process.platform === 'win32' ? it.skip : it)('should return false when claude CLI is not in PATH', async () => {
-      // Test with modified PATH that excludes claude
-      const originalPath = process.env.PATH;
-      process.env.PATH = '';
+    it('should return false when claude CLI is not found', async () => {
+      const mockExec = exec as jest.MockedFunction<typeof exec>;
+      
+      // Mock failed which/where command
+      mockExec.mockImplementationOnce((cmd, callback) => {
+        callback?.(new Error('Command not found') as any, { stdout: '', stderr: 'not found' } as any, '');
+        return {} as any;
+      });
 
       const isAvailable = await adapter.checkAvailability();
       expect(isAvailable).toBe(false);
+    });
 
-      process.env.PATH = originalPath;
+    it('should throw error when claude CLI requires authentication', async () => {
+      const mockExec = exec as jest.MockedFunction<typeof exec>;
+      
+      // Mock successful which/where command
+      mockExec.mockImplementationOnce((cmd, callback) => {
+        callback?.(null, { stdout: '/usr/local/bin/claude', stderr: '' } as any, '');
+        return {} as any;
+      });
+      
+      // Mock --version command with auth error
+      mockExec.mockImplementationOnce((cmd, callback) => {
+        callback?.(null, { stdout: '', stderr: 'Error: API key not found' } as any, '');
+        return {} as any;
+      });
+
+      await expect(adapter.checkAvailability()).rejects.toThrow(/authentication/);
     });
   });
 
