@@ -12,6 +12,7 @@ import { createSpinner } from '../../lib/progress.js';
 import * as logger from '../../lib/logger.js';
 import { UserErrors, formatUserError } from '../../lib/user-errors.js';
 import { parseConfig, getFormatTips } from '../../lib/config-parser.js';
+import { loadConfig, substituteVariablesInObject } from '../../lib/config-loader.js';
 import { ZodError } from 'zod';
 
 /**
@@ -28,6 +29,9 @@ interface EvalCommandOptions {
  */
 export async function evalCommand(options: EvalCommandOptions): Promise<void> {
   try {
+    // Load youBencha configuration
+    const config = await loadConfig();
+    
     // Load configuration file
     logger.info(`Loading eval configuration from ${options.config}`);
     
@@ -59,6 +63,12 @@ export async function evalCommand(options: EvalCommandOptions): Promise<void> {
       process.exit(1);
     }
     
+    // Apply variable substitution if configured
+    if (config.variables && Object.keys(config.variables).length > 0) {
+      configData = substituteVariablesInObject(configData, config.variables);
+      logger.debug('Applied variable substitution from youBencha config');
+    }
+    
     // Validate against schema
     const spinner = createSpinner('Validating eval configuration...');
     spinner.start();
@@ -85,9 +95,16 @@ export async function evalCommand(options: EvalCommandOptions): Promise<void> {
       process.exit(1);
     }
 
-    // Create orchestrator
+    // Apply output_dir from config if specified and not overridden in eval config
+    if (config.output_dir && !evalConfig.output_dir) {
+      evalConfig.output_dir = config.output_dir;
+      logger.debug(`Using output directory from config: ${config.output_dir}`);
+    }
+
+    // Create orchestrator with config values
     const orchestrator = new Orchestrator({
       keepWorkspace: true, // Always keep workspace for eval-only mode
+      maxConcurrentEvaluators: config.evaluators?.max_concurrent,
     });
 
     // Run evaluation

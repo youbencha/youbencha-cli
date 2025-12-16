@@ -1,0 +1,32 @@
+# Test Case with Variable Substitution Example
+#
+# This example demonstrates using variables defined in .youbencharc
+# to avoid hardcoding values in test case configurations.
+#
+# In your .youbencharc, define:
+# variables:
+#   REPO_BASE: https://github.com/myorg
+#   DEFAULT_BRANCH: main
+#   PROJECT_NAME: my-project
+
+name: "Variable Substitution Example"
+description: "Demonstrates using ${PROJECT_NAME} variables from youBencha config"
+
+# Use variables from .youbencharc
+repo: ${REPO_BASE}/hello-world.git
+branch: ${DEFAULT_BRANCH}
+
+agent:
+  type: copilot-cli
+  config:
+    prompt: "Add a comment to README explaining what ${PROJECT_NAME} is about"
+
+evaluators:
+  - name: git-diff
+  - name: agentic-judge
+    config:
+      type: copilot-cli
+      agent_name: agentic-judge
+      assertions:
+        readme_modified: "README.md was modified. Score 1 if true, 0 if false."
+        helpful_comment: "A helpful comment about ${PROJECT_NAME} was added."

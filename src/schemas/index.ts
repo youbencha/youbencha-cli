@@ -65,3 +65,10 @@ export {
   type PreExecutionConfig,
   type PreExecutionResult,
 } from './pre-execution.schema.js';
+
+// Configuration schema and types
+export {
+  configSchema,
+  defaultConfig,
+  type Config,
+} from './config.schema.js';

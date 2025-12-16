@@ -11,6 +11,7 @@ import { createSpinner } from '../../lib/progress.js';
 import * as logger from '../../lib/logger.js';
 import { UserErrors, formatUserError } from '../../lib/user-errors.js';
 import { parseConfig, getFormatTips } from '../../lib/config-parser.js';
+import { loadConfig, substituteVariablesInObject } from '../../lib/config-loader.js';
 import { ZodError } from 'zod';
 
 /**
@@ -28,6 +29,9 @@ interface RunCommandOptions {
  */
 export async function runCommand(options: RunCommandOptions): Promise<void> {
   try {
+    // Load youBencha configuration
+    const config = await loadConfig();
+    
     // Load configuration file
     logger.info(`Loading test case configuration from ${options.config}`);
     
@@ -59,6 +63,12 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
       process.exit(1);
     }
     
+    // Apply variable substitution if configured
+    if (config.variables && Object.keys(config.variables).length > 0) {
+      configData = substituteVariablesInObject(configData, config.variables);
+      logger.debug('Applied variable substitution from youBencha config');
+    }
+    
     // Validate against schema
     const spinner = createSpinner('Validating test case configuration...');
     spinner.start();
@@ -85,9 +95,21 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
       process.exit(1);
     }
 
-    // Create orchestrator
+    // Apply workspace_dir from config if specified and not overridden in test case
+    if (config.workspace_dir && !testCaseConfig.workspace_dir) {
+      testCaseConfig.workspace_dir = config.workspace_dir;
+      logger.debug(`Using workspace directory from config: ${config.workspace_dir}`);
+    }
+    
+    // Apply keep_workspace from config if CLI flag not specified
+    const keepWorkspace = options.deleteWorkspace === true 
+      ? false 
+      : (config.keep_workspace ?? true);
+
+    // Create orchestrator with config values
     const orchestrator = new Orchestrator({
-      keepWorkspace: !options.deleteWorkspace, // Invert: keep by default, delete only if flag is set
+      keepWorkspace,
+      maxConcurrentEvaluators: config.evaluators?.max_concurrent,
     });
 
     // Run evaluation
