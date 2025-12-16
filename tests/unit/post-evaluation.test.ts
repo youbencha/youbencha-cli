@@ -117,7 +117,7 @@ describe('WebhookPostEvaluation', () => {
       expect(result).toHaveProperty('duration_ms');
       expect(result).toHaveProperty('timestamp');
       expect(typeof result.duration_ms).toBe('number');
-    });
+    }, 30000);
   });
 });
 

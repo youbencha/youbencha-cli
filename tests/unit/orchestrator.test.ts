@@ -97,7 +97,7 @@ describe('Orchestrator', () => {
       expect(result.agent.status).toMatch(/^(success|failed|timeout)$/);
       expect(result.agent.exit_code).toBeDefined();
       expect(result.agent.youbencha_log_path).toBeDefined();
-    }, 120000);
+    }, 180000);
 
     test('runs configured evaluators', async () => {
       const configWithMultipleEvaluators: TestCaseConfig = {

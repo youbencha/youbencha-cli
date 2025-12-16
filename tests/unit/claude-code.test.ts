@@ -13,6 +13,7 @@
 
 import { ClaudeCodeAdapter } from '../../src/adapters/claude-code.js';
 import { AgentExecutionContext, AgentExecutionResult } from '../../src/adapters/base.js';
+import { exec } from 'child_process';
 
 // Mock child_process to avoid real system calls in unit tests
 jest.mock('child_process', () => ({
