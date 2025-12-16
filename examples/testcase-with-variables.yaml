@@ -16,6 +16,8 @@ description: "Demonstrates using ${PROJECT_NAME} variables from youBencha config
 repo: ${REPO_BASE}/hello-world.git
 branch: ${DEFAULT_BRANCH}
 
+workspace_name: ${PROJECT_NAME}
+
 agent:
   type: copilot-cli
   config:
