@@ -21,6 +21,7 @@ agent:
   #   - gpt-5.1
   #   - gpt-5.1-codex-mini
   #   - gpt-5.1-codex
+  #   - gpt-5.1-codex-max
   #   - gemini-3-pro-preview
   config:
     prompt: "Add a friendly welcome message to the README file"
