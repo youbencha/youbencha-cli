@@ -1,6 +1,6 @@
 {
   "name": "youbencha",
-  "version": "0.1.5-beta",
+  "version": "0.1.6-beta",
   "description": "A friendly, developer-first CLI framework for evaluating agentic coding tools",
   "main": "dist/cli/index.js",
   "bin": {
