@@ -576,6 +576,7 @@ See `examples/scripts/` for ready-to-use scripts:
 ### Documentation
 
 - [Getting Started Guide](GETTING-STARTED.md) - Comprehensive walkthrough for new users
+- [Custom Evaluators Guide](docs/custom-evaluators.md) - Creating custom code and LLM-based evaluators
 - [Post-Evaluation Guide](docs/post-evaluation.md) - Complete reference for post-evaluation hooks
 - [Analyzing Results Guide](docs/analyzing-results.md) - Analysis patterns and best practices
 - [Prompt Files Guide](docs/prompt-files.md) - Loading prompts from external files
