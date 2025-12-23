@@ -15,6 +15,7 @@ import { dirname, join } from 'path';
 import { runCommand } from './commands/run.js';
 import { evalCommand } from './commands/eval.js';
 import { reportCommand } from './commands/report.js';
+import { analyzeCommand } from './commands/analyze.js';
 import { registerSuggestTestCaseCommand } from './commands/suggest-testcase.js';
 import { listCommand } from './commands/list.js';
 import { initCommand } from './commands/init.js';
@@ -141,6 +142,34 @@ Examples:
   - Links to detailed artifacts
     `)
     .action(reportCommand);
+
+  // Register analyze command (aggregate analysis from JSONL history)
+  program
+    .command('analyze')
+    .description('Analyze historical evaluation results from JSONL files')
+    .option('--from <path>', 'Path to JSONL history file', './results-history.jsonl')
+    .option('--format <format>', 'Output format: table, markdown, json', 'table')
+    .option('--output <path>', 'File path to save report (defaults to stdout)')
+    .option('--test-case <name>', 'Filter by test case name (supports glob patterns)')
+    .option('--agent <type>', 'Filter by agent type')
+    .option('--evaluator <name>', 'Filter by evaluator name')
+    .option('--since <date>', 'Only include runs after this date (ISO 8601)')
+    .option('--until <date>', 'Only include runs before this date (ISO 8601)')
+    .option('--last <n>', 'Limit to last N runs', parseInt)
+    .option('--view <view>', 'Analysis view: summary, trends, comparison, failures, assertions', 'summary')
+    .option('--verbose', 'Include detailed metrics')
+    .addHelpText('after', `
+Examples:
+  $ ${commandName} analyze                                    # Analyze default history file
+  $ ${commandName} analyze --from ./results-history.jsonl     # Analyze specific file
+  $ ${commandName} analyze --format markdown --output report.md
+  $ ${commandName} analyze --test-case "Add README*"          # Filter by test case
+  $ ${commandName} analyze --agent copilot-cli                # Filter by agent
+  $ ${commandName} analyze --view trends                      # Show trends over time
+  $ ${commandName} analyze --last 10                          # Analyze last 10 runs
+  $ ${commandName} analyze --since 2025-11-01                 # Filter by date
+    `)
+    .action(analyzeCommand);
 
   // Register suggest-testcase command (User Story 3)
   registerSuggestTestCaseCommand(program);
