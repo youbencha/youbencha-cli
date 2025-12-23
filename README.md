@@ -576,6 +576,7 @@ See `examples/scripts/` for ready-to-use scripts:
 ### Documentation
 
 - [Getting Started Guide](GETTING-STARTED.md) - Comprehensive walkthrough for new users
+- [TDD for Agents Guide](docs/TDD-GUIDE.md) - Test-driven development for AI coding agents
 - [Post-Evaluation Guide](docs/post-evaluation.md) - Complete reference for post-evaluation hooks
 - [Analyzing Results Guide](docs/analyzing-results.md) - Analysis patterns and best practices
 - [Prompt Files Guide](docs/prompt-files.md) - Loading prompts from external files
