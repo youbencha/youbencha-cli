@@ -2,7 +2,7 @@
  * Unit tests for Model Selection Feature
  * 
  * Tests that model configuration is properly passed through the system:
- * 1. Schema validation accepts valid model names
+ * 1. Schema validation accepts any model string
  * 2. CopilotCLIAdapter includes --model flag when model is specified
  * 3. Agentic-judge evaluator passes model configuration to adapter
  */
@@ -12,20 +12,16 @@ import { suiteConfigSchema } from '../../src/schemas/suite.schema.js';
 
 describe('Model Selection Feature', () => {
   describe('Schema Validation', () => {
-    const validModels = [
+    const testModels = [
       'claude-sonnet-4.5',
-      'claude-sonnet-4',
-      'claude-haiku-4.5',
-      'gpt-5',
       'gpt-5.1',
-      'gpt-5.1-codex-mini',
-      'gpt-5.1-codex',
-      'gemini-3-pro-preview',
+      'custom-model-name',
+      'any-valid-string',
     ];
 
     describe('TestCase Schema', () => {
-      validModels.forEach(model => {
-        it(`should accept valid model: ${model}`, () => {
+      testModels.forEach(model => {
+        it(`should accept model string: ${model}`, () => {
           const config = {
             name: 'Test Case',
             description: 'Test case with model selection',
@@ -51,15 +47,15 @@ describe('Model Selection Feature', () => {
         });
       });
 
-      it('should reject invalid model name', () => {
+      it('should reject empty model string', () => {
         const config = {
           name: 'Test Case',
-          description: 'Test case with invalid model',
+          description: 'Test case with empty model',
           repo: 'https://github.com/test/repo.git',
           branch: 'main',
           agent: {
             type: 'copilot-cli',
-            model: 'invalid-model-name',
+            model: '',
             config: {
               prompt: 'Fix the bug',
             },
@@ -99,8 +95,8 @@ describe('Model Selection Feature', () => {
     });
 
     describe('Suite Schema', () => {
-      validModels.forEach(model => {
-        it(`should accept valid model in suite config: ${model}`, () => {
+      testModels.forEach(model => {
+        it(`should accept model string in suite config: ${model}`, () => {
           const config = {
             repo: 'https://github.com/test/repo.git',
             branch: 'main',

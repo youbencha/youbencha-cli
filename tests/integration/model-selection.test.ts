@@ -141,13 +141,8 @@ describe('Model Selection Integration', () => {
   describe('Different Model Types', () => {
     const models = [
       'claude-sonnet-4.5',
-      'claude-sonnet-4',
-      'claude-haiku-4.5',
-      'gpt-5',
       'gpt-5.1',
-      'gpt-5.1-codex-mini',
-      'gpt-5.1-codex',
-      'gemini-3-pro-preview',
+      'custom-model',
     ];
 
     models.forEach(model => {
