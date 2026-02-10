@@ -1,0 +1,111 @@
+# Benchmark 1.1: Add Installation Instructions
+# Category: Documentation & README Tasks
+# Difficulty: Easy
+# Expected Time: 2-5 minutes
+
+name: "Add Installation Instructions"
+description: "Tests the agent's ability to add clear, complete installation instructions to a README file"
+
+# Repository configuration
+# For this benchmark, we use the initial/ directory as the starting point
+repo: ./initial
+branch: main
+
+# Expected reference - the ideal solution to compare against
+expected_source: path
+expected: ./expected
+
+# Agent configuration
+agent:
+  type: copilot-cli
+  config:
+    # Load the task description as the prompt
+    prompt: |
+      Add installation instructions to the README.md file. Include:
+      1. Prerequisites (Node.js version requirement from package.json)
+      2. npm install command
+      3. Quick start usage example
+      4. Use proper markdown formatting
+      
+      Only modify README.md. Do not change any other files.
+
+# Evaluators
+evaluators:
+  # Track scope and focus of changes
+  - name: git-diff
+    config:
+      assertions:
+        max_files_changed: 1       # Only README.md should change
+        max_lines_added: 20        # Keep additions focused
+        max_lines_removed: 0       # Should only add content, not remove
+        max_change_entropy: 2.0    # Changes should be focused in one file
+
+  # Compare against reference implementation
+  - name: expected-diff
+    config:
+      threshold: 0.70  # Allow some creativity in wording (70% similarity)
+
+  # Evaluate content completeness
+  - name: agentic-judge-content
+    config:
+      type: copilot-cli
+      agent_name: agentic-judge
+      assertions:
+        has_prerequisites: |
+          README.md mentions Node.js version requirement.
+          Score 1 if prerequisites section exists and mentions Node.js version, 0 if missing.
+        
+        has_install_command: |
+          README.md includes npm install command.
+          Score 1 if npm install command is present and correct, 0 if missing or incorrect.
+        
+        has_quick_start: |
+          README.md includes usage example or quick start instructions.
+          Score 1 if usage examples are present, 0.5 if partial, 0 if missing.
+        
+        preserves_existing: |
+          README.md preserves the existing project name and description.
+          Score 1 if original content preserved, 0 if modified or removed.
+        
+        no_extra_files: |
+          Only README.md was modified, no other files changed.
+          Score 1 if true, 0 if other files were modified.
+
+  # Evaluate markdown formatting quality
+  - name: agentic-judge-formatting
+    config:
+      type: copilot-cli
+      agent_name: agentic-judge
+      assertions:
+        proper_headings: |
+          Markdown headings use proper syntax (## for sections, ### for subsections).
+          Score 1 if heading hierarchy is correct, 0.5 if minor issues, 0 if broken.
+        
+        proper_code_blocks: |
+          Code examples use proper markdown code block syntax (```).
+          Score 1 if all code blocks formatted correctly, 0.5 if partial, 0 if incorrect.
+        
+        consistent_style: |
+          New content matches the style and tone of existing README.
+          Score 1 if consistent, 0.5 if minor inconsistencies, 0 if significantly different.
+        
+        no_syntax_errors: |
+          No markdown syntax errors (broken links, unclosed code blocks, etc.).
+          Score 1 if no errors, 0 if syntax errors present.
+
+# Workspace configuration
+workspace_dir: .youbencha-workspace
+timeout: 300000  # 5 minutes
+
+# Benchmark metadata (for tracking and reporting)
+metadata:
+  category: documentation
+  difficulty: easy
+  estimated_time_minutes: 5
+  files_expected_to_change: 1
+  lines_expected_to_add: 15
+  primary_skill: technical_writing
+  secondary_skills:
+    - reading_comprehension
+    - markdown_formatting
+    - change_minimalism
