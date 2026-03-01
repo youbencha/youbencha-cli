@@ -1,0 +1,98 @@
+# Example: Spec-Driven Trust Building
+#
+# This test case was generated from a feature spec using the spec-to-testcase agent.
+# It demonstrates the full trust-building pipeline:
+#   1. Spec → decomposed requirements → test case
+#   2. Run repeatedly to build trust score
+#   3. Analyze with: ./examples/scripts/analyze-trust.sh trust-ledger.jsonl
+#
+# Original spec:
+#   "Add rate limiting to the Express API. Limit each IP to 100 requests per
+#    15-minute window. Return 429 with Retry-After header when exceeded.
+#    Include unit tests."
+#
+# Usage:
+#   yb run -c examples/testcase-spec-trust.yaml
+#   yb report --from .youbencha-workspace/rate-limiting-*/artifacts/results.json
+#
+# Trust building:
+#   # Run 5 times to build trust baseline
+#   for i in $(seq 1 5); do yb run -c examples/testcase-spec-trust.yaml; done
+#   # Analyze trust
+#   ./examples/scripts/analyze-trust.sh trust-ledger.jsonl --test-name "Add Rate Limiting Middleware"
+
+name: "Add Rate Limiting Middleware"
+description: "Tests agent's ability to implement rate limiting per spec: 100 req/15min/IP, 429 response, Retry-After header, unit tests"
+
+# Repository configuration
+repo: https://github.com/youbencha/hello-world.git
+branch: main
+
+# Agent configuration — prompt generated from spec
+# The prompt describes WHAT to build without leaking evaluation criteria
+agent:
+  type: copilot-cli
+  config:
+    prompt: |
+      Add rate limiting middleware to this Express API.
+
+      Requirements:
+      - Each IP address should be limited to 100 requests per 15-minute window
+      - When the limit is exceeded, respond with HTTP 429 (Too Many Requests)
+      - Include a Retry-After header indicating when the client can retry
+      - Add unit tests covering normal usage and rate-exceeded scenarios
+
+      Constraints:
+      - Do not modify existing API endpoints or their behavior
+      - Do not add unnecessary dependencies
+
+evaluators:
+  # Scope check — derived from spec analysis:
+  # Expected files: middleware (1), tests (1-2), config/package.json (1-2)
+  # Buffer: +50% → max 6 files
+  - name: git-diff
+    config:
+      assertions:
+        max_files_changed: 6
+        max_lines_added: 300
+        max_change_entropy: 2.0   # Changes concentrated in a few files
+
+  # Core functionality — mapped from functional requirements in spec
+  - name: agentic-judge-functionality
+    config:
+      type: copilot-cli
+      agent_name: agentic-judge
+      assertions:
+        rate_limiter_exists: "Rate limiting middleware is implemented. Score 1 if present, 0 if absent."
+        correct_limit: "Limit is 100 requests per 15-minute window per IP. Score 1 if correct, 0.5 if rate limiting exists but wrong values, 0 if absent."
+        returns_429: "Returns HTTP 429 when rate limit is exceeded. Score 1 if true, 0 if false."
+
+  # API contract — mapped from behavioral requirements in spec
+  - name: agentic-judge-api-contract
+    config:
+      type: copilot-cli
+      agent_name: agentic-judge
+      assertions:
+        retry_after_header: "Response includes Retry-After header when rate limited. Score 1 if present with correct value, 0.5 if present but wrong, 0 if absent."
+        existing_endpoints_unchanged: "Existing API endpoints still work and are not modified. Score 1 if true, 0 if false."
+
+  # Test quality — mapped from quality requirements in spec
+  - name: agentic-judge-testing
+    config:
+      type: copilot-cli
+      agent_name: agentic-judge
+      assertions:
+        tests_exist: "Unit tests were added for rate limiting. Score 1 if true, 0 if false."
+        tests_cover_scenarios: "Tests cover both normal requests and rate-exceeded scenarios. Score 1 if both, 0.5 if one, 0 if neither."
+
+# Trust ledger — appends results after every run for trend analysis
+post_evaluation:
+  - name: database
+    config:
+      type: json-file
+      output_path: ./trust-ledger.jsonl
+      include_full_bundle: true
+      append: true
+
+workspace_name: rate-limiting-eval
+timeout: 300000
