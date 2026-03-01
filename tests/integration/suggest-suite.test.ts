@@ -52,6 +52,69 @@ describe('Suggest Suite Integration', () => {
       }
     });
 
+    test('fails when neither --spec nor --output-dir is provided', async () => {
+      try {
+        await execAsync(
+          `node dist/cli/index.js suggest-testcase --agent copilot-cli`,
+          { cwd: process.cwd() }
+        );
+        fail('Should have thrown an error');
+      } catch (error: any) {
+        expect(error.code).toBe(1);
+        expect(error.stderr).toContain('--spec');
+        expect(error.stderr).toContain('--output-dir');
+      }
+    });
+
+    test('fails when --spec file does not exist', async () => {
+      const nonExistentSpec = path.join(tempDir, 'non-existent-spec.md');
+
+      try {
+        await execAsync(
+          `node dist/cli/index.js suggest-testcase --agent copilot-cli --spec ${nonExistentSpec}`,
+          { cwd: process.cwd() }
+        );
+        fail('Should have thrown an error');
+      } catch (error: any) {
+        expect(error.code).toBe(1);
+        expect(error.stderr).toContain('Spec file not found');
+      }
+    });
+
+    test('fails when --spec file is empty', async () => {
+      const emptySpec = path.join(tempDir, 'empty-spec.md');
+      await fs.writeFile(emptySpec, '   \n   ');
+
+      try {
+        await execAsync(
+          `node dist/cli/index.js suggest-testcase --agent copilot-cli --spec ${emptySpec}`,
+          { cwd: process.cwd() }
+        );
+        fail('Should have thrown an error');
+      } catch (error: any) {
+        expect(error.code).toBe(1);
+        expect(error.stderr).toContain('Spec file is empty');
+      }
+    });
+
+    test('accepts --spec without --output-dir', async () => {
+      const specFile = path.join(tempDir, 'spec.md');
+      await fs.writeFile(specFile, '# Feature Spec\n\nAdd a login page.');
+
+      // Should pass spec/output-dir validation but fail later on agent availability
+      try {
+        await execAsync(
+          `node dist/cli/index.js suggest-testcase --agent copilot-cli --spec ${specFile} --agent-file ${agentFile}`,
+          { cwd: process.cwd(), timeout: 30000 }
+        );
+      } catch (error: any) {
+        // Should NOT fail due to missing --output-dir
+        expect(error.stderr).not.toContain('--spec');
+        expect(error.stderr).not.toContain('--output-dir');
+        expect(error.stderr).not.toContain('Spec file not found');
+      }
+    }, 60000);
+
     test('fails when agent type is unsupported', async () => {
       try {
         await execAsync(
@@ -156,6 +219,22 @@ Example content
       expect(content).toContain('git-diff');
       expect(content).toContain('expected-diff');
       expect(content).toContain('agentic-judge');
+    });
+
+    test('validates suggest-testcase agent file structure and required sections', async () => {
+      const actualAgentFile = path.join(process.cwd(), 'agents', 'suggest-testcase.agent.md');
+      
+      // Verify the real testcase agent file exists and has proper structure
+      const content = await fs.readFile(actualAgentFile, 'utf-8');
+      
+      expect(content).toContain('# youBencha Test Case Suggestion Agent');
+      expect(content).toContain('## Your Role');
+      expect(content).toContain('## Domain Knowledge');
+      expect(content).toContain('## Workflow Instructions');
+      expect(content).toContain('YOUBENCHA_SPEC_CONTENT');
+      expect(content).toContain('testcase.yaml');
+      expect(content).toContain('agentic-judge');
+      expect(content).toContain('assertions');
     });
   });
 
