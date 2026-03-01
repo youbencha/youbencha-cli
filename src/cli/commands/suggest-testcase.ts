@@ -18,9 +18,22 @@ export function registerSuggestTestCaseCommand(program: Command): void {
     .command('suggest-testcase')
     .description('Generate test case suggestions using AI agent')
     .requiredOption('--agent <type>', 'Agent tool to use (e.g., copilot-cli)')
-    .requiredOption('--output-dir <path>', 'Path to successful agent output folder')
+    .option('--spec <path>', 'Path to specification or task description file (.md, .txt, .yaml)')
+    .option('--output-dir <path>', 'Path to successful agent output folder (optional context)')
     .option('--agent-file <path>', 'Custom agent file path', 'agents/suggest-testcase.agent.md')
     .option('--save <path>', 'Path to save generated test case (default: suggested-testcase.yaml)')
+    .addHelpText('after', `
+Examples:
+  $ yb suggest-testcase --agent copilot-cli --spec feature-spec.md
+  $ yb suggest-testcase --agent copilot-cli --spec spec.md --output-dir ./completed-output
+  $ yb suggest-testcase --agent copilot-cli --output-dir ./completed-output
+
+Workflow:
+  1. Provide a spec file (--spec) to generate a testcase from requirements
+  2. Optionally provide --output-dir to give the agent context from existing output
+  3. The AI agent will guide you through creating a testcase.yaml
+  4. Save the generated testcase and run it with: yb run -c testcase.yaml
+    `)
     .action(async (options: SuggestTestCaseOptions) => {
       try {
         await handleSuggestTestCase(options);
@@ -36,7 +49,8 @@ export function registerSuggestTestCaseCommand(program: Command): void {
  */
 interface SuggestTestCaseOptions {
   agent: string;
-  outputDir: string;
+  spec?: string;
+  outputDir?: string;
   agentFile: string;
   save?: string;
 }
@@ -45,20 +59,44 @@ interface SuggestTestCaseOptions {
  * Handle suggest-testcase command execution
  */
 async function handleSuggestTestCase(options: SuggestTestCaseOptions): Promise<void> {
-  logger.info('Starting test case suggestion workflow...');
-
-  // Step 1: Validate output directory
-  const spinner = createSpinner('Validating output directory...');
-  spinner.start();
-  try {
-    await validateOutputDir(options.outputDir);
-    spinner.succeed('Output directory validated');
-  } catch (error) {
-    spinner.fail(`Invalid output directory: ${(error as Error).message}`);
-    throw error;
+  // Require at least --spec or --output-dir
+  if (!options.spec && !options.outputDir) {
+    logger.error('Please provide either --spec <path> or --output-dir <path> (or both).');
+    logger.info('  --spec <path>       Path to your spec or task description file');
+    logger.info('  --output-dir <path> Path to existing agent output for context');
+    process.exit(1);
   }
 
-  // Step 2: Validate agent tool
+  logger.info('Starting test case suggestion workflow...');
+
+  // Step 1: Validate and read spec file (if provided)
+  let specContent: string | undefined;
+  if (options.spec) {
+    const specSpinner = createSpinner('Loading spec file...');
+    specSpinner.start();
+    try {
+      specContent = await readSpecFile(options.spec);
+      specSpinner.succeed(`Spec loaded: ${options.spec}`);
+    } catch (error) {
+      specSpinner.fail(`Failed to load spec: ${(error as Error).message}`);
+      throw error;
+    }
+  }
+
+  // Step 2: Validate output directory (if provided)
+  if (options.outputDir) {
+    const spinner = createSpinner('Validating output directory...');
+    spinner.start();
+    try {
+      await validateOutputDir(options.outputDir);
+      spinner.succeed('Output directory validated');
+    } catch (error) {
+      spinner.fail(`Invalid output directory: ${(error as Error).message}`);
+      throw error;
+    }
+  }
+
+  // Step 3: Validate agent tool
   const agentSpinner = createSpinner(`Validating ${options.agent} installation...`);
   agentSpinner.start();
   try {
@@ -70,7 +108,7 @@ async function handleSuggestTestCase(options: SuggestTestCaseOptions): Promise<v
     throw error;
   }
 
-  // Step 3: Validate agent file
+  // Step 4: Validate agent file
   const fileSpinner = createSpinner('Loading agent workflow file...');
   fileSpinner.start();
   try {
@@ -81,25 +119,58 @@ async function handleSuggestTestCase(options: SuggestTestCaseOptions): Promise<v
     throw error;
   }
 
-  // Step 4: Launch agent
+  // Step 5: Launch agent
   logger.info('\n🤖 Launching interactive agent session...\n');
-  logger.info('The agent will guide you through the test case generation process.');
+  if (specContent) {
+    logger.info('The agent will convert your spec into a testcase.yaml configuration.');
+  } else {
+    logger.info('The agent will guide you through the test case generation process.');
+  }
   logger.info('Follow the prompts to provide context about your changes.\n');
 
+  const workingDir = options.outputDir ?? process.cwd();
   try {
-    await launchAgent(options.agent, options.agentFile, options.outputDir);
+    await launchAgent(options.agent, options.agentFile, workingDir, specContent);
     logger.info('\n✅ Agent session completed successfully');
   } catch (error) {
     logger.error('\n❌ Agent session failed:', (error as Error).message);
     throw error;
   }
 
-  // Step 5: Provide next steps
+  // Step 6: Provide next steps
   logger.info('\n📋 Next Steps:');
   logger.info('1. Review the generated test case configuration');
   logger.info('2. Save it as testcase-<description>.yaml in your project');
   logger.info('3. Run: yb run -c testcase-<description>.yaml');
   logger.info('4. Review evaluation results\n');
+}
+
+/**
+ * Read and validate a spec file
+ */
+async function readSpecFile(specPath: string): Promise<string> {
+  const resolvedPath = path.resolve(specPath);
+
+  try {
+    await fs.access(resolvedPath, fs.constants.R_OK);
+    const stats = await fs.stat(resolvedPath);
+
+    if (!stats.isFile()) {
+      throw new Error(`Path is not a file: ${specPath}`);
+    }
+
+    const content = await fs.readFile(resolvedPath, 'utf-8');
+    if (!content.trim()) {
+      throw new Error(`Spec file is empty: ${specPath}`);
+    }
+
+    return content;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      throw new Error(`Spec file not found: ${specPath}`);
+    }
+    throw error;
+  }
 }
 
 /**
@@ -200,13 +271,25 @@ async function validateAgentFile(agentFilePath: string): Promise<string> {
 async function launchAgent(
   agentType: string,
   agentFilePath: string,
-  outputDir: string
+  workingDir: string,
+  specContent?: string
 ): Promise<void> {
   const resolvedAgentFile = path.resolve(agentFilePath);
-  const resolvedOutputDir = path.resolve(outputDir);
+  const resolvedWorkingDir = path.resolve(workingDir);
 
   // Read agent file content
   const agentContent = await fs.readFile(resolvedAgentFile, 'utf-8');
+
+  // Build environment with optional spec content
+  const agentEnv: NodeJS.ProcessEnv = {
+    ...process.env,
+    YOUBENCHA_AGENT_FILE: resolvedAgentFile,
+    YOUBENCHA_OUTPUT_DIR: resolvedWorkingDir,
+    YOUBENCHA_AGENT_INSTRUCTIONS: agentContent,
+  };
+  if (specContent !== undefined) {
+    agentEnv['YOUBENCHA_SPEC_CONTENT'] = specContent;
+  }
 
   return new Promise((resolve, reject) => {
     let proc;
@@ -231,26 +314,16 @@ async function launchAgent(
           ], {
             stdio: 'inherit',
             shell: false,
-            cwd: resolvedOutputDir,
-            env: {
-              ...process.env,
-              YOUBENCHA_AGENT_FILE: resolvedAgentFile,
-              YOUBENCHA_OUTPUT_DIR: resolvedOutputDir,
-              YOUBENCHA_AGENT_INSTRUCTIONS: agentContent
-            }
+            cwd: resolvedWorkingDir,
+            env: agentEnv
           });
         } else {
           // Unix-like systems can execute scripts directly
           proc = spawn('copilot', ['suggest'], {
             stdio: 'inherit',
             shell: false,
-            cwd: resolvedOutputDir,
-            env: {
-              ...process.env,
-              YOUBENCHA_AGENT_FILE: resolvedAgentFile,
-              YOUBENCHA_OUTPUT_DIR: resolvedOutputDir,
-              YOUBENCHA_AGENT_INSTRUCTIONS: agentContent
-            }
+            cwd: resolvedWorkingDir,
+            env: agentEnv
           });
         }
         break;
@@ -264,7 +337,8 @@ async function launchAgent(
         ], {
           stdio: 'inherit',
           shell: false,
-          cwd: resolvedOutputDir
+          cwd: resolvedWorkingDir,
+          env: agentEnv
         });
         break;
 
@@ -274,7 +348,7 @@ async function launchAgent(
         logger.warn(
           '\n⚠️  Cursor integration not yet implemented.\n' +
           'Please manually:\n' +
-          `1. Open Cursor in ${resolvedOutputDir}\n` +
+          `1. Open Cursor in ${resolvedWorkingDir}\n` +
           `2. Start a new chat session\n` +
           `3. Copy and paste the contents of ${resolvedAgentFile}\n` +
           '4. Follow the agent\'s workflow instructions\n'
