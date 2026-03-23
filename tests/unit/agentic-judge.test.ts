@@ -210,6 +210,48 @@ describe('AgenticJudgeEvaluator', () => {
       expect(result.message).toBe(expectedResult.message);
     });
 
+    test('exports terminal output as an evaluator artifact', async () => {
+      const terminalOutput = [
+        'Thinking about the assertions...',
+        'Checking README changes...',
+        JSON.stringify({ status: 'passed', metrics: { code_quality: 1 }, message: 'Looks good' }),
+      ].join('\n');
+
+      const mockAdapter: AgentAdapter = {
+        name: 'test-adapter',
+        version: '1.0.0',
+        checkAvailability: jest.fn().mockResolvedValue(true),
+        execute: jest.fn().mockResolvedValue({
+          exitCode: 0,
+          status: 'success',
+          output: terminalOutput,
+          startedAt: new Date().toISOString(),
+          completedAt: new Date().toISOString(),
+          durationMs: 2000,
+          errors: [],
+        }),
+        normalizeLog: jest.fn(),
+      };
+
+      (evaluator as any).getAdapter = jest.fn().mockResolvedValue(mockAdapter);
+
+      const result = await evaluator.evaluate(mockContext);
+
+      expect(result.artifacts).toEqual([
+        {
+          type: 'terminal-output',
+          path: path.join('evaluators', 'agentic-judge', 'terminal-output.log'),
+          description: 'Terminal output for agentic-judge',
+        },
+      ]);
+
+      const artifactContent = await fs.readFile(
+        path.join(mockContext.artifactsDir, 'evaluators', 'agentic-judge', 'terminal-output.log'),
+        'utf-8'
+      );
+      expect(artifactContent).toBe(terminalOutput);
+    });
+
     test('builds evaluation prompt with assertions', async () => {
       const mockAdapter: AgentAdapter = {
         name: 'test-adapter',
@@ -377,6 +419,13 @@ describe('AgenticJudgeEvaluator', () => {
       expect(result.status).toBe('skipped');
       expect(result.error).toBeDefined();
       expect(result.error?.message).toContain('JSON');
+      expect(result.artifacts).toEqual([
+        {
+          type: 'terminal-output',
+          path: path.join('evaluators', 'agentic-judge', 'terminal-output.log'),
+          description: 'Terminal output for agentic-judge',
+        },
+      ]);
     });
 
     test('handles agent timeout', async () => {
@@ -577,6 +626,40 @@ describe('AgenticJudgeEvaluator', () => {
       // Each should be independent
       expect(errorHandling.name).not.toBe(documentation.name);
       expect(documentation.name).not.toBe(bestPractices.name);
+    });
+
+    test('custom named instances export to separate artifact paths', async () => {
+      const documentation = new AgenticJudgeEvaluator('agentic-judge-documentation');
+      const testing = new AgenticJudgeEvaluator('agentic-judge-testing');
+
+      const createMockAdapter = (): AgentAdapter => ({
+        name: 'test-adapter',
+        version: '1.0.0',
+        checkAvailability: jest.fn().mockResolvedValue(true),
+        execute: jest.fn().mockResolvedValue({
+          exitCode: 0,
+          status: 'success',
+          output: JSON.stringify({ status: 'passed', metrics: {}, message: 'OK' }),
+          startedAt: new Date().toISOString(),
+          completedAt: new Date().toISOString(),
+          durationMs: 1000,
+          errors: [],
+        }),
+        normalizeLog: jest.fn(),
+      });
+
+      (documentation as any).getAdapter = jest.fn().mockResolvedValue(createMockAdapter());
+      (testing as any).getAdapter = jest.fn().mockResolvedValue(createMockAdapter());
+
+      const documentationResult = await documentation.evaluate(mockContext);
+      const testingResult = await testing.evaluate(mockContext);
+
+      expect(documentationResult.artifacts?.[0].path).toBe(
+        path.join('evaluators', 'agentic-judge-documentation', 'terminal-output.log')
+      );
+      expect(testingResult.artifacts?.[0].path).toBe(
+        path.join('evaluators', 'agentic-judge-testing', 'terminal-output.log')
+      );
     });
   });
 });
