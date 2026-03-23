@@ -6,25 +6,27 @@
  * NOT a single LLM API call - uses full agentic workflow.
  */
 
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { Evaluator, EvaluationContext } from './base.js';
-import { EvaluationResult } from '../schemas/result.schema.js';
+import { EvaluationArtifact, EvaluationResult } from '../schemas/result.schema.js';
 import { AgentAdapter, AgentExecutionContext } from '../adapters/base.js';
 import { CopilotCLIAdapter } from '../adapters/copilot-cli.js';
 import { ClaudeCodeAdapter } from '../adapters/claude-code.js';
+import { saveArtifact } from '../core/storage.js';
 
 // Use the built template file in the prompts directory
 // When running from compiled dist/, the prompts directory is a sibling
 // When running from source, we need to find the dist directory
-const PROMPTS_DIR = join(process.cwd(), 'dist', 'evaluators', 'prompts');
+const BUILT_PROMPTS_DIR = join(process.cwd(), 'dist', 'evaluators', 'prompts');
+const SOURCE_PROMPTS_DIR = join(process.cwd(), 'src', 'evaluators', 'prompts');
 
 /**
  * Get the directory path for prompts
  * Uses a fixed path relative to cwd since this is simpler and works in all environments
  */
 function getPromptsDir(): string {
-  return PROMPTS_DIR;
+  return existsSync(BUILT_PROMPTS_DIR) ? BUILT_PROMPTS_DIR : SOURCE_PROMPTS_DIR;
 }
 
 /**
@@ -177,13 +179,15 @@ export class AgenticJudgeEvaluator implements Evaluator {
       };
 
       const agentResult = await adapter.execute(agentContext);
+      const artifacts = await this.saveTerminalOutputArtifact(context.artifactsDir, agentResult.output);
 
       // Handle agent execution failures
       if (agentResult.status === 'failed') {
         return this.createSkippedResult(
           startedAt,
           `Agent execution failed: ${agentResult.errors.map(e => e.message).join('; ')}`,
-          agentResult.durationMs
+          agentResult.durationMs,
+          artifacts
         );
       }
 
@@ -191,7 +195,8 @@ export class AgenticJudgeEvaluator implements Evaluator {
         return this.createSkippedResult(
           startedAt,
           'Agent execution timed out',
-          agentResult.durationMs
+          agentResult.durationMs,
+          artifacts
         );
       }
 
@@ -203,7 +208,8 @@ export class AgenticJudgeEvaluator implements Evaluator {
         return this.createSkippedResult(
           startedAt,
           `Agent output is not valid JSON or missing required fields (status, metrics, message). Output preview: "${outputPreview}..."`,
-          agentResult.durationMs
+          agentResult.durationMs,
+          artifacts
         );
       }
 
@@ -229,6 +235,7 @@ export class AgenticJudgeEvaluator implements Evaluator {
         duration_ms: durationMs,
         timestamp: completedAt,
         assertions: assertionResults as Record<string, unknown>,
+        artifacts,
       };
     } catch (error) {
       const completedAt = new Date().toISOString();
@@ -430,7 +437,8 @@ export class AgenticJudgeEvaluator implements Evaluator {
   private createSkippedResult(
     startedAt: string,
     message: string,
-    agentDurationMs?: number
+    agentDurationMs?: number,
+    artifacts?: EvaluationArtifact[]
   ): EvaluationResult {
     const completedAt = new Date().toISOString();
     const durationMs = new Date(completedAt).getTime() - new Date(startedAt).getTime();
@@ -442,9 +450,45 @@ export class AgenticJudgeEvaluator implements Evaluator {
       message,
       duration_ms: durationMs,
       timestamp: completedAt,
+      artifacts,
       error: {
         message,
       },
     };
+  }
+
+  /**
+   * Save agentic judge terminal output as an evaluator artifact.
+   */
+  private async saveTerminalOutputArtifact(
+    artifactsDir: string,
+    output: string
+  ): Promise<EvaluationArtifact[] | undefined> {
+    if (!output || output.trim().length === 0) {
+      return undefined;
+    }
+
+    try {
+      const artifactPath = join('evaluators', this.getArtifactDirectoryName(), 'terminal-output.log');
+      await saveArtifact(output, artifactPath, artifactsDir);
+
+      return [
+        {
+          type: 'terminal-output',
+          path: artifactPath,
+          description: `Terminal output for ${this.name}`,
+        },
+      ];
+    } catch (error) {
+      console.error('Failed to save agentic judge terminal output artifact:', error);
+      return undefined;
+    }
+  }
+
+  /**
+   * Build a stable artifact directory name for this evaluator instance.
+   */
+  private getArtifactDirectoryName(): string {
+    return this.name.replace(/[^a-zA-Z0-9._-]/g, '-');
   }
 }
