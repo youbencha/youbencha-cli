@@ -378,6 +378,17 @@ describe('CopilotCLIAdapter', () => {
       expect(log.execution.status).toBe('success');
     });
 
+    it('should parse current Copilot CLI version and model output formats', () => {
+      const rawOutput = `GitHub Copilot CLI 1.0.10.\nUsing model: gpt-5.2`;
+      const log = adapter.normalizeLog(rawOutput, {
+        ...mockResult,
+        output: rawOutput,
+      });
+
+      expect(log.agent.version).toBe('1.0.10');
+      expect(log.model.name).toBe('gpt-5.2');
+    });
+
     it('should conform to youBencha Log schema', async () => {
       const log = adapter.normalizeLog(mockRawOutput, mockResult);
       

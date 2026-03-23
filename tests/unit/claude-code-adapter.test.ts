@@ -153,7 +153,7 @@ You are a test agent called ${name}.`;
       await fs.writeFile(path.join(agentDir, `${name}.md`), agentContent);
     };
 
-    it('should include --append-system-prompt with agent prompt when agent_name is specified', async () => {
+    it('should accept agent_name when agent_name is specified', async () => {
       if (skipIfNoClaude()) return;
 
       await createAgentFile('code-reviewer');
@@ -821,7 +821,7 @@ Line 5 with 'single quotes'`;
     it('should handle all permission_mode values', async () => {
       if (skipIfNoClaude()) return;
 
-      const permissionModes = ['auto', 'plan', 'ask'];
+      const permissionModes = ['auto', 'plan', 'dontAsk'];
 
       for (const permission_mode of permissionModes) {
         const context: AgentExecutionContext = {
@@ -898,9 +898,7 @@ Line 5 with 'single quotes'`;
       expect(result).toBeDefined();
     });
 
-    it('should include --max-tokens flag when specified', async () => {
-      if (skipIfNoClaude()) return;
-
+    it('should fail fast when max_tokens is specified', async () => {
       const context: AgentExecutionContext = {
         workspaceDir: tempWorkspace,
         repoDir: path.join(tempWorkspace, 'src-modified'),
@@ -914,12 +912,11 @@ Line 5 with 'single quotes'`;
       };
 
       const result = await adapter.execute(context);
-      expect(result).toBeDefined();
+      expect(result.status).toBe('failed');
+      expect(result.errors[0]?.message).toContain('max_tokens');
     });
 
-    it('should include --temperature flag when specified', async () => {
-      if (skipIfNoClaude()) return;
-
+    it('should fail fast when temperature is specified', async () => {
       const context: AgentExecutionContext = {
         workspaceDir: tempWorkspace,
         repoDir: path.join(tempWorkspace, 'src-modified'),
@@ -933,26 +930,8 @@ Line 5 with 'single quotes'`;
       };
 
       const result = await adapter.execute(context);
-      expect(result).toBeDefined();
-    });
-
-    it('should handle temperature of 0.0', async () => {
-      if (skipIfNoClaude()) return;
-
-      const context: AgentExecutionContext = {
-        workspaceDir: tempWorkspace,
-        repoDir: path.join(tempWorkspace, 'src-modified'),
-        artifactsDir: path.join(tempWorkspace, 'artifacts'),
-        config: {
-          prompt: 'Test prompt',
-          temperature: 0.0,
-        },
-        timeout: 5000,
-        env: {},
-      };
-
-      const result = await adapter.execute(context);
-      expect(result).toBeDefined();
+      expect(result.status).toBe('failed');
+      expect(result.errors[0]?.message).toContain('temperature');
     });
 
     it('should handle all advanced flags together', async () => {
@@ -968,8 +947,6 @@ Line 5 with 'single quotes'`;
           permission_mode: 'auto',
           allowed_tools: ['Read', 'Write'],
           system_prompt: 'Custom prompt',
-          max_tokens: 8000,
-          temperature: 0.0,
         },
         timeout: 5000,
         env: {},
@@ -992,7 +969,6 @@ Line 5 with 'single quotes'`;
           agent_name: 'code-reviewer',
           append_system_prompt: 'Expert developer',
           permission_mode: 'plan',
-          max_tokens: 4096,
         },
         timeout: 5000,
         env: {},

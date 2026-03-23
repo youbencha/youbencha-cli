@@ -108,7 +108,7 @@ agent:
       Focus on OWASP Top 10 vulnerabilities.
       Provide severity ratings for each finding.
     
-    # Optional: Permission mode (auto, plan, ask)
+    # Optional: Permission mode (auto, plan, dontAsk, default, acceptEdits, bypassPermissions)
     permission_mode: auto
     
     # Optional: Restrict allowed tools
@@ -117,9 +117,6 @@ agent:
       - Write
       - ListDirectory
     
-    # Optional: Token limit
-    max_tokens: 8192
-
 evaluators:
   - name: git-diff
   - name: agentic-judge
@@ -140,9 +137,10 @@ timeout: 600000  # 10 minutes
 | `config.prompt` | string | One of prompt/prompt_file | Inline prompt text |
 | `config.prompt_file` | string | One of prompt/prompt_file | Path to prompt file |
 | `config.append_system_prompt` | string | No | Additional system prompt text |
-| `config.permission_mode` | string | No | `auto`, `plan`, or `ask` |
+| `config.permission_mode` | string | No | `acceptEdits`, `auto`, `bypassPermissions`, `default`, `dontAsk`, or `plan` |
 | `config.allowed_tools` | string[] | No | List of allowed tool names |
-| `config.max_tokens` | number | No | Maximum response tokens |
+
+`config.max_tokens` and `config.temperature` are intentionally not supported by the current Claude Code adapter because Claude Code 2.1.81 does not advertise corresponding headless CLI flags in `claude --help`.
 
 ## Output Artifacts
 

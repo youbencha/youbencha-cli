@@ -39,10 +39,12 @@ export class CopilotCLIAdapter implements AgentAdapter {
         : 'which copilot';
       
       await execAsync(command);
-      
-      // Check if authenticated (this may fail if not logged in)
-      // We'll just check if the binary exists for now
-      // Authentication check would require running copilot with auth check
+
+      // Verify the binary is runnable. Authentication may come from stored
+      // login state or headless token environment variables, so availability
+      // stops at command health rather than forcing an auth flow here.
+      await execAsync('copilot --version');
+
       return true;
     } catch (error) {
       return false;
@@ -207,8 +209,16 @@ export class CopilotCLIAdapter implements AgentAdapter {
       throw new Error('Prompt is required in agent config');
     }
 
-    // Build base args
-    const baseArgs = ['-p', prompt];
+    // Build base args for deterministic non-interactive execution.
+    const baseArgs = [
+      '--prompt', prompt,
+      '--output-format', 'text',
+      '--stream', 'off',
+      '--no-color',
+      '--allow-all-tools',
+      '--allow-all-paths',
+      '--no-ask-user',
+    ];
     
     // Add model if specified
     if (model) {
@@ -220,15 +230,12 @@ export class CopilotCLIAdapter implements AgentAdapter {
       baseArgs.push('--agent', agent);
     }
     
-    // Add tool permissions
-    baseArgs.push('--allow-all-tools', '--allow-all-paths');
-
     // Add logging configuration
     baseArgs.push('--log-level', 'all');
     
     // Create copilot-logs subdirectory in artifacts for better organization
     const copilotLogsDir = path.join(context.artifactsDir, 'copilot-logs');
-    baseArgs.push('--log-dir', copilotLogsDir);
+    baseArgs.push('--log-dir', copilotLogsDir, '--add-dir', context.workspaceDir);
 
     // On Windows, use the & call operator to invoke copilot.cmd/.exe
     // This properly handles the command execution in PowerShell
@@ -253,7 +260,7 @@ export class CopilotCLIAdapter implements AgentAdapter {
     // Unix-like systems can execute scripts directly
     return {
       command: 'copilot',
-      args: [...baseArgs, '--add-dir', context.workspaceDir],
+      args: baseArgs,
     };
   }
 
@@ -506,6 +513,11 @@ export class CopilotCLIAdapter implements AgentAdapter {
    * Detect copilot version from output
    */
   private detectCopilotVersion(rawOutput: string): string {
+    const currentVersionMatch = rawOutput.match(/GitHub\s+Copilot\s+CLI\s+([0-9]+\.[0-9]+\.[0-9]+)/i);
+    if (currentVersionMatch) {
+      return currentVersionMatch[1];
+    }
+
     const versionMatch = rawOutput.match(/copilot[_\s-]cli[_\s]version?:\s*([0-9.]+)/i);
     return versionMatch ? versionMatch[1] : 'unknown';
   }
@@ -514,8 +526,8 @@ export class CopilotCLIAdapter implements AgentAdapter {
    * Detect model from output
    */
   private detectModel(rawOutput: string): string {
-    const modelMatch = rawOutput.match(/using\s+model:\s*([\w-]+)/i);
-    return modelMatch ? modelMatch[1] : 'gpt-4';
+    const modelMatch = rawOutput.match(/(?:using\s+model|model)[:\s]+([\w.-]+)/i);
+    return modelMatch ? modelMatch[1] : 'unknown';
   }
 
   /**

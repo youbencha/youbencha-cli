@@ -24,6 +24,15 @@ const execAsync = promisify(exec);
 
 // Maximum output size in bytes (10MB)
 const MAX_OUTPUT_SIZE = 10 * 1024 * 1024;
+const VALID_PERMISSION_MODES = new Set([
+  'acceptEdits',
+  'auto',
+  'bypassPermissions',
+  'default',
+  'dontAsk',
+  'plan',
+]);
+const UNSUPPORTED_HEADLESS_CONFIG_KEYS = ['max_tokens', 'temperature'] as const;
 
 /**
  * Claude Code adapter implementation
@@ -282,9 +291,8 @@ export class ClaudeCodeAdapter implements AgentAdapter {
     // Add output format for structured response
     args.push('--output-format', 'text');
 
-    // Add permission bypass for non-interactive execution
-    // This prevents Claude from waiting for permission prompts
-    args.push('--dangerously-skip-permissions');
+    // Print mode evaluations should not leak state into persisted sessions.
+    args.push('--no-session-persistence');
 
     // Enable verbose logging for better debugging
     args.push('--verbose');
@@ -295,8 +303,11 @@ export class ClaudeCodeAdapter implements AgentAdapter {
       args.push('--model', model);
     }
 
-    // Store agent name for later use in prompt modification
+    // Use the built-in agent selection flag when requested.
     const agentName = context.config.agent_name as string | undefined;
+    if (agentName) {
+      args.push('--agent', agentName);
+    }
 
     // Add system_prompt if specified (replaces default system prompt)
     const systemPrompt = context.config.system_prompt as string | undefined;
@@ -313,7 +324,17 @@ export class ClaudeCodeAdapter implements AgentAdapter {
     // Add permission_mode if specified
     const permissionMode = context.config.permission_mode as string | undefined;
     if (permissionMode) {
+      if (!VALID_PERMISSION_MODES.has(permissionMode)) {
+        throw new Error(
+          `Invalid permission_mode "${permissionMode}". Supported values: ${Array.from(VALID_PERMISSION_MODES).join(', ')}`
+        );
+      }
+
       args.push('--permission-mode', permissionMode);
+    } else {
+      // Headless runs need to bypass prompts unless the caller explicitly
+      // requested a different permission flow.
+      args.push('--dangerously-skip-permissions');
     }
 
     // Add allowed_tools if specified
@@ -322,28 +343,16 @@ export class ClaudeCodeAdapter implements AgentAdapter {
       args.push('--allowedTools', allowedTools.join(','));
     }
 
-    // Add max_tokens if specified
-    const maxTokens = context.config.max_tokens as number | undefined;
-    if (maxTokens !== undefined) {
-      args.push('--max-tokens', String(maxTokens));
-    }
-
-    // Add temperature if specified
-    const temperature = context.config.temperature as number | undefined;
-    if (temperature !== undefined) {
-      args.push('--temperature', String(temperature));
-    }
-
-    // Build the final prompt, prepending agent invocation if agent_name is specified
-    // Claude Code auto-discovers agents from .claude/agents/ directory
-    // We just need to tell it to use the agent by name
-    let finalPrompt = prompt;
-    if (agentName) {
-      finalPrompt = `Use the "${agentName}" agent for this task.\n\n${prompt}`;
+    for (const key of UNSUPPORTED_HEADLESS_CONFIG_KEYS) {
+      if (context.config[key] !== undefined) {
+        throw new Error(
+          `Claude Code no longer advertises the \"${key}\" headless flag. Remove it from the test case configuration.`
+        );
+      }
     }
 
     // Prompt must be the last argument (positional argument)
-    args.push(finalPrompt);
+    args.push(prompt);
 
     // On Windows, use PowerShell with the & call operator to invoke claude
     // This properly handles the command execution in PowerShell
@@ -631,6 +640,11 @@ export class ClaudeCodeAdapter implements AgentAdapter {
    * Parse Claude Code version from output
    */
   parseVersion(rawOutput: string): string {
+    const currentVersionMatch = rawOutput.match(/([0-9]+\.[0-9]+\.[0-9]+)\s*\(Claude Code\)/i);
+    if (currentVersionMatch) {
+      return currentVersionMatch[1];
+    }
+
     // Try to detect version from output
     const versionMatch = rawOutput.match(/[Vv]ersion[:\s]+([0-9]+\.[0-9]+\.[0-9]+)/);
     if (versionMatch) {

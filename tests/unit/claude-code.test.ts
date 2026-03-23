@@ -351,9 +351,64 @@ describe('ClaudeCodeAdapter', () => {
       expect(adapter.parseVersion(output)).toBe('2.0.1');
     });
 
+    it('should extract version from current Claude Code version output', () => {
+      const output = '2.1.81 (Claude Code)';
+      expect(adapter.parseVersion(output)).toBe('2.1.81');
+    });
+
     it('should return unknown when version not found', () => {
       const output = 'No version information';
       expect(adapter.parseVersion(output)).toBe('unknown');
+    });
+  });
+
+  describe('buildClaudeCommand', () => {
+    const buildClaudeCommand = (
+      context: AgentExecutionContext
+    ): { command: string; args: string[] } => {
+      const adapterWithPrivateMethod = adapter as unknown as {
+        buildClaudeCommand: (buildContext: AgentExecutionContext) => {
+          command: string;
+          args: string[];
+        };
+      };
+
+      return adapterWithPrivateMethod.buildClaudeCommand(context);
+    };
+
+    it('should map agent_name to the --agent flag', () => {
+      const context: AgentExecutionContext = {
+        workspaceDir: '/tmp/youbencha/workspace',
+        repoDir: '/tmp/youbencha/workspace/src-modified',
+        artifactsDir: '/tmp/youbencha/workspace/artifacts',
+        config: {
+          prompt: 'Review the code',
+          agent_name: 'code-reviewer',
+        },
+        timeout: 300000,
+        env: {},
+      };
+
+      const { args } = buildClaudeCommand(context);
+      expect(args).toContain('--agent');
+      expect(args).toContain('code-reviewer');
+      expect(args[args.length - 1]).toBe('Review the code');
+    });
+
+    it('should reject unsupported headless config flags', () => {
+      const context: AgentExecutionContext = {
+        workspaceDir: '/tmp/youbencha/workspace',
+        repoDir: '/tmp/youbencha/workspace/src-modified',
+        artifactsDir: '/tmp/youbencha/workspace/artifacts',
+        config: {
+          prompt: 'Review the code',
+          max_tokens: 4096,
+        },
+        timeout: 300000,
+        env: {},
+      };
+
+      expect(() => buildClaudeCommand(context)).toThrow(/max_tokens/);
     });
   });
 

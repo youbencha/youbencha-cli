@@ -363,20 +363,20 @@ describe('AgentAdapter Contract', () => {
       await expect(adapter.execute(contextWithPlanMode)).resolves.toBeDefined();
     });
 
-    it('should accept permission_mode with ask value', async () => {
-      const contextWithAskMode: AgentExecutionContext = {
+    it('should accept permission_mode with dontAsk value', async () => {
+      const contextWithDontAskMode: AgentExecutionContext = {
         workspaceDir: '/tmp/workspace',
         repoDir: '/tmp/workspace/src-modified',
         artifactsDir: '/tmp/workspace/artifacts',
         config: {
           prompt: 'Test task',
-          permission_mode: 'ask',
+          permission_mode: 'dontAsk',
         },
         timeout: 60000,
         env: {},
       };
 
-      await expect(adapter.execute(contextWithAskMode)).resolves.toBeDefined();
+      await expect(adapter.execute(contextWithDontAskMode)).resolves.toBeDefined();
     });
 
     // CR-2.14: allowed_tools parameter
@@ -429,7 +429,7 @@ describe('AgentAdapter Contract', () => {
       await expect(adapter.execute(contextWithSystemPrompt)).resolves.toBeDefined();
     });
 
-    it('should accept max_tokens configuration', async () => {
+    it('should reject max_tokens configuration', async () => {
       const contextWithMaxTokens: AgentExecutionContext = {
         workspaceDir: '/tmp/workspace',
         repoDir: '/tmp/workspace/src-modified',
@@ -442,10 +442,12 @@ describe('AgentAdapter Contract', () => {
         env: {},
       };
 
-      await expect(adapter.execute(contextWithMaxTokens)).resolves.toBeDefined();
+      const result = await adapter.execute(contextWithMaxTokens);
+      expect(result.status).toBe('failed');
+      expect(result.errors[0]?.message).toContain('max_tokens');
     });
 
-    it('should accept temperature configuration', async () => {
+    it('should reject temperature configuration', async () => {
       const contextWithTemperature: AgentExecutionContext = {
         workspaceDir: '/tmp/workspace',
         repoDir: '/tmp/workspace/src-modified',
@@ -458,7 +460,9 @@ describe('AgentAdapter Contract', () => {
         env: {},
       };
 
-      await expect(adapter.execute(contextWithTemperature)).resolves.toBeDefined();
+      const result = await adapter.execute(contextWithTemperature);
+      expect(result.status).toBe('failed');
+      expect(result.errors[0]?.message).toContain('temperature');
     });
 
     it('should accept combined advanced configuration', async () => {
@@ -471,8 +475,6 @@ describe('AgentAdapter Contract', () => {
           append_system_prompt: 'You are an expert',
           permission_mode: 'auto',
           allowed_tools: ['Read', 'Write'],
-          max_tokens: 8000,
-          temperature: 0.0,
         },
         timeout: 60000,
         env: {},
