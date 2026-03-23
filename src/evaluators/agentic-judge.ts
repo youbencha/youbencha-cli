@@ -14,6 +14,7 @@ import { AgentAdapter, AgentExecutionContext } from '../adapters/base.js';
 import { CopilotCLIAdapter } from '../adapters/copilot-cli.js';
 import { ClaudeCodeAdapter } from '../adapters/claude-code.js';
 import { saveArtifact } from '../core/storage.js';
+import logger from '../lib/logger.js';
 
 // Use the built template file in the prompts directory
 // When running from compiled dist/, the prompts directory is a sibling
@@ -26,7 +27,17 @@ const SOURCE_PROMPTS_DIR = join(process.cwd(), 'src', 'evaluators', 'prompts');
  * Uses a fixed path relative to cwd since this is simpler and works in all environments
  */
 function getPromptsDir(): string {
-  return existsSync(BUILT_PROMPTS_DIR) ? BUILT_PROMPTS_DIR : SOURCE_PROMPTS_DIR;
+  if (existsSync(BUILT_PROMPTS_DIR)) {
+    return BUILT_PROMPTS_DIR;
+  }
+
+  if (existsSync(SOURCE_PROMPTS_DIR)) {
+    return SOURCE_PROMPTS_DIR;
+  }
+
+  throw new Error(
+    `Agentic judge prompt templates not found. Checked: ${BUILT_PROMPTS_DIR} and ${SOURCE_PROMPTS_DIR}`
+  );
 }
 
 /**
@@ -465,6 +476,7 @@ export class AgenticJudgeEvaluator implements Evaluator {
     output: string
   ): Promise<EvaluationArtifact[] | undefined> {
     if (!output || output.trim().length === 0) {
+      logger.warn(`Skipping terminal output artifact for ${this.name}: agent produced no output`);
       return undefined;
     }
 
@@ -480,7 +492,7 @@ export class AgenticJudgeEvaluator implements Evaluator {
         },
       ];
     } catch (error) {
-      console.error('Failed to save agentic judge terminal output artifact:', error);
+      logger.error(`Failed to save agentic judge terminal output artifact for ${this.name}`, error);
       return undefined;
     }
   }
