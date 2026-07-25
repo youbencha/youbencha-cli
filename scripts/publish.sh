@@ -77,23 +77,10 @@ case $VERSION_CHOICE in
     ;;
 esac
 
-# Run tests and build
+# Run the same release gates used by GitHub Actions
 echo ""
-echo -e "${YELLOW}Running tests...${NC}"
-npm test
-
-echo ""
-echo -e "${YELLOW}Running linter...${NC}"
-npm run lint
-
-echo ""
-echo -e "${YELLOW}Building project...${NC}"
-npm run build
-
-# Verify package contents
-echo ""
-echo -e "${YELLOW}Verifying package contents...${NC}"
-npm pack --dry-run
+echo -e "${YELLOW}Running release gates...${NC}"
+npm run verify:release
 
 # Bump version
 echo ""
@@ -108,12 +95,17 @@ npm version $VERSION_TYPE --no-git-tag-version
 NEW_VERSION=$(node -p "require('./package.json').version")
 echo -e "${GREEN}New version: $NEW_VERSION${NC}"
 
-# Commit version bump
-echo ""
-echo -e "${YELLOW}Committing version bump...${NC}"
-git add package.json
-git commit -m "chore: bump version to $NEW_VERSION"
-git tag "v$NEW_VERSION"
+TAG_NAME="v$NEW_VERSION"
+if git rev-parse --verify --quiet "refs/tags/$TAG_NAME" >/dev/null; then
+  echo -e "${RED}Error: Tag $TAG_NAME already exists locally${NC}"
+  git restore -- package.json package-lock.json
+  exit 1
+fi
+if [ -n "$(git ls-remote --tags origin "refs/tags/$TAG_NAME")" ]; then
+  echo -e "${RED}Error: Tag $TAG_NAME already exists on origin${NC}"
+  git restore -- package.json package-lock.json
+  exit 1
+fi
 
 # Final confirmation
 echo ""
@@ -122,22 +114,27 @@ read -p "Continue? [y/N] " -n 1 -r
 echo ""
 if [[ ! $REPLY =~ ^[Yy]$ ]]; then
   echo -e "${RED}Publishing cancelled${NC}"
-  echo "To undo version bump:"
-  echo "  git reset --hard HEAD~1"
-  echo "  git tag -d v$NEW_VERSION"
+  git restore -- package.json package-lock.json
   exit 1
 fi
+
+# Commit version bump only after confirmation.
+echo ""
+echo -e "${YELLOW}Committing version bump...${NC}"
+git add package.json package-lock.json
+git commit -m "chore: bump version to $NEW_VERSION"
+git tag "$TAG_NAME"
 
 # Publish to NPM
 echo ""
 echo -e "${YELLOW}Publishing to NPM...${NC}"
-npm publish --access public
+npm publish --provenance --access public
 
 # Push to GitHub
 echo ""
 echo -e "${YELLOW}Pushing to GitHub...${NC}"
 git push origin main
-git push origin "v$NEW_VERSION"
+git push origin "$TAG_NAME"
 
 echo ""
 echo -e "${GREEN}✓ Successfully published version $NEW_VERSION${NC}"

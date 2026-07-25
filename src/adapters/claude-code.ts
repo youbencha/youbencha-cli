@@ -1,6 +1,6 @@
 /**
  * Claude Code Adapter
- * 
+ *
  * Integrates Claude Code CLI as an agent for youBencha evaluations.
  * Handles execution, output capture, and log normalization.
  */
@@ -19,6 +19,7 @@ import {
 } from './base.js';
 import { YouBenchaLog } from '../schemas/youbenchalog.schema.js';
 import { stripAnsiCodes, isPathSafe } from '../lib/shell-utils.js';
+import * as logger from '../lib/logger.js';
 
 const execAsync = promisify(exec);
 
@@ -38,9 +39,8 @@ export class ClaudeCodeAdapter implements AgentAdapter {
   async checkAvailability(): Promise<boolean> {
     try {
       // Check if claude is in PATH
-      const command = process.platform === 'win32'
-        ? 'where claude'
-        : 'which claude';
+      const command =
+        process.platform === 'win32' ? 'where claude' : 'which claude';
 
       await execAsync(command);
 
@@ -57,7 +57,10 @@ export class ClaudeCodeAdapter implements AgentAdapter {
       return true;
     } catch (error) {
       // If the error is about authentication, rethrow it
-      if (error instanceof Error && error.message.includes('Claude Code requires authentication')) {
+      if (
+        error instanceof Error &&
+        error.message.includes('Claude Code requires authentication')
+      ) {
         throw error;
       }
       // Otherwise, Claude CLI is not available
@@ -73,7 +76,11 @@ export class ClaudeCodeAdapter implements AgentAdapter {
     let output = '';
     let exitCode = 0;
     let status: 'success' | 'failed' | 'timeout' = 'success';
-    const errors: Array<{ message: string; timestamp: string; stackTrace?: string }> = [];
+    const errors: Array<{
+      message: string;
+      timestamp: string;
+      stackTrace?: string;
+    }> = [];
 
     try {
       // Ensure claude-code-logs directory exists
@@ -82,17 +89,21 @@ export class ClaudeCodeAdapter implements AgentAdapter {
 
       // Create a log file path for terminal output
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const terminalLogPath = path.join(claudeLogsDir, `terminal-output-${timestamp}.log`);
+      const terminalLogPath = path.join(
+        claudeLogsDir,
+        `terminal-output-${timestamp}.log`
+      );
 
       // Build Claude command
       const { command, args } = this.buildClaudeCommand(context);
 
-      // Log the command being executed for debugging
-      console.log('[DEBUG] Claude Code CLI Command:');
-      console.log(`  Command: ${command}`);
-      console.log(`  Args: ${JSON.stringify(args)}`);
-      console.log(`  CWD: ${context.workspaceDir}`);
-      console.log(`  Terminal output log: ${terminalLogPath}`);
+      // Avoid logging the argument array because it contains the full prompt.
+      logger.debug(`Claude Code CLI command: ${command}`);
+      logger.debug(`Claude Code working directory: ${context.workspaceDir}`);
+      logger.debug(
+        `Claude Code prompt length: ${(context.config.prompt as string)?.length || 0} chars`
+      );
+      logger.debug(`Claude Code terminal output log: ${terminalLogPath}`);
 
       // Execute Claude with timeout
       const result = await this.executeWithTimeout(
@@ -104,12 +115,10 @@ export class ClaudeCodeAdapter implements AgentAdapter {
         terminalLogPath
       );
 
-      console.log('[DEBUG] Execution result:');
-      console.log(`  Exit code: ${result.exitCode}`);
-      console.log(`  Timed out: ${result.timedOut}`);
-      console.log(`  Truncated: ${result.truncated}`);
-      console.log(`  Output length: ${result.output.length} bytes`);
-      console.log(`  First 500 chars of output: ${result.output.substring(0, 500)}`);
+      logger.debug(`Claude Code exit code: ${result.exitCode}`);
+      logger.debug(`Claude Code timed out: ${result.timedOut}`);
+      logger.debug(`Claude Code output truncated: ${result.truncated}`);
+      logger.debug(`Claude Code output length: ${result.output.length} bytes`);
 
       output = result.output;
       exitCode = result.exitCode;
@@ -143,7 +152,8 @@ export class ClaudeCodeAdapter implements AgentAdapter {
     } catch (error) {
       status = 'failed';
       exitCode = 1;
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       const stackTrace = error instanceof Error ? error.stack : undefined;
 
       errors.push({
@@ -156,7 +166,8 @@ export class ClaudeCodeAdapter implements AgentAdapter {
     }
 
     const completedAt = new Date().toISOString();
-    const durationMs = new Date(completedAt).getTime() - new Date(startedAt).getTime();
+    const durationMs =
+      new Date(completedAt).getTime() - new Date(startedAt).getTime();
 
     return {
       exitCode,
@@ -217,7 +228,7 @@ export class ClaudeCodeAdapter implements AgentAdapter {
       },
       messages,
       usage,
-      errors: result.errors.map(err => ({
+      errors: result.errors.map((err) => ({
         message: err.message,
         timestamp: err.timestamp,
         stack_trace: err.stackTrace,
@@ -229,9 +240,10 @@ export class ClaudeCodeAdapter implements AgentAdapter {
   /**
    * Build Claude Code command with proper platform handling
    */
-  private buildClaudeCommand(
-    context: AgentExecutionContext
-  ): { command: string; args: string[] } {
+  private buildClaudeCommand(context: AgentExecutionContext): {
+    command: string;
+    args: string[];
+  } {
     let prompt: string | undefined;
 
     // Handle prompt_file vs prompt
@@ -305,7 +317,9 @@ export class ClaudeCodeAdapter implements AgentAdapter {
     }
 
     // Add append_system_prompt if specified
-    const appendSystemPrompt = context.config.append_system_prompt as string | undefined;
+    const appendSystemPrompt = context.config.append_system_prompt as
+      | string
+      | undefined;
     if (appendSystemPrompt) {
       args.push('--append-system-prompt', appendSystemPrompt);
     }
@@ -350,10 +364,10 @@ export class ClaudeCodeAdapter implements AgentAdapter {
     if (process.platform === 'win32') {
       // Build the PowerShell command using the call operator (&)
       // Only quote arguments that contain spaces or special characters
-      const escapedArgs = args.map(arg => {
+      const escapedArgs = args.map((arg) => {
         // Check if argument needs quoting (contains spaces, special chars, or is empty)
         const needsQuoting = /[\s`$"']/.test(arg) || arg.length === 0;
-        
+
         if (needsQuoting) {
           // Escape special PowerShell characters and wrap in double quotes
           const escaped = arg
@@ -362,16 +376,22 @@ export class ClaudeCodeAdapter implements AgentAdapter {
             .replace(/"/g, '`"');
           return `"${escaped}"`;
         }
-        
+
         return arg;
       });
-      
+
       // Use & operator to call claude with arguments
       const claudeCommand = `& claude ${escapedArgs.join(' ')}`;
-      
+
       return {
         command: 'powershell.exe',
-        args: ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', claudeCommand],
+        args: [
+          '-NoProfile',
+          '-ExecutionPolicy',
+          'Bypass',
+          '-Command',
+          claudeCommand,
+        ],
       };
     }
 
@@ -392,7 +412,12 @@ export class ClaudeCodeAdapter implements AgentAdapter {
     env: Record<string, string>,
     timeout: number,
     logFilePath?: string
-  ): Promise<{ output: string; exitCode: number; timedOut: boolean; truncated: boolean }> {
+  ): Promise<{
+    output: string;
+    exitCode: number;
+    timedOut: boolean;
+    truncated: boolean;
+  }> {
     return new Promise((resolve) => {
       let output = '';
       let outputSize = 0;
@@ -555,7 +580,8 @@ export class ClaudeCodeAdapter implements AgentAdapter {
     if (currentMessageContent.trim() || currentToolCalls.length > 0) {
       messages.push({
         role: 'assistant',
-        content: currentMessageContent.trim() || rawOutput || 'No output captured',
+        content:
+          currentMessageContent.trim() || rawOutput || 'No output captured',
         timestamp: result.completedAt,
         tool_calls: currentToolCalls.length > 0 ? currentToolCalls : undefined,
       });
@@ -582,18 +608,27 @@ export class ClaudeCodeAdapter implements AgentAdapter {
     const inputTokensMatch = rawOutput.match(/[Ii]nput\s+tokens?:\s*(\d+)/i);
     const outputTokensMatch = rawOutput.match(/[Oo]utput\s+tokens?:\s*(\d+)/i);
 
-    const promptTokens = inputTokensMatch ? parseInt(inputTokensMatch[1], 10) : 0;
-    const completionTokens = outputTokensMatch ? parseInt(outputTokensMatch[1], 10) : 0;
+    const promptTokens = inputTokensMatch
+      ? parseInt(inputTokensMatch[1], 10)
+      : 0;
+    const completionTokens = outputTokensMatch
+      ? parseInt(outputTokensMatch[1], 10)
+      : 0;
 
     // Estimate tokens if not available (rough estimate: 1 token ≈ 4 characters)
-    const estimatedPromptTokens = promptTokens || Math.ceil(rawOutput.length / 4);
-    const estimatedCompletionTokens = completionTokens || Math.ceil(rawOutput.length / 8);
+    const estimatedPromptTokens =
+      promptTokens || Math.ceil(rawOutput.length / 4);
+    const estimatedCompletionTokens =
+      completionTokens || Math.ceil(rawOutput.length / 8);
 
     return {
       prompt_tokens: estimatedPromptTokens,
       completion_tokens: estimatedCompletionTokens,
       total_tokens: estimatedPromptTokens + estimatedCompletionTokens,
-      estimated_cost_usd: this.estimateCost(estimatedPromptTokens, estimatedCompletionTokens),
+      estimated_cost_usd: this.estimateCost(
+        estimatedPromptTokens,
+        estimatedCompletionTokens
+      ),
     };
   }
 
@@ -619,7 +654,9 @@ export class ClaudeCodeAdapter implements AgentAdapter {
     }
 
     // Look for model mentions in the output
-    const mentionMatch = rawOutput.match(/(claude-(?:sonnet|opus|haiku)-[\d.-]+)/i);
+    const mentionMatch = rawOutput.match(
+      /(claude-(?:sonnet|opus|haiku)-[\d.-]+)/i
+    );
     if (mentionMatch) {
       return mentionMatch[1];
     }
@@ -632,13 +669,17 @@ export class ClaudeCodeAdapter implements AgentAdapter {
    */
   parseVersion(rawOutput: string): string {
     // Try to detect version from output
-    const versionMatch = rawOutput.match(/[Vv]ersion[:\s]+([0-9]+\.[0-9]+\.[0-9]+)/);
+    const versionMatch = rawOutput.match(
+      /[Vv]ersion[:\s]+([0-9]+\.[0-9]+\.[0-9]+)/
+    );
     if (versionMatch) {
       return versionMatch[1];
     }
 
     // Look for claude code version pattern
-    const claudeVersionMatch = rawOutput.match(/claude[_\s-]?code[_\s]?v?([0-9]+\.[0-9]+\.[0-9]+)/i);
+    const claudeVersionMatch = rawOutput.match(
+      /claude[_\s-]?code[_\s]?v?([0-9]+\.[0-9]+\.[0-9]+)/i
+    );
     if (claudeVersionMatch) {
       return claudeVersionMatch[1];
     }
@@ -653,7 +694,9 @@ export class ClaudeCodeAdapter implements AgentAdapter {
     try {
       // Try to read version from package.json
       const packageJsonPath = path.join(process.cwd(), 'package.json');
-      const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8')) as { version?: string };
+      const packageJson = JSON.parse(
+        readFileSync(packageJsonPath, 'utf-8')
+      ) as { version?: string };
       return packageJson.version || '1.0.0';
     } catch {
       return '1.0.0';

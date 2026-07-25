@@ -52,7 +52,7 @@ npm unlink -g youbencha
 
 ## Quick Start
 
-**New to youBencha?** Check out the [Getting Started Guide](GETTING-STARTED.md) for a detailed walkthrough.
+**New to youBencha?** Check out the [Getting Started Guide](docs/GETTING-STARTED.md) for a detailed walkthrough.
 
 ### 1. Install
 
@@ -60,7 +60,23 @@ npm unlink -g youbencha
 npm install -g youbencha
 ```
 
-### 2. Create a test case configuration
+Check the installation and local prerequisites:
+
+```bash
+yb doctor
+```
+
+For an offline, no-agent smoke workflow in an existing Git repository:
+
+```bash
+yb init --minimal
+yb eval -c eval.yaml
+```
+
+This evaluates the current working tree with `git-diff`; it does not clone a
+repository, invoke an agent, or use a paid model.
+
+### 2. Create an agent test case configuration
 
 youBencha supports both **YAML** and **JSON** formats for configuration files.
 
@@ -95,8 +111,7 @@ evaluators:
 {
   "name": "README Comment Addition",
   "description": "Tests the agent's ability to add a helpful comment explaining the repository purpose",
-  "repo": "https://github.com/youbencha/hello-world.git
-",
+  "repo": "https://github.com/youbencha/hello-world.git",
   "branch": "main",
   "agent": {
     "type": "copilot-cli",
@@ -135,8 +150,8 @@ yb run -c testcase.yaml
 yb run -c testcase.json
 
 # See examples directory for more configurations
-yb run -c examples/testcase-simple.yaml
-yb run -c examples/testcase-simple.json
+yb run -c examples/testcase-basic.yaml
+yb run -c examples/testcase-basic.json
 ```
 
 The workspace is kept by default for inspection. Add `--delete-workspace` to clean up after completion.
@@ -214,6 +229,47 @@ yb eval -c <eval-config-file>
 - Comparative analysis of multiple outputs
 
 See the [Eval Command Guide](docs/eval-command.md) for detailed documentation.
+
+### `yb experiment`
+
+Run a repeatable matrix of test cases and agent variants, aggregate the results,
+and enforce regression policies in CI.
+
+```bash
+# Check and inspect the matrix without invoking an agent
+yb experiment validate examples/experiment-basic.yaml
+yb experiment plan examples/experiment-basic.yaml
+
+# Run it, then render or compare the durable result
+yb experiment run examples/experiment-basic.yaml
+yb experiment report <experiment-id> --format markdown
+yb experiment compare <experiment-id> --baseline last-approved
+```
+
+Experiment state is stored under `results/experiments/<experiment-id>/`.
+Interrupted and budget-limited runs can be continued with
+`yb experiment run <file> --resume <experiment-id>`; validated completed cells
+are reused. See the [Experiments Guide](docs/experiments.md) for the full schema,
+baseline workflow, reports, and CI example.
+
+### CI exit codes
+
+`yb run` and `yb eval` return a stable quality-gate result:
+
+| Code | Meaning |
+| --- | --- |
+| `0` | Agent execution and all evaluators passed |
+| `1` | Configuration, tool, agent execution, or other runtime error |
+| `2` | At least one evaluator failed |
+| `3` | Evaluation was incomplete because at least one evaluator was skipped |
+
+Both commands generate `report.md` beside `results.json` when artifacts are
+retained. Treat codes `2` and `3` as failed CI checks unless the workflow has an
+explicit policy for incomplete evaluation.
+
+Experiment commands use the same meanings: `0` is a completed passing
+experiment, `1` is configuration or infrastructure failure, `2` is a required
+cell or regression-policy failure, and `3` is an incomplete experiment.
 
 ### `yb report`
 
@@ -575,9 +631,10 @@ See `examples/scripts/` for ready-to-use scripts:
 
 ### Documentation
 
-- [Getting Started Guide](GETTING-STARTED.md) - Comprehensive walkthrough for new users
+- [Getting Started Guide](docs/GETTING-STARTED.md) - Comprehensive walkthrough for new users
 - [Post-Evaluation Guide](docs/post-evaluation.md) - Complete reference for post-evaluation hooks
 - [Analyzing Results Guide](docs/analyzing-results.md) - Analysis patterns and best practices
+- [Experiments Guide](docs/experiments.md) - Agent matrices, baselines, regression policies, reports, and CI
 - [Prompt Files Guide](docs/prompt-files.md) - Loading prompts from external files
 - [Reusable Evaluators Guide](docs/reusable-evaluators.md) - Sharing evaluator configurations
 - [Multiple Agentic Judges Guide](docs/multiple-agentic-judges.md) - Using multiple focused evaluators

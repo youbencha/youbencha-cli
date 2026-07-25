@@ -1,6 +1,6 @@
 /**
  * Expected Diff Evaluator
- * 
+ *
  * Compares agent-modified code against expected reference branch.
  * Calculates file-by-file similarity and aggregate similarity score.
  */
@@ -8,8 +8,12 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { Evaluator, EvaluationContext } from './base.js';
-import { EvaluationResult, EvaluationArtifact } from '../schemas/result.schema.js';
+import {
+  EvaluationResult,
+  EvaluationArtifact,
+} from '../schemas/result.schema.js';
 import { calculateSimilarity } from '../lib/diff-utils.js';
+import * as logger from '../lib/logger.js';
 
 /**
  * File similarity details
@@ -25,7 +29,8 @@ interface FileSimilarity {
  */
 export class ExpectedDiffEvaluator implements Evaluator {
   readonly name = 'expected-diff';
-  readonly description = 'Compares the agent\'s output against a known-good reference (like an ideal implementation). Measures how similar the results are, file by file. Perfect for checking if the agent matched your expectations or followed a reference solution.';
+  readonly description =
+    "Compares the agent's output against a known-good reference (like an ideal implementation). Measures how similar the results are, file by file. Perfect for checking if the agent matched your expectations or followed a reference solution.";
   readonly requiresExpectedReference = true;
 
   /**
@@ -65,7 +70,7 @@ export class ExpectedDiffEvaluator implements Evaluator {
       }
 
       // Get threshold from config (default: 0.80)
-      const threshold = (context.config.threshold as number) || 0.80;
+      const threshold = (context.config.threshold as number) || 0.8;
 
       // Get all files from both directories
       const modifiedFiles = await this.getAllFiles(context.modifiedDir);
@@ -87,7 +92,10 @@ export class ExpectedDiffEvaluator implements Evaluator {
       );
 
       // Determine status based on threshold
-      const status = (metrics.aggregate_similarity as number) >= threshold ? 'passed' : 'failed';
+      const status =
+        (metrics.aggregate_similarity as number) >= threshold
+          ? 'passed'
+          : 'failed';
 
       // Generate artifacts
       const artifacts = await this.generateArtifacts(
@@ -97,7 +105,8 @@ export class ExpectedDiffEvaluator implements Evaluator {
       );
 
       const completedAt = new Date().toISOString();
-      const durationMs = new Date(completedAt).getTime() - new Date(startedAt).getTime();
+      const durationMs =
+        new Date(completedAt).getTime() - new Date(startedAt).getTime();
 
       // Build message
       const message = this.buildMessage(metrics, threshold, status);
@@ -123,8 +132,10 @@ export class ExpectedDiffEvaluator implements Evaluator {
       };
     } catch (error) {
       const completedAt = new Date().toISOString();
-      const durationMs = new Date(completedAt).getTime() - new Date(startedAt).getTime();
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const durationMs =
+        new Date(completedAt).getTime() - new Date(startedAt).getTime();
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
 
       return {
         evaluator: this.name,
@@ -201,7 +212,10 @@ export class ExpectedDiffEvaluator implements Evaluator {
             'utf-8'
           );
 
-          const similarity = calculateSimilarity(modifiedContent, expectedContent);
+          const similarity = calculateSimilarity(
+            modifiedContent,
+            expectedContent
+          );
 
           similarities.push({
             path: filePath,
@@ -249,15 +263,21 @@ export class ExpectedDiffEvaluator implements Evaluator {
     expectedFiles: string[]
   ): Record<string, unknown> {
     // Count file status categories
-    const matched = fileSimilarities.filter(f => f.status === 'matched').length;
-    const changed = fileSimilarities.filter(f => f.status === 'changed').length;
-    const added = fileSimilarities.filter(f => f.status === 'added').length;
-    const removed = fileSimilarities.filter(f => f.status === 'removed').length;
+    const matched = fileSimilarities.filter(
+      (f) => f.status === 'matched'
+    ).length;
+    const changed = fileSimilarities.filter(
+      (f) => f.status === 'changed'
+    ).length;
+    const added = fileSimilarities.filter((f) => f.status === 'added').length;
+    const removed = fileSimilarities.filter(
+      (f) => f.status === 'removed'
+    ).length;
 
     // Calculate aggregate similarity as weighted average
     // Only include files that exist in both directories
     const comparableFiles = fileSimilarities.filter(
-      f => f.status === 'matched' || f.status === 'changed'
+      (f) => f.status === 'matched' || f.status === 'changed'
     );
 
     let aggregateSimilarity: number;
@@ -271,13 +291,19 @@ export class ExpectedDiffEvaluator implements Evaluator {
       }
     } else {
       // Calculate average similarity of comparable files
-      const totalSimilarity = comparableFiles.reduce((sum, f) => sum + f.similarity, 0);
+      const totalSimilarity = comparableFiles.reduce(
+        (sum, f) => sum + f.similarity,
+        0
+      );
       aggregateSimilarity = totalSimilarity / comparableFiles.length;
 
       // Apply penalty for added/removed files
       const totalFiles = new Set([...modifiedFiles, ...expectedFiles]).size;
       const structuralPenalty = (added + removed) / totalFiles;
-      aggregateSimilarity = Math.max(0, aggregateSimilarity - structuralPenalty);
+      aggregateSimilarity = Math.max(
+        0,
+        aggregateSimilarity - structuralPenalty
+      );
     }
 
     return {
@@ -319,7 +345,9 @@ export class ExpectedDiffEvaluator implements Evaluator {
       ];
     } catch (error) {
       // Don't fail evaluation if artifact saving fails
-      console.error('Failed to save diff report artifact:', error);
+      logger.warn(
+        `Failed to save diff report artifact: ${error instanceof Error ? error.message : String(error)}`
+      );
       return [];
     }
   }
@@ -332,7 +360,9 @@ export class ExpectedDiffEvaluator implements Evaluator {
     threshold: number,
     status: 'passed' | 'failed'
   ): string {
-    const similarityPercent = ((metrics.aggregate_similarity as number) * 100).toFixed(1);
+    const similarityPercent = (
+      (metrics.aggregate_similarity as number) * 100
+    ).toFixed(1);
     const thresholdPercent = (threshold * 100).toFixed(0);
 
     const parts = [
@@ -357,9 +387,13 @@ export class ExpectedDiffEvaluator implements Evaluator {
   /**
    * Create a skipped evaluation result
    */
-  private createSkippedResult(startedAt: string, message: string): EvaluationResult {
+  private createSkippedResult(
+    startedAt: string,
+    message: string
+  ): EvaluationResult {
     const completedAt = new Date().toISOString();
-    const durationMs = new Date(completedAt).getTime() - new Date(startedAt).getTime();
+    const durationMs =
+      new Date(completedAt).getTime() - new Date(startedAt).getTime();
 
     return {
       evaluator: this.name,

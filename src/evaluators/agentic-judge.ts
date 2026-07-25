@@ -1,6 +1,6 @@
 /**
  * Agentic Judge Evaluator
- * 
+ *
  * Uses a full agentic coding agent (via AgentAdapter) to evaluate code quality.
  * The agent executes with tools and iterative reasoning to assess evaluation assertions.
  * NOT a single LLM API call - uses full agentic workflow.
@@ -13,6 +13,7 @@ import { EvaluationResult } from '../schemas/result.schema.js';
 import { AgentAdapter, AgentExecutionContext } from '../adapters/base.js';
 import { CopilotCLIAdapter } from '../adapters/copilot-cli.js';
 import { ClaudeCodeAdapter } from '../adapters/claude-code.js';
+import * as logger from '../lib/logger.js';
 
 // Use the built template file in the prompts directory
 // When running from compiled dist/, the prompts directory is a sibling
@@ -41,7 +42,8 @@ interface AgentEvaluationOutput {
  */
 export class AgenticJudgeEvaluator implements Evaluator {
   readonly name: string;
-  readonly description = 'Uses an AI agent to evaluate code quality based on your custom assertions. The agent reads files, searches for patterns, and makes judgments like a human reviewer would. Great for assessing things like: test coverage, error handling, documentation quality, and best practices. Each assertion should be explicit and evaluable as pass/fail. Note: Results may vary between runs due to AI behavior.';
+  readonly description =
+    'Uses an AI agent to evaluate code quality based on your custom assertions. The agent reads files, searches for patterns, and makes judgments like a human reviewer would. Great for assessing things like: test coverage, error handling, documentation quality, and best practices. Each assertion should be explicit and evaluable as pass/fail. Note: Results may vary between runs due to AI behavior.';
   readonly requiresExpectedReference = false;
 
   /**
@@ -60,11 +62,11 @@ export class AgenticJudgeEvaluator implements Evaluator {
       // Check if agent type is configured (either in test case config or evaluator config)
       const agentConfig = context.testCaseConfig?.agent;
       const agentType = (agentConfig?.type || context.config.type) as string;
-      
+
       if (!agentType) {
         return false;
       }
-      
+
       // Validate assertions exists and is not empty
       const assertions = context.config.assertions || context.config.criteria; // Support both for transition
       if (!assertions) {
@@ -73,7 +75,11 @@ export class AgenticJudgeEvaluator implements Evaluator {
       if (Array.isArray(assertions) && assertions.length === 0) {
         return false;
       }
-      if (typeof assertions === 'object' && !Array.isArray(assertions) && Object.keys(assertions).length === 0) {
+      if (
+        typeof assertions === 'object' &&
+        !Array.isArray(assertions) &&
+        Object.keys(assertions).length === 0
+      ) {
         return false;
       }
 
@@ -107,9 +113,14 @@ export class AgenticJudgeEvaluator implements Evaluator {
       }
       // Get adapter for configured agent type from test case config (or evaluator config for eval-only)
       const agentConfig = context.testCaseConfig?.agent;
-      console.log('Agent config from suiteConfig:', agentConfig);
-      const agentType = context.config?.type as string;
-      console.log('Agent type from config:', agentType);
+      const configuredEvaluatorType = context.config?.type;
+      const agentType =
+        typeof configuredEvaluatorType === 'string'
+          ? configuredEvaluatorType
+          : agentConfig?.type;
+      logger.debug(
+        `Agentic judge adapter: ${agentType || agentConfig?.type || '(not configured)'}`
+      );
       if (!agentType) {
         return this.createSkippedResult(
           startedAt,
@@ -126,34 +137,45 @@ export class AgenticJudgeEvaluator implements Evaluator {
 
       // If agent name is specified, copy agent folders to modifiedDir
       // Copy both .github/agents (for copilot-cli) and .claude/agents (for claude-code)
-      console.log('context.config:', context.config);
       if (context.config.agent_name) {
         const fs = await import('fs-extra');
-        
+
         // Copy .github/agents folder (for copilot-cli)
-        console.log(`Copying .github/agents to modifiedDir for ${agentType} agent...`);
         const sourceGithubAgentsDir = join(process.cwd(), '.github', 'agents');
-        console.log('Source .github/agents dir:', sourceGithubAgentsDir);
-        const destGithubAgentsDir = join(context.modifiedDir, '.github', 'agents');
-        console.log('Destination .github/agents dir:', destGithubAgentsDir);
+        const destGithubAgentsDir = join(
+          context.modifiedDir,
+          '.github',
+          'agents'
+        );
+        logger.debug(
+          `Copying GitHub agent files for ${agentType}: ${sourceGithubAgentsDir} -> ${destGithubAgentsDir}`
+        );
         try {
           await fs.default.copy(sourceGithubAgentsDir, destGithubAgentsDir);
-          console.log('Copied .github/agents successfully');
+          logger.debug('Copied GitHub agent files successfully');
         } catch (error) {
-          console.error('Failed to copy .github/agents:', error);
+          logger.warn(
+            `Could not copy GitHub agent files: ${error instanceof Error ? error.message : String(error)}`
+          );
         }
-        
+
         // Copy .claude/agents folder (for claude-code)
-        console.log(`Copying .claude/agents to modifiedDir for ${agentType} agent...`);
         const sourceClaudeAgentsDir = join(process.cwd(), '.claude', 'agents');
-        console.log('Source .claude/agents dir:', sourceClaudeAgentsDir);
-        const destClaudeAgentsDir = join(context.modifiedDir, '.claude', 'agents');
-        console.log('Destination .claude/agents dir:', destClaudeAgentsDir);
+        const destClaudeAgentsDir = join(
+          context.modifiedDir,
+          '.claude',
+          'agents'
+        );
+        logger.debug(
+          `Copying Claude agent files for ${agentType}: ${sourceClaudeAgentsDir} -> ${destClaudeAgentsDir}`
+        );
         try {
           await fs.default.copy(sourceClaudeAgentsDir, destClaudeAgentsDir);
-          console.log('Copied .claude/agents successfully');
+          logger.debug('Copied Claude agent files successfully');
         } catch (error) {
-          console.error('Failed to copy .claude/agents:', error);
+          logger.warn(
+            `Could not copy Claude agent files: ${error instanceof Error ? error.message : String(error)}`
+          );
         }
       }
 
@@ -170,9 +192,12 @@ export class AgenticJudgeEvaluator implements Evaluator {
           // Pass through agent_name parameter if specified in evaluator config
           agent_name: context.config.agent_name,
           // Pass through model parameter if specified in evaluator config
-          model: context.config.model,
+          model: context.config.model ?? agentConfig?.model,
         },
-        timeout: (context.config.timeout as number) || 300000, // 5 min default
+        timeout:
+          (context.config.timeout as number | undefined) ??
+          context.testCaseConfig?.timeout ??
+          300000,
         env: {},
       };
 
@@ -182,7 +207,7 @@ export class AgenticJudgeEvaluator implements Evaluator {
       if (agentResult.status === 'failed') {
         return this.createSkippedResult(
           startedAt,
-          `Agent execution failed: ${agentResult.errors.map(e => e.message).join('; ')}`,
+          `Agent execution failed: ${agentResult.errors.map((e) => e.message).join('; ')}`,
           agentResult.durationMs
         );
       }
@@ -199,7 +224,9 @@ export class AgenticJudgeEvaluator implements Evaluator {
       const evaluationOutput = this.parseAgentOutput(agentResult.output);
       if (!evaluationOutput) {
         // Provide detailed error message with output preview
-        const outputPreview = agentResult.output.substring(0, 500).replace(/\n/g, ' ');
+        const outputPreview = agentResult.output
+          .substring(0, 500)
+          .replace(/\n/g, ' ');
         return this.createSkippedResult(
           startedAt,
           `Agent output is not valid JSON or missing required fields (status, metrics, message). Output preview: "${outputPreview}..."`,
@@ -208,13 +235,14 @@ export class AgenticJudgeEvaluator implements Evaluator {
       }
 
       const completedAt = new Date().toISOString();
-      const durationMs = new Date(completedAt).getTime() - new Date(startedAt).getTime();
+      const durationMs =
+        new Date(completedAt).getTime() - new Date(startedAt).getTime();
 
       // Separate assertion results from other metrics
       // evaluationOutput.metrics contains the assertion scores (e.g., readme_modified: 1)
       // We need to move those to the assertions field at top level
       const assertionResults = { ...evaluationOutput.metrics };
-      
+
       // Keep only non-assertion metadata in metrics
       const metadataMetrics = {
         agent_type: agentType,
@@ -232,8 +260,10 @@ export class AgenticJudgeEvaluator implements Evaluator {
       };
     } catch (error) {
       const completedAt = new Date().toISOString();
-      const durationMs = new Date(completedAt).getTime() - new Date(startedAt).getTime();
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const durationMs =
+        new Date(completedAt).getTime() - new Date(startedAt).getTime();
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
 
       return {
         evaluator: this.name,
@@ -254,32 +284,37 @@ export class AgenticJudgeEvaluator implements Evaluator {
    * Build evaluation prompt for agent
    */
   private buildEvaluationPrompt(context: EvaluationContext): string {
-    const instructionsFile = context.config['instructions-file'] as string | undefined;
+    const instructionsFile = context.config['instructions-file'] as
+      | string
+      | undefined;
     const agentName = context.config['agent_name'] as string | undefined;
     const prompt = context.config['prompt'] as string | undefined;
-    
+
     // Get assertions (support both new and legacy names)
     const assertions = context.config.assertions || context.config.criteria;
-    
+
     // Format assertions list
     const assertionsList = this.formatAssertions(assertions);
-    
+
     // Mode 1: Load instructions from specified file
     if (instructionsFile) {
       // Support both absolute and relative paths
-      const filePath = instructionsFile.startsWith('/') || instructionsFile.match(/^[a-zA-Z]:/)
-        ? instructionsFile
-        : join(process.cwd(), instructionsFile);
-      
+      const filePath =
+        instructionsFile.startsWith('/') || instructionsFile.match(/^[a-zA-Z]:/)
+          ? instructionsFile
+          : join(process.cwd(), instructionsFile);
+
       const template = readFileSync(filePath, 'utf-8');
-      
+
       // Build combined content with prompt prepended to assertions
-      const combinedContent = prompt 
+      const combinedContent = prompt
         ? `${prompt}\n\n${assertionsList}`
         : assertionsList;
-      
+
       // Replace placeholders with actual values (support both ASSERTIONS and CRITERIA)
-      return template.replace('{{ASSERTIONS}}', combinedContent).replace('{{CRITERIA}}', combinedContent);
+      return template
+        .replace('{{ASSERTIONS}}', combinedContent)
+        .replace('{{CRITERIA}}', combinedContent);
     }
     if (agentName) {
       // Agent has instructions, just send assertions with proper structure
@@ -291,14 +326,16 @@ export class AgenticJudgeEvaluator implements Evaluator {
     // Mode 2: Use default markdown template
     const templatePath = join(getPromptsDir(), 'agentic-judge.template.md');
     const template = readFileSync(templatePath, 'utf-8');
-    
+
     // Build combined content with prompt prepended to assertions
-    const combinedContent = prompt 
+    const combinedContent = prompt
       ? `${prompt}\n\n${assertionsList}`
       : assertionsList;
-    
+
     // Replace placeholders with actual values (support both ASSERTIONS and CRITERIA)
-    return template.replace('{{ASSERTIONS}}', combinedContent).replace('{{CRITERIA}}', combinedContent);
+    return template
+      .replace('{{ASSERTIONS}}', combinedContent)
+      .replace('{{CRITERIA}}', combinedContent);
   }
 
   /**
@@ -334,7 +371,9 @@ export class AgenticJudgeEvaluator implements Evaluator {
       }
 
       // Strategy 2: Try to find JSON object with required fields
-      const jsonObjectMatch = output.match(/\{[\s\S]*?"status"[\s\S]*?"metrics"[\s\S]*?"message"[\s\S]*?\}/);
+      const jsonObjectMatch = output.match(
+        /\{[\s\S]*?"status"[\s\S]*?"metrics"[\s\S]*?"message"[\s\S]*?\}/
+      );
       if (jsonObjectMatch) {
         const parsed = this.validateAndParse(jsonObjectMatch[0]);
         if (parsed) return parsed;
@@ -349,7 +388,10 @@ export class AgenticJudgeEvaluator implements Evaluator {
       if (lastBraceIndex > 0) {
         const firstBraceIndex = output.lastIndexOf('{', lastBraceIndex);
         if (firstBraceIndex >= 0) {
-          const jsonCandidate = output.substring(firstBraceIndex, lastBraceIndex + 1);
+          const jsonCandidate = output.substring(
+            firstBraceIndex,
+            lastBraceIndex + 1
+          );
           const parsed = this.validateAndParse(jsonCandidate);
           if (parsed) return parsed;
         }
@@ -357,7 +399,9 @@ export class AgenticJudgeEvaluator implements Evaluator {
 
       // Strategy 5: Find all JSON objects with required fields and use the last valid one
       // This handles cases where agent outputs multiple JSON blocks (e.g., thought process + final result)
-      const jsonMatches = output.match(/\{[^{}]*"status"[^{}]*"metrics"[^{}]*"message"[^{}]*\}/g);
+      const jsonMatches = output.match(
+        /\{[^{}]*"status"[^{}]*"metrics"[^{}]*"message"[^{}]*\}/g
+      );
       if (jsonMatches && jsonMatches.length > 0) {
         for (let i = jsonMatches.length - 1; i >= 0; i--) {
           const parsed = this.validateAndParse(jsonMatches[i]);
@@ -377,7 +421,7 @@ export class AgenticJudgeEvaluator implements Evaluator {
   private validateAndParse(jsonText: string): AgentEvaluationOutput | null {
     try {
       const parsed = JSON.parse(jsonText) as Record<string, unknown>;
-      
+
       // Validate required fields exist
       if (!parsed.status || !parsed.metrics || !parsed.message) {
         return null;
@@ -387,7 +431,11 @@ export class AgenticJudgeEvaluator implements Evaluator {
       if (typeof parsed.status !== 'string') {
         return null;
       }
-      if (typeof parsed.metrics !== 'object' || parsed.metrics === null || Array.isArray(parsed.metrics)) {
+      if (
+        typeof parsed.metrics !== 'object' ||
+        parsed.metrics === null ||
+        Array.isArray(parsed.metrics)
+      ) {
         return null;
       }
       if (typeof parsed.message !== 'string') {
@@ -433,7 +481,8 @@ export class AgenticJudgeEvaluator implements Evaluator {
     agentDurationMs?: number
   ): EvaluationResult {
     const completedAt = new Date().toISOString();
-    const durationMs = new Date(completedAt).getTime() - new Date(startedAt).getTime();
+    const durationMs =
+      new Date(completedAt).getTime() - new Date(startedAt).getTime();
 
     return {
       evaluator: this.name,

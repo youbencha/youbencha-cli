@@ -1,9 +1,9 @@
 /**
  * Unit tests for Claude Code Adapter
- * 
+ *
  * These tests verify the internal command building and parsing logic
  * of the Claude Code adapter without requiring actual CLI execution.
- * 
+ *
  * Note: Tests that require actual Claude CLI execution will be skipped
  * in normal test runs. Set CLAUDE_CODE_INTEGRATION_TESTS=1 to run them.
  */
@@ -12,6 +12,7 @@ import { ClaudeCodeAdapter } from '../../src/adapters/claude-code.js';
 import { AgentExecutionContext } from '../../src/adapters/base.js';
 import * as path from 'path';
 import * as fs from 'fs/promises';
+import * as os from 'os';
 
 // Check if we should run integration tests
 const RUN_INTEGRATION_TESTS = process.env.CLAUDE_CODE_INTEGRATION_TESTS === '1';
@@ -27,7 +28,9 @@ describe('ClaudeCodeAdapter Unit Tests', () => {
   // Helper to skip tests when Claude is not available or integration tests disabled
   const skipIfNoClaude = (): boolean => {
     if (!RUN_INTEGRATION_TESTS) {
-      console.log('Skipping: Set CLAUDE_CODE_INTEGRATION_TESTS=1 to run Claude CLI tests');
+      console.log(
+        'Skipping: Set CLAUDE_CODE_INTEGRATION_TESTS=1 to run Claude CLI tests'
+      );
       return true;
     }
     if (!isClaudeAvailable) {
@@ -39,6 +42,10 @@ describe('ClaudeCodeAdapter Unit Tests', () => {
 
   beforeAll(async () => {
     adapter = new ClaudeCodeAdapter();
+    if (!RUN_INTEGRATION_TESTS) {
+      isClaudeAvailable = false;
+      return;
+    }
     // Check if Claude CLI is available for tests that require it
     try {
       isClaudeAvailable = await adapter.checkAvailability();
@@ -46,16 +53,19 @@ describe('ClaudeCodeAdapter Unit Tests', () => {
       isClaudeAvailable = false;
     }
     if (!isClaudeAvailable) {
-      console.log('Note: Claude CLI not available - execution tests will be skipped');
+      console.log(
+        'Note: Claude CLI not available - execution tests will be skipped'
+      );
     }
     if (!RUN_INTEGRATION_TESTS) {
-      console.log('Note: Integration tests disabled - set CLAUDE_CODE_INTEGRATION_TESTS=1 to enable');
+      console.log(
+        'Note: Integration tests disabled - set CLAUDE_CODE_INTEGRATION_TESTS=1 to enable'
+      );
     }
   });
 
   beforeEach(async () => {
-    tempWorkspace = path.join('/tmp', `test-unit-${Date.now()}`);
-    await fs.mkdir(tempWorkspace, { recursive: true });
+    tempWorkspace = await fs.mkdtemp(path.join(os.tmpdir(), 'claude-unit-'));
     await fs.mkdir(path.join(tempWorkspace, 'artifacts'), { recursive: true });
   });
 
@@ -141,10 +151,15 @@ describe('ClaudeCodeAdapter Unit Tests', () => {
 
   describe('buildClaudeCommand() with agent flag', () => {
     // Helper to create an agent file in the test workspace
-    const createAgentFile = async (name: string, content?: string): Promise<void> => {
+    const createAgentFile = async (
+      name: string,
+      content?: string
+    ): Promise<void> => {
       const agentDir = path.join(tempWorkspace, '.claude', 'agents');
       await fs.mkdir(agentDir, { recursive: true });
-      const agentContent = content || `---
+      const agentContent =
+        content ||
+        `---
 name: ${name}
 description: Test agent for ${name}
 ---
@@ -195,11 +210,7 @@ You are a test agent called ${name}.`;
     it('should handle custom agent names', async () => {
       if (skipIfNoClaude()) return;
 
-      const agentNames = [
-        'custom-agent',
-        'test-agent',
-        'my-code-reviewer',
-      ];
+      const agentNames = ['custom-agent', 'test-agent', 'my-code-reviewer'];
 
       // Create agent files for each
       for (const agent_name of agentNames) {
@@ -248,7 +259,7 @@ You are a test agent called ${name}.`;
 
     it('should throw error when agent_name is specified but agent file not found', async () => {
       if (skipIfNoClaude()) return;
-      
+
       const context: AgentExecutionContext = {
         workspaceDir: tempWorkspace,
         repoDir: path.join(tempWorkspace, 'src-modified'),
@@ -548,7 +559,7 @@ Line 5 with 'single quotes'`;
       };
 
       const log = adapter.normalizeLog(mockResult.output, mockResult);
-      const assistantMsg = log.messages.find(m => m.role === 'assistant');
+      const assistantMsg = log.messages.find((m) => m.role === 'assistant');
 
       expect(assistantMsg?.content).toContain('Line 1');
       expect(assistantMsg?.content).toContain('Line 2');
@@ -586,7 +597,7 @@ Line 5 with 'single quotes'`;
       };
 
       const log = adapter.normalizeLog(mockResult.output, mockResult);
-      const assistantMsg = log.messages.find(m => m.role === 'assistant');
+      const assistantMsg = log.messages.find((m) => m.role === 'assistant');
 
       expect(assistantMsg?.tool_calls).toBeDefined();
       expect(assistantMsg?.tool_calls?.length).toBe(1);
@@ -604,7 +615,7 @@ Line 5 with 'single quotes'`;
       };
 
       const log = adapter.normalizeLog(mockResult.output, mockResult);
-      const assistantMsg = log.messages.find(m => m.role === 'assistant');
+      const assistantMsg = log.messages.find((m) => m.role === 'assistant');
 
       expect(assistantMsg?.tool_calls?.[0].function.name).toBe('list_files');
     });
@@ -621,16 +632,19 @@ Line 5 with 'single quotes'`;
       };
 
       const log = adapter.normalizeLog(mockResult.output, mockResult);
-      const assistantMsg = log.messages.find(m => m.role === 'assistant');
+      const assistantMsg = log.messages.find((m) => m.role === 'assistant');
 
-      expect(assistantMsg?.tool_calls?.[0].function.arguments).toContain('*.ts');
+      expect(assistantMsg?.tool_calls?.[0].function.arguments).toContain(
+        '*.ts'
+      );
     });
 
     it('should handle multiple tool calls', () => {
       const mockResult = {
         exitCode: 0,
         status: 'success' as const,
-        output: '[TOOL: read_file] a.ts\n[TOOL: write_file] b.ts\n[TOOL: list_files] .',
+        output:
+          '[TOOL: read_file] a.ts\n[TOOL: write_file] b.ts\n[TOOL: list_files] .',
         startedAt: '2025-11-25T10:00:00Z',
         completedAt: '2025-11-25T10:01:00Z',
         durationMs: 60000,
@@ -638,7 +652,7 @@ Line 5 with 'single quotes'`;
       };
 
       const log = adapter.normalizeLog(mockResult.output, mockResult);
-      const assistantMsg = log.messages.find(m => m.role === 'assistant');
+      const assistantMsg = log.messages.find((m) => m.role === 'assistant');
 
       expect(assistantMsg?.tool_calls?.length).toBe(3);
     });
@@ -655,7 +669,7 @@ Line 5 with 'single quotes'`;
       };
 
       const log = adapter.normalizeLog(mockResult.output, mockResult);
-      const assistantMsg = log.messages.find(m => m.role === 'assistant');
+      const assistantMsg = log.messages.find((m) => m.role === 'assistant');
 
       expect(assistantMsg?.tool_calls).toBeUndefined();
     });

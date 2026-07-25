@@ -11,7 +11,7 @@ branch: main
 
 # Agent configuration - what coding agent to use and what to ask it
 agent:
-  type: copilot-cli  # Currently the only supported agent
+  type: copilot-cli  # Also supported: claude-code
   model: gpt-5.1  # Optional: Specify which model to use
   # Available models:
   #   - claude-sonnet-4.5

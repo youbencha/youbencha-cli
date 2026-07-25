@@ -103,6 +103,39 @@ cat .youbencha-workspace/.../artifacts/git-diff.patch
 
 ## Suite of Results Analysis
 
+### Experiment Results
+
+`yb experiment run` produces a versioned experiment result with every matrix
+cell and attempt, aggregates at experiment/test-case/variant/pair scope,
+comparison findings, provenance, warnings, and report artifact paths. The
+durable directory contains:
+
+```text
+results/experiments/<experiment-id>/
+  experiment.json
+  state.json
+  results.json
+  report.md
+  junit.xml
+  cells/<cell-id>/attempt-<n>/
+```
+
+Use the generated Markdown report for a human overview, `results.json` for
+automation, and `junit.xml` for CI test annotations. Aggregates always include
+sample size and measurement quality. A p95 is unavailable below 20
+observations, and missing or incomparable baseline data is reported as
+`partial`, not silently treated as a pass.
+
+```bash
+yb experiment report <experiment-id> --format markdown
+yb experiment report <experiment-id> --format json
+yb experiment report <experiment-id> --format junit
+yb experiment compare <experiment-id> --baseline last-approved
+```
+
+For the complete workflow and field semantics, see
+[Experiments](experiments.md).
+
 ### Multiple Test Cases, Same Agent
 
 When you run multiple test cases with the same agent configuration, you can compare:

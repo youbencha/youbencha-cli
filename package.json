@@ -14,8 +14,8 @@
     "lint": "eslint src/**/*.ts tests/**/*.ts",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\"",
-    "prepublishOnly": "npm run build",
-    "prepublishOnly2": "npm run lint && npm run test && npm run build",
+    "verify:release": "npm run lint && npm test -- --runInBand && npm run build && npm pack --dry-run",
+    "prepublishOnly": "npm run verify:release",
     "prepack": "npm run build"
   },
   "keywords": [
@@ -44,7 +44,7 @@
     "dist/",
     "examples/",
     "README.md",
-    "GETTING-STARTED.md",
+    "docs/",
     "LICENSE"
   ],
   "engines": {

@@ -28,6 +28,61 @@ yb config init --force
 
 This creates a commented configuration file with all available options.
 
+## Experiment Definitions
+
+Experiment files are separate from `.youbencharc` and test-case files. They
+describe a matrix of existing test cases, agent variants, repetitions, and
+execution policy. Relative test-case paths are resolved from the experiment
+file's directory.
+
+```yaml
+version: 1
+name: agent-comparison
+
+testcases:
+  - id: readme-task
+    file: ../examples/testcase-basic.yaml
+
+variants:
+  - name: copilot-default
+    agent:
+      type: copilot-cli
+  - name: claude-sonnet
+    agent:
+      type: claude-code
+      model: sonnet
+
+repetitions: 2
+
+execution:
+  max_concurrent: 2
+  retry:
+    max_attempts: 2
+    on: [infrastructure_failure, timeout]
+    backoff_ms: 1000
+
+budget:
+  max_duration_minutes: 30
+  max_cost_usd: 10
+```
+
+Variant `agent` values override matching fields in the referenced test case's
+agent configuration; unspecified agent fields, evaluators, and task
+configuration still come from that test case. Test-case IDs and variant names
+must be unique. At least one test case and one variant are required. A budget is
+optional, but when present it must set a duration, a cost, or both.
+
+Validate or expand the matrix before spending agent capacity:
+
+```bash
+yb experiment validate experiment.yaml
+yb experiment plan experiment.yaml
+yb experiment plan experiment.yaml --json
+```
+
+See [Experiments](experiments.md) for regression settings, baseline management,
+resume behavior, and reports.
+
 ## Configuration Options
 
 ### workspace_dir

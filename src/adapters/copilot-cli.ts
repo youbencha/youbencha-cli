@@ -1,6 +1,6 @@
 /**
  * GitHub Copilot CLI Adapter
- * 
+ *
  * Integrates GitHub Copilot CLI as an agent for youBencha evaluations.
  * Handles execution, output capture, and log normalization.
  */
@@ -12,12 +12,13 @@ import * as os from 'os';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { createWriteStream, readFileSync } from 'fs';
-import { 
-  AgentAdapter, 
-  AgentExecutionContext, 
-  AgentExecutionResult 
+import {
+  AgentAdapter,
+  AgentExecutionContext,
+  AgentExecutionResult,
 } from './base.js';
 import { YouBenchaLog } from '../schemas/youbenchalog.schema.js';
+import * as logger from '../lib/logger.js';
 
 const execAsync = promisify(exec);
 
@@ -34,12 +35,11 @@ export class CopilotCLIAdapter implements AgentAdapter {
   async checkAvailability(): Promise<boolean> {
     try {
       // Check if copilot is in PATH
-      const command = process.platform === 'win32' 
-        ? 'where copilot' 
-        : 'which copilot';
-      
+      const command =
+        process.platform === 'win32' ? 'where copilot' : 'which copilot';
+
       await execAsync(command);
-      
+
       // Check if authenticated (this may fail if not logged in)
       // We'll just check if the binary exists for now
       // Authentication check would require running copilot with auth check
@@ -57,7 +57,11 @@ export class CopilotCLIAdapter implements AgentAdapter {
     let output = '';
     let exitCode = 0;
     let status: 'success' | 'failed' | 'timeout' = 'success';
-    const errors: Array<{ message: string; timestamp: string; stackTrace?: string }> = [];
+    const errors: Array<{
+      message: string;
+      timestamp: string;
+      stackTrace?: string;
+    }> = [];
 
     try {
       // Ensure copilot-logs directory exists
@@ -66,23 +70,28 @@ export class CopilotCLIAdapter implements AgentAdapter {
 
       // Create a log file path for terminal output (cross-platform tee functionality)
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const terminalLogPath = path.join(copilotLogsDir, `terminal-output-${timestamp}.log`);
+      const terminalLogPath = path.join(
+        copilotLogsDir,
+        `terminal-output-${timestamp}.log`
+      );
 
       // Build copilot command
       const { command, args } = this.buildCopilotCommand(context);
-      
+
       // Get agent name for logging
-      const agentName = (context.config.agent_name || context.config.agent) as string | undefined;
-      
-      // Log the command being executed for debugging
-      console.log('[DEBUG] Copilot CLI Command:');
-      console.log(`  Command: ${command}`);
-      console.log(`  Args: ${JSON.stringify(args)}`);
-      console.log(`  CWD: ${context.workspaceDir}`);
-      console.log(`  Agent name: ${agentName || '(default)'}`);
-      console.log(`  Prompt length: ${(context.config.prompt as string)?.length || 0} chars`);
-      console.log(`  Terminal output log: ${terminalLogPath}`);
-      
+      const agentName = (context.config.agent_name || context.config.agent) as
+        | string
+        | undefined;
+
+      // Avoid logging the argument array because it contains the full prompt.
+      logger.debug(`Copilot CLI command: ${command}`);
+      logger.debug(`Copilot CLI working directory: ${context.workspaceDir}`);
+      logger.debug(`Copilot CLI agent name: ${agentName || '(default)'}`);
+      logger.debug(
+        `Copilot CLI prompt length: ${(context.config.prompt as string)?.length || 0} chars`
+      );
+      logger.debug(`Copilot CLI terminal output log: ${terminalLogPath}`);
+
       // Execute copilot with timeout
       const result = await this.executeWithTimeout(
         command,
@@ -95,7 +104,7 @@ export class CopilotCLIAdapter implements AgentAdapter {
 
       output = result.output;
       exitCode = result.exitCode;
-      
+
       if (result.timedOut) {
         status = 'timeout';
         errors.push({
@@ -112,20 +121,22 @@ export class CopilotCLIAdapter implements AgentAdapter {
     } catch (error) {
       status = 'failed';
       exitCode = 1;
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       const stackTrace = error instanceof Error ? error.stack : undefined;
-      
+
       errors.push({
         message: errorMessage,
         timestamp: new Date().toISOString(),
         stackTrace,
       });
-      
+
       output = errorMessage;
     }
 
     const completedAt = new Date().toISOString();
-    const durationMs = new Date(completedAt).getTime() - new Date(startedAt).getTime();
+    const durationMs =
+      new Date(completedAt).getTime() - new Date(startedAt).getTime();
 
     return {
       exitCode,
@@ -144,10 +155,10 @@ export class CopilotCLIAdapter implements AgentAdapter {
   normalizeLog(rawOutput: string, result: AgentExecutionResult): YouBenchaLog {
     // Parse copilot output to extract messages and tool calls
     const messages = this.parseMessages(rawOutput, result);
-    
+
     // Extract usage metrics from output if available
     const usage = this.extractUsageMetrics(rawOutput);
-    
+
     // Build environment context
     const environment = {
       os: `${os.platform()}-${os.arch()}`,
@@ -183,7 +194,7 @@ export class CopilotCLIAdapter implements AgentAdapter {
       },
       messages,
       usage,
-      errors: result.errors.map(err => ({
+      errors: result.errors.map((err) => ({
         message: err.message,
         timestamp: err.timestamp,
         stack_trace: err.stackTrace,
@@ -195,37 +206,40 @@ export class CopilotCLIAdapter implements AgentAdapter {
   /**
    * Build copilot command with proper platform handling
    */
-  private buildCopilotCommand(
-    context: AgentExecutionContext
-  ): { command: string; args: string[] } {
+  private buildCopilotCommand(context: AgentExecutionContext): {
+    command: string;
+    args: string[];
+  } {
     const prompt = context.config.prompt as string | undefined;
     // Support both 'agent_name' (from test case config) and 'agent' (legacy/direct)
-    const agent = (context.config.agent_name || context.config.agent) as string | undefined;
+    const agent = (context.config.agent_name || context.config.agent) as
+      | string
+      | undefined;
     const model = context.config.model as string | undefined;
-    
+
     if (!prompt) {
       throw new Error('Prompt is required in agent config');
     }
 
     // Build base args
     const baseArgs = ['-p', prompt];
-    
+
     // Add model if specified
     if (model) {
       baseArgs.push('--model', model);
     }
-    
+
     // Add agent if specified
     if (agent) {
       baseArgs.push('--agent', agent);
     }
-    
+
     // Add tool permissions
     baseArgs.push('--allow-all-tools', '--allow-all-paths');
 
     // Add logging configuration
     baseArgs.push('--log-level', 'all');
-    
+
     // Create copilot-logs subdirectory in artifacts for better organization
     const copilotLogsDir = path.join(context.artifactsDir, 'copilot-logs');
     baseArgs.push('--log-dir', copilotLogsDir);
@@ -235,18 +249,24 @@ export class CopilotCLIAdapter implements AgentAdapter {
     if (process.platform === 'win32') {
       // Build the PowerShell command using the call operator (&)
       // This allows PowerShell to properly execute the copilot command with arguments
-      const escapedArgs = baseArgs.map(arg => {
+      const escapedArgs = baseArgs.map((arg) => {
         // Escape single quotes by doubling them for PowerShell
         const escaped = arg.replace(/'/g, "''");
         return `'${escaped}'`;
       });
-      
+
       // Use & operator to call copilot with arguments
       const copilotCommand = `& copilot ${escapedArgs.join(' ')}`;
-      
+
       return {
         command: 'powershell.exe',
-        args: ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', copilotCommand],
+        args: [
+          '-NoProfile',
+          '-ExecutionPolicy',
+          'Bypass',
+          '-Command',
+          copilotCommand,
+        ],
       };
     }
 
@@ -274,7 +294,9 @@ export class CopilotCLIAdapter implements AgentAdapter {
       let timeoutHandle: NodeJS.Timeout | null = null;
 
       // Create write stream for terminal output log if path provided
-      const logStream = logFilePath ? createWriteStream(logFilePath, { encoding: 'utf8' }) : null;
+      const logStream = logFilePath
+        ? createWriteStream(logFilePath, { encoding: 'utf8' })
+        : null;
 
       // Use direct command execution without shell
       // This ensures arguments are passed correctly without shell parsing
@@ -291,7 +313,7 @@ export class CopilotCLIAdapter implements AgentAdapter {
         timeoutHandle = setTimeout(() => {
           timedOut = true;
           childProcess.kill('SIGTERM');
-          
+
           // Force kill after 5 seconds if still running
           setTimeout(() => {
             if (!childProcess.killed) {
@@ -367,7 +389,10 @@ export class CopilotCLIAdapter implements AgentAdapter {
   /**
    * Get spawn configuration for direct command execution
    */
-  private getShellConfig(): { shell?: boolean | string; windowsVerbatimArguments?: boolean } {
+  private getShellConfig(): {
+    shell?: boolean | string;
+    windowsVerbatimArguments?: boolean;
+  } {
     // Don't use shell to avoid argument parsing issues on all platforms
     // spawn will handle arguments correctly when shell is false
     return { shell: false };
@@ -376,10 +401,13 @@ export class CopilotCLIAdapter implements AgentAdapter {
   /**
    * Parse copilot output into messages array
    */
-  private parseMessages(rawOutput: string, result: AgentExecutionResult): YouBenchaLog['messages'] {
+  private parseMessages(
+    rawOutput: string,
+    result: AgentExecutionResult
+  ): YouBenchaLog['messages'] {
     const messages: YouBenchaLog['messages'] = [];
     const lines = rawOutput.split('\n');
-    
+
     // Add system message
     messages.push({
       role: 'system',
@@ -393,10 +421,10 @@ export class CopilotCLIAdapter implements AgentAdapter {
       type: string;
       function: { name: string; arguments: string };
     }> = [];
-    
+
     for (const line of lines) {
       const trimmed = line.trim();
-      
+
       if (!trimmed) continue;
 
       // Parse tool calls
@@ -412,11 +440,11 @@ export class CopilotCLIAdapter implements AgentAdapter {
             },
           });
         }
-      } 
+      }
       // Parse responses
       else if (trimmed.startsWith('[RESPONSE]')) {
         const responseContent = trimmed.replace('[RESPONSE]', '').trim();
-        
+
         // Add assistant message with tool calls if any
         if (currentToolCalls.length > 0) {
           messages.push({
@@ -474,20 +502,31 @@ export class CopilotCLIAdapter implements AgentAdapter {
     // Try to extract token usage from output
     // Copilot CLI may include usage information in output
     const promptTokensMatch = rawOutput.match(/prompt[_\s]tokens?:\s*(\d+)/i);
-    const completionTokensMatch = rawOutput.match(/completion[_\s]tokens?:\s*(\d+)/i);
-    
-    const promptTokens = promptTokensMatch ? parseInt(promptTokensMatch[1], 10) : 0;
-    const completionTokens = completionTokensMatch ? parseInt(completionTokensMatch[1], 10) : 0;
+    const completionTokensMatch = rawOutput.match(
+      /completion[_\s]tokens?:\s*(\d+)/i
+    );
+
+    const promptTokens = promptTokensMatch
+      ? parseInt(promptTokensMatch[1], 10)
+      : 0;
+    const completionTokens = completionTokensMatch
+      ? parseInt(completionTokensMatch[1], 10)
+      : 0;
 
     // Estimate tokens if not available (rough estimate: 1 token ≈ 4 characters)
-    const estimatedPromptTokens = promptTokens || Math.ceil(rawOutput.length / 4);
-    const estimatedCompletionTokens = completionTokens || Math.ceil(rawOutput.length / 8);
+    const estimatedPromptTokens =
+      promptTokens || Math.ceil(rawOutput.length / 4);
+    const estimatedCompletionTokens =
+      completionTokens || Math.ceil(rawOutput.length / 8);
 
     return {
       prompt_tokens: estimatedPromptTokens,
       completion_tokens: estimatedCompletionTokens,
       total_tokens: estimatedPromptTokens + estimatedCompletionTokens,
-      estimated_cost_usd: this.estimateCost(estimatedPromptTokens, estimatedCompletionTokens),
+      estimated_cost_usd: this.estimateCost(
+        estimatedPromptTokens,
+        estimatedCompletionTokens
+      ),
     };
   }
 
@@ -506,7 +545,9 @@ export class CopilotCLIAdapter implements AgentAdapter {
    * Detect copilot version from output
    */
   private detectCopilotVersion(rawOutput: string): string {
-    const versionMatch = rawOutput.match(/copilot[_\s-]cli[_\s]version?:\s*([0-9.]+)/i);
+    const versionMatch = rawOutput.match(
+      /copilot[_\s-]cli[_\s]version?:\s*([0-9.]+)/i
+    );
     return versionMatch ? versionMatch[1] : 'unknown';
   }
 
@@ -525,7 +566,9 @@ export class CopilotCLIAdapter implements AgentAdapter {
     try {
       // Try to read version from package.json
       const packageJsonPath = path.join(process.cwd(), 'package.json');
-      const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8')) as { version?: string };
+      const packageJson = JSON.parse(
+        readFileSync(packageJsonPath, 'utf-8')
+      ) as { version?: string };
       return packageJson.version || '1.0.0';
     } catch {
       return '1.0.0';

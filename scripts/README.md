@@ -31,12 +31,12 @@ The script will:
 5. ✅ Prompt for version bump type (patch/minor/major/custom)
 6. ✅ Run tests and linting
 7. ✅ Build the project
-8. ✅ Show package contents preview
+8. ✅ Show the package contents preview
 9. ✅ Bump the version in package.json
 10. ✅ Ask for final confirmation
-11. ✅ Publish to NPM with provenance
-12. ✅ Create and push git tag
-13. ✅ Push changes to GitHub
+11. ✅ Commit the confirmed version bump and create a unique git tag
+12. ✅ Publish to NPM with provenance
+13. ✅ Push the commit and tag to GitHub
 
 ### Version Bumping
 
@@ -66,7 +66,9 @@ git tag -d v<VERSION>
 
 For automated releases, use the GitHub Actions workflow instead of the manual script:
 
-1. Create a new release on GitHub
-2. The workflow will automatically publish to NPM
+1. Commit a unique version in `package.json` and `package-lock.json`
+2. Create and publish a GitHub release whose tag is exactly `v<package version>`
+3. The workflow verifies the tag, runs all release gates, rejects versions that
+   already exist on NPM, and publishes with provenance
 
 See `.github/workflows/publish.yml` for details.

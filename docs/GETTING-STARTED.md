@@ -1,16 +1,34 @@
 # Getting Started with youBencha
 
-youBencha helps you evaluate AI coding agents objectively. This guide will get you running your first evaluation in under 5 minutes.
+youBencha helps you evaluate AI coding agents objectively. Start with the
+offline smoke workflow below, then configure an agent-backed run when you are
+ready.
 
 ## What You'll Need
 
 - **Node.js 20+** - Check with `node --version`
 - **Git** - Check with `git --version`
-- **An AI coding agent** - Currently GitHub Copilot CLI is supported
-  - Install: `npm install -g @githubnext/github-copilot-cli`
-  - Verify: `copilot --version`
+- **An AI coding agent** (only for `yb run`) - At least one of:
+  - GitHub Copilot CLI (`copilot`), used by the `copilot-cli` agent type
+  - Claude Code CLI (`claude`), used by the `claude-code` agent type
 
-## Quick Start (3 steps)
+Run `yb doctor` to check these prerequisites and see actionable fixes.
+
+## Minimal offline smoke workflow
+
+From an existing Git repository:
+
+```bash
+yb init --minimal
+# Make or keep an uncommitted change, then:
+yb eval -c eval.yaml
+```
+
+This creates an objective `git-diff` evaluation for the current working tree.
+It does not clone a repository, invoke an agent, use an AI judge, or require a
+paid model. Results are written under `.youbencha-eval/`.
+
+## Agent-backed quick start
 
 ### 1. Install youBencha
 
@@ -32,6 +50,8 @@ This creates:
 - `.claude/agents/agentic-judge.md` - Agent file for Claude Code
 
 The agent files enable the `agentic-judge` evaluator to work with your preferred coding agent.
+If you do not need an AI judge, `yb init --minimal` skips these files and
+creates an eval-only workflow instead.
 
 ### 3. Customize and run
 
@@ -106,6 +126,10 @@ You'll see:
 2. The agent makes changes based on your prompt
 3. Evaluators analyze the output
 4. Results are saved to `.youbencha-workspace/`
+
+The command exits with `0` only when every evaluator passes. Runtime errors use
+`1`, evaluator failures use `2`, and skipped/incomplete evaluation uses `3`.
+This makes the same command suitable for a CI quality gate.
 
 ### 5. View the report
 
@@ -231,12 +255,15 @@ To clean up the workspace after completion:
 yb run -c testcase.yaml --delete-workspace
 ```
 
-### Testing locally
+### Evaluating local changes
 
-Use a local directory instead of a GitHub repo:
+`yb run` currently accepts public HTTP(S) repository URLs; it does not accept
+`file://` repositories. To evaluate an existing local Git working tree without
+running an agent, use:
 
-```yaml
-repo: file:///path/to/local/repo
+```bash
+yb init --minimal
+yb eval -c eval.yaml
 ```
 
 ### Multiple evaluators
@@ -259,7 +286,7 @@ evaluators:
 ## Tips for Success
 
 ### 1. Start Simple
-Begin with just `git-diff` and `agentic-judge`. Add more evaluators as you learn.
+Begin with `git-diff`. Add `agentic-judge` when you need qualitative assessment.
 
 ### 2. Make Assertions Specific
 ❌ Bad: `"Code is good"`
@@ -276,16 +303,20 @@ The agent's output quality depends heavily on your prompt. Test and iterate!
 
 ### 5. Check Examples
 Look at `examples/` directory for working configurations:
-- `testcase-simple.yaml` - Minimal configuration
+- `eval-minimal.yaml` - Offline evaluation of the current working tree
 - `testcase-basic.yaml` - Standard setup
 - `testcase-expected-ref.yaml` - With reference comparison
 
 ## Troubleshooting
 
 ### "Agent not found"
-Install the agent first:
+Install one of the supported agent CLIs, then authenticate it:
 ```bash
-npm install -g @githubnext/github-copilot-cli
+npm install -g @github/copilot
+# or
+npm install -g @anthropic-ai/claude-code
+
+yb doctor
 ```
 
 ### "Configuration validation failed"
@@ -295,10 +326,9 @@ Common YAML issues:
 - Validate at https://yaml-online-parser.appspot.com
 
 ### "Permission denied"
-Run from a directory where you have write permissions, or use:
-```bash
-sudo npm install -g youbencha
-```
+Run from a directory where you have write permissions. For npm installation
+permission errors, configure a user-owned npm global directory or use a Node
+version manager; do not install the CLI with `sudo`.
 
 ### Need Help?
 - Check the [README](../README.md) for full documentation

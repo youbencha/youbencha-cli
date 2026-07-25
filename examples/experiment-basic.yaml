@@ -1,0 +1,31 @@
+version: 1
+name: basic-agent-comparison
+
+testcases:
+  - id: add-readme-comment
+    file: ./testcase-basic.yaml
+
+variants:
+  - name: copilot-default
+    agent:
+      type: copilot-cli
+  - name: claude-default
+    agent:
+      type: claude-code
+
+repetitions: 2
+
+execution:
+  max_concurrent: 2
+  retry:
+    max_attempts: 2
+    backoff_ms: 1000
+    on:
+      - infrastructure_failure
+      - timeout
+
+budget:
+  max_duration_minutes: 30
+
+regression:
+  min_pass_rate: 0.8
