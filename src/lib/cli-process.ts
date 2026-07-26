@@ -30,6 +30,17 @@ export interface CliProcessRequest {
   stdin?: string;
   timeoutMs: number;
   maxCapturedOutputBytes: number;
+  /**
+   * Maximum bytes durably written to each stdout/stderr artifact. When omitted,
+   * a conservative process-wide default is used so legacy callers remain
+   * bounded.
+   */
+  maxArtifactOutputBytes?: number;
+  /**
+   * Exact credential values to replace before stdout/stderr bytes reach
+   * durable storage. JSON-escaped forms are covered automatically.
+   */
+  artifactRedactions?: readonly string[];
   stdoutArtifactPath: string;
   stderrArtifactPath: string;
   terminationGraceMs?: number;
@@ -44,6 +55,12 @@ export interface CliProcessResult {
   stderrBytes: number;
   stdoutTruncated: boolean;
   stderrTruncated: boolean;
+  stdoutArtifactBytes: number;
+  stderrArtifactBytes: number;
+  stdoutArtifactTruncated: boolean;
+  stderrArtifactTruncated: boolean;
+  stdoutArtifactRedactionCount?: number;
+  stderrArtifactRedactionCount?: number;
   timedOut: boolean;
   error?: Error;
 }
@@ -65,6 +82,7 @@ export interface CliProcessDependencies {
 
 const DEFAULT_TERMINATION_GRACE_MS = 500;
 const DEFAULT_TERMINATION_COMMAND_TIMEOUT_MS = 2_000;
+const DEFAULT_MAX_ARTIFACT_OUTPUT_BYTES = 64 * 1024 * 1024;
 const WINDOWS_EXECUTABLE_EXTENSIONS = ['.COM', '.EXE', '.BAT', '.CMD'];
 
 /**
@@ -177,6 +195,10 @@ export async function runCliProcess(
       stderrBytes: 0,
       stdoutTruncated: false,
       stderrTruncated: false,
+      stdoutArtifactBytes: 0,
+      stderrArtifactBytes: 0,
+      stdoutArtifactTruncated: false,
+      stderrArtifactTruncated: false,
       timedOut: false,
       error: toError(error, 'Unable to start CLI process'),
     };
@@ -198,6 +220,18 @@ export async function runCliProcess(
     const stderrCapture = new BoundedByteCapture(
       request.maxCapturedOutputBytes
     );
+    const artifactLimit =
+      request.maxArtifactOutputBytes ?? DEFAULT_MAX_ARTIFACT_OUTPUT_BYTES;
+    const stdoutArtifactWriter = new BoundedArtifactWriter(
+      stdoutArtifact,
+      artifactLimit,
+      request.artifactRedactions
+    );
+    const stderrArtifactWriter = new BoundedArtifactWriter(
+      stderrArtifact,
+      artifactLimit,
+      request.artifactRedactions
+    );
     const stdoutEnded = waitForReadableEnd(child.stdout);
     const stderrEnded = waitForReadableEnd(child.stderr);
 
@@ -208,13 +242,13 @@ export async function runCliProcess(
 
     pipeToArtifact(
       child.stdout,
-      stdoutArtifact,
+      stdoutArtifactWriter,
       stdoutCapture,
       recordArtifactError
     );
     pipeToArtifact(
       child.stderr,
-      stderrArtifact,
+      stderrArtifactWriter,
       stderrCapture,
       recordArtifactError
     );
@@ -225,6 +259,8 @@ export async function runCliProcess(
         child.stderr?.destroy();
       }
 
+      stdoutArtifactWriter.finish();
+      stderrArtifactWriter.finish();
       stdoutArtifact.end();
       stderrArtifact.end();
       await Promise.allSettled([
@@ -255,6 +291,12 @@ export async function runCliProcess(
         stderrBytes: stderrCapture.totalBytes,
         stdoutTruncated: stdoutCapture.truncated,
         stderrTruncated: stderrCapture.truncated,
+        stdoutArtifactBytes: stdoutArtifactWriter.writtenBytes,
+        stderrArtifactBytes: stderrArtifactWriter.writtenBytes,
+        stdoutArtifactTruncated: stdoutArtifactWriter.truncated,
+        stderrArtifactTruncated: stderrArtifactWriter.truncated,
+        stdoutArtifactRedactionCount: stdoutArtifactWriter.redactionCount,
+        stderrArtifactRedactionCount: stderrArtifactWriter.redactionCount,
         timedOut,
         error: processError ?? artifactError,
       });
@@ -381,9 +423,124 @@ class BoundedByteCapture {
   }
 }
 
+class BoundedArtifactWriter {
+  writtenBytes = 0;
+  totalBytes = 0;
+  private readonly redactor: StreamingSecretRedactor | undefined;
+
+  constructor(
+    readonly destination: NodeJS.WritableStream,
+    private readonly limit: number,
+    redactions: readonly string[] | undefined
+  ) {
+    const variants = redactionVariants(redactions ?? []);
+    this.redactor =
+      variants.length > 0 ? new StreamingSecretRedactor(variants) : undefined;
+  }
+
+  get truncated(): boolean {
+    return this.totalBytes > this.writtenBytes;
+  }
+
+  get redactionCount(): number {
+    return this.redactor?.redactionCount ?? 0;
+  }
+
+  write(chunk: Buffer): boolean {
+    const transformed = this.redactor
+      ? Buffer.from(this.redactor.push(chunk), 'utf8')
+      : chunk;
+    return this.writeTransformed(transformed);
+  }
+
+  finish(): void {
+    if (!this.redactor) {
+      return;
+    }
+    this.writeTransformed(Buffer.from(this.redactor.finish(), 'utf8'));
+  }
+
+  private writeTransformed(chunk: Buffer): boolean {
+    this.totalBytes += chunk.length;
+    const remaining = this.limit - this.writtenBytes;
+    if (remaining <= 0) {
+      return true;
+    }
+    const bounded = chunk.subarray(0, remaining);
+    this.writtenBytes += bounded.length;
+    return this.destination.write(bounded);
+  }
+}
+
+class StreamingSecretRedactor {
+  private readonly decoder = new TextDecoder();
+  private buffered = '';
+  private readonly maxSecretLength: number;
+  redactionCount = 0;
+
+  constructor(private readonly secrets: readonly string[]) {
+    this.maxSecretLength = Math.max(...secrets.map((value) => value.length));
+  }
+
+  push(chunk: Buffer): string {
+    this.buffered += this.decoder.decode(chunk, { stream: true });
+    return this.consume(
+      Math.max(0, this.buffered.length - (this.maxSecretLength - 1))
+    );
+  }
+
+  finish(): string {
+    this.buffered += this.decoder.decode();
+    return this.consume(this.buffered.length);
+  }
+
+  private consume(safeEnd: number): string {
+    if (safeEnd <= 0) {
+      return '';
+    }
+    let result = '';
+    let cursor = 0;
+    while (cursor < safeEnd) {
+      let nextIndex = -1;
+      let nextSecret: string | undefined;
+      for (const secret of this.secrets) {
+        const index = this.buffered.indexOf(secret, cursor);
+        if (index >= 0 && (nextIndex < 0 || index < nextIndex)) {
+          nextIndex = index;
+          nextSecret = secret;
+        }
+      }
+      if (nextIndex < 0 || nextIndex >= safeEnd || !nextSecret) {
+        result += this.buffered.slice(cursor, safeEnd);
+        cursor = safeEnd;
+        break;
+      }
+      result += `${this.buffered.slice(cursor, nextIndex)}[REDACTED]`;
+      cursor = nextIndex + nextSecret.length;
+      this.redactionCount += 1;
+    }
+    this.buffered = this.buffered.slice(cursor);
+    return result;
+  }
+}
+
+function redactionVariants(values: readonly string[]): string[] {
+  return [
+    ...new Set(
+      values.flatMap((value) => {
+        if (!value) {
+          return [];
+        }
+        const escaped = JSON.stringify(value).slice(1, -1);
+        return escaped === value ? [value] : [escaped, value];
+      })
+    ),
+  ].sort((left, right) => right.length - left.length);
+}
+
 function pipeToArtifact(
   source: NodeJS.ReadableStream | null,
-  destination: NodeJS.WritableStream,
+  artifact: BoundedArtifactWriter,
   capture: BoundedByteCapture,
   onError: (error: Error) => void
 ): void {
@@ -394,13 +551,13 @@ function pipeToArtifact(
   source.on('data', (value: Buffer | string) => {
     const chunk = Buffer.isBuffer(value) ? value : Buffer.from(value);
     capture.append(chunk);
-    if (!destination.write(chunk)) {
+    if (!artifact.write(chunk)) {
       source.pause();
-      destination.once('drain', () => source.resume());
+      artifact.destination.once('drain', () => source.resume());
     }
   });
   source.once('error', onError);
-  destination.once('error', onError);
+  artifact.destination.once('error', onError);
 }
 
 async function buildInvocation(
@@ -647,6 +804,13 @@ function validateRequest(request: CliProcessRequest): void {
     !Number.isSafeInteger(request.maxCapturedOutputBytes)
   ) {
     throw new Error('maxCapturedOutputBytes must be a non-negative integer');
+  }
+  if (
+    request.maxArtifactOutputBytes !== undefined &&
+    (request.maxArtifactOutputBytes < 0 ||
+      !Number.isSafeInteger(request.maxArtifactOutputBytes))
+  ) {
+    throw new Error('maxArtifactOutputBytes must be a non-negative integer');
   }
   if (
     resolve(request.stdoutArtifactPath) === resolve(request.stderrArtifactPath)

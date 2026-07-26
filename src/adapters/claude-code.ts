@@ -36,6 +36,7 @@ import {
 const MAX_OUTPUT_SIZE = 10 * 1024 * 1024;
 const VERSION_PROBE_TIMEOUT_MS = 10_000;
 const MAX_NODE_TIMEOUT_MS = 2_147_483_647;
+const MAX_ARTIFACT_OUTPUT_BYTES = 64 * 1024 * 1024;
 const CLAUDE_AGENT_NAME_PATTERN = /^[a-z][a-z0-9-]{0,63}$/;
 const CLAUDE_PERMISSION_MODES = new Set([
   'acceptEdits',
@@ -428,6 +429,7 @@ export class ClaudeCodeAdapter implements AgentAdapter {
         env: environment,
         timeoutMs: context.timeout > 0 ? context.timeout : MAX_NODE_TIMEOUT_MS,
         maxCapturedOutputBytes: retainedOutputLimit,
+        maxArtifactOutputBytes: MAX_ARTIFACT_OUTPUT_BYTES,
         stdoutArtifactPath: eventsArtifactPath,
         stderrArtifactPath,
       });
@@ -491,6 +493,7 @@ export class ClaudeCodeAdapter implements AgentAdapter {
           allowed_tools: context.config.allowed_tools,
           disallowed_tools: context.config.disallowed_tools,
           max_output_bytes: retainedOutputLimit,
+          max_artifact_output_bytes: MAX_ARTIFACT_OUTPUT_BYTES,
           timeout_ms: context.timeout,
         },
         diagnostics: [
@@ -498,11 +501,23 @@ export class ClaudeCodeAdapter implements AgentAdapter {
           ...this.capabilityDiagnostics(context.config),
           ...(processResult.stdoutTruncated
             ? [
-                `Captured stdout preview was truncated; the complete event artifact was parsed.`,
+                processResult.stdoutArtifactTruncated
+                  ? 'Captured stdout preview and the quota-bounded event artifact were truncated.'
+                  : 'Captured stdout preview was truncated; the event artifact was parsed.',
               ]
             : []),
           ...(processResult.stderrTruncated
             ? ['Captured stderr preview was truncated.']
+            : []),
+          ...(processResult.stdoutArtifactTruncated
+            ? [
+                `Claude event artifact reached its ${MAX_ARTIFACT_OUTPUT_BYTES}-byte limit and is incomplete.`,
+              ]
+            : []),
+          ...(processResult.stderrArtifactTruncated
+            ? [
+                `Claude stderr artifact reached its ${MAX_ARTIFACT_OUTPUT_BYTES}-byte limit and is incomplete.`,
+              ]
             : []),
         ],
       };
@@ -530,6 +545,13 @@ export class ClaudeCodeAdapter implements AgentAdapter {
         status = 'failed';
         errors.push({
           message: `Claude Code exited with code ${exitCode}${stderrPreview(processResult)}`,
+          timestamp: new Date().toISOString(),
+        });
+      } else if (processResult.stdoutArtifactTruncated) {
+        status = 'failed';
+        exitCode = 1;
+        errors.push({
+          message: `Claude Code event artifact exceeded the ${MAX_ARTIFACT_OUTPUT_BYTES}-byte safety limit; the structured result is incomplete.`,
           timestamp: new Date().toISOString(),
         });
       } else if (stream.malformedTerminal || !stream.terminal) {

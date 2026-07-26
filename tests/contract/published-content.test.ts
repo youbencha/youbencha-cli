@@ -18,6 +18,7 @@ describe('published documentation and examples', () => {
     'docs/experiments.md',
     'docs/configuration.md',
     'docs/analyzing-results.md',
+    'docs/codex-cli-adapter.md',
   ])('%s has no broken local Markdown links', (relativeDocumentPath) => {
     const documentPath = path.join(repositoryRoot, relativeDocumentPath);
     const content = fs.readFileSync(documentPath, 'utf8');

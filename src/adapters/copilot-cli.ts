@@ -34,6 +34,7 @@ import * as logger from '../lib/logger.js';
 const DEFAULT_MAX_OUTPUT_BYTES = 10 * 1024 * 1024;
 const VERSION_PROBE_TIMEOUT_MS = 10_000;
 const MAX_NODE_TIMEOUT_MS = 2_147_483_647;
+const MAX_ARTIFACT_OUTPUT_BYTES = 64 * 1024 * 1024;
 const COPILOT_LOG_LEVELS = new Set([
   'none',
   'error',
@@ -272,6 +273,7 @@ export class CopilotCLIAdapter implements AgentAdapter {
         env: environment,
         timeoutMs: context.timeout > 0 ? context.timeout : MAX_NODE_TIMEOUT_MS,
         maxCapturedOutputBytes: retainedOutputLimit,
+        maxArtifactOutputBytes: MAX_ARTIFACT_OUTPUT_BYTES,
         stdoutArtifactPath: eventsArtifactPath,
         stderrArtifactPath,
       });
@@ -297,18 +299,31 @@ export class CopilotCLIAdapter implements AgentAdapter {
         effectiveConfig: {
           ...builtCommand.effectiveConfig,
           max_output_bytes: retainedOutputLimit,
+          max_artifact_output_bytes: MAX_ARTIFACT_OUTPUT_BYTES,
           timeout_ms: context.timeout,
         },
         diagnostics: [
           ...(parsed.telemetry.diagnostics ?? []),
           ...(processResult.stdoutTruncated
             ? [
-                `Captured stdout preview was truncated after ${processResult.stdout.length} bytes; the full event artifact was parsed.`,
+                processResult.stdoutArtifactTruncated
+                  ? `Captured stdout preview and the quota-bounded event artifact were truncated after retaining ${processResult.stdout.length} preview bytes.`
+                  : `Captured stdout preview was truncated after ${processResult.stdout.length} bytes; the event artifact was parsed.`,
               ]
             : []),
           ...(processResult.stderrTruncated
             ? [
                 `Captured stderr preview was truncated after ${processResult.stderr.length} bytes.`,
+              ]
+            : []),
+          ...(processResult.stdoutArtifactTruncated
+            ? [
+                `Copilot event artifact reached its ${MAX_ARTIFACT_OUTPUT_BYTES}-byte limit and is incomplete.`,
+              ]
+            : []),
+          ...(processResult.stderrArtifactTruncated
+            ? [
+                `Copilot stderr artifact reached its ${MAX_ARTIFACT_OUTPUT_BYTES}-byte limit and is incomplete.`,
               ]
             : []),
         ],
@@ -352,6 +367,13 @@ export class CopilotCLIAdapter implements AgentAdapter {
         status = 'failed';
         errors.push({
           message: `Copilot CLI exited with code ${exitCode}${stderrPreview(processResult)}`,
+          timestamp: new Date().toISOString(),
+        });
+      } else if (processResult.stdoutArtifactTruncated) {
+        status = 'failed';
+        exitCode = 1;
+        errors.push({
+          message: `Copilot event artifact exceeded the ${MAX_ARTIFACT_OUTPUT_BYTES}-byte safety limit; the structured result is incomplete.`,
           timestamp: new Date().toISOString(),
         });
       } else if (parsed.malformedTerminalEvent) {

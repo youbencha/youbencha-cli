@@ -6,6 +6,12 @@ youBencha supports custom agent names for both GitHub Copilot CLI definitions
 in `.github/agents/` and Claude Code definitions in `.claude/agents/`. Named
 agents work during the coding run and an `agentic-judge` evaluation.
 
+The `codex-cli` adapter does not support `agent_name`. Codex profiles,
+`AGENTS.md`, skills, and subagents have different semantics, so youBencha
+rejects `agent_name` rather than mapping it implicitly. Use `config.profile` for
+a Codex profile, keep repository guidance in `AGENTS.md`, and request a
+task-specific skill in the prompt.
+
 ## Features
 
 ### 1. Named Agent for Coding Run
@@ -108,3 +114,4 @@ agent:
 - [Basic Test Case Example](../examples/testcase-basic.yaml)
 - [Named Agent Example](../examples/testcase-named-agent.yaml)
 - [Agent Outputs Examples](../examples/agent-outputs/)
+- [Codex CLI Adapter](codex-cli-adapter.md)

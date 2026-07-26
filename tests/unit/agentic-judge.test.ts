@@ -144,6 +144,33 @@ describe('AgenticJudgeEvaluator', () => {
       );
       expect(result).toBe(false);
     });
+
+    test('prefers the evaluator adapter type over the main agent type', async () => {
+      const mockAdapter = {
+        checkAvailability: jest.fn().mockResolvedValue(true),
+      };
+      (evaluator as any).getAdapter = jest.fn().mockResolvedValue(mockAdapter);
+
+      const context = {
+        ...mockContext,
+        config: {
+          ...mockContext.config,
+          type: 'codex-cli',
+        },
+        testCaseConfig: {
+          name: 'Mixed adapters',
+          description: 'Uses a different adapter for evaluation',
+          repo: 'https://github.com/test/repo',
+          agent: {
+            type: 'copilot-cli',
+          },
+          evaluators: [{ name: 'agentic-judge' }],
+        },
+      } as EvaluationContext;
+
+      await expect(evaluator.checkPreconditions(context)).resolves.toBe(true);
+      expect((evaluator as any).getAdapter).toHaveBeenCalledWith('codex-cli');
+    });
   });
 
   describe('evaluate - Agent Execution', () => {

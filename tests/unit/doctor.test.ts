@@ -102,4 +102,140 @@ describe('doctor checks', () => {
     expect(configuration?.message).not.toContain('super-secret-value');
     expect(configuration?.message).not.toContain('API_TOKEN');
   });
+
+  it('reports structured Codex version and persisted login diagnostics without executing a model request', async () => {
+    const probes: Array<{ command: string; args: readonly string[] }> = [];
+    const result = await runDoctor(
+      createDependencies({
+        commandVersion: async (command) => {
+          if (command === 'git') return 'git version 2.47.0';
+          if (command === 'codex') return 'codex-cli 0.95.0';
+          return null;
+        },
+        commandOutput: async (command, args) => {
+          probes.push({ command, args });
+          if (args[0] === '--help') {
+            return {
+              exitCode: 0,
+              stdout: '--ask-for-approval --sandbox',
+              stderr: '',
+            };
+          }
+          if (args[0] === 'exec') {
+            return {
+              exitCode: 0,
+              stdout:
+                '--json --ephemeral --color --sandbox --ignore-user-config -C',
+              stderr: '',
+            };
+          }
+          return {
+            exitCode: 0,
+            stdout: 'Signed in with ChatGPT',
+            stderr: '',
+          };
+        },
+      })
+    );
+
+    expect(probes).toEqual([
+      { command: 'codex', args: ['login', 'status'] },
+      { command: 'codex', args: ['--help'] },
+      { command: 'codex', args: ['exec', '--help'] },
+    ]);
+    expect(
+      probes.some(({ args }) => args[0] === 'exec' && args[1] !== '--help')
+    ).toBe(false);
+    expect(result.checks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          name: 'Codex CLI',
+          status: 'pass',
+          message: expect.stringMatching(
+            /Installed: yes.*Authentication: signed in.*JSONL output: supported/
+          ),
+        }),
+      ])
+    );
+  });
+
+  it('recognizes process-scoped Codex API key availability without exposing it', async () => {
+    const result = await runDoctor(
+      createDependencies({
+        commandVersion: async (command) =>
+          command === 'git'
+            ? 'git version 2.47.0'
+            : command === 'codex'
+              ? 'codex-cli 0.95.0'
+              : null,
+        commandOutput: async () => ({
+          exitCode: 0,
+          stdout:
+            '--ask-for-approval --sandbox --json --ephemeral --color --ignore-user-config -C',
+          stderr: '',
+        }),
+        hasCodexApiKey: true,
+      })
+    );
+    const codex = result.checks.find((check) => check.name === 'Codex CLI');
+
+    expect(codex?.status).toBe('pass');
+    expect(codex?.message).toContain('CODEX_API_KEY available');
+  });
+
+  it('reports unsupported Codex capabilities from side-effect-free help probes', async () => {
+    const result = await runDoctor(
+      createDependencies({
+        commandVersion: async (command) =>
+          command === 'git'
+            ? 'git version 2.47.0'
+            : command === 'codex'
+              ? 'codex-cli 0.1.0'
+              : null,
+        commandOutput: async (_command, args) =>
+          args[0] === 'login'
+            ? {
+                exitCode: 1,
+                stdout: '',
+                stderr: 'Not logged in',
+              }
+            : { exitCode: 0, stdout: 'usage: codex', stderr: '' },
+      })
+    );
+    const codex = result.checks.find((check) => check.name === 'Codex CLI');
+
+    expect(codex?.status).toBe('warn');
+    expect(codex?.message).toContain('Authentication: unavailable');
+    expect(codex?.message).toContain('JSONL output: unsupported');
+    expect(codex?.message).toContain('Workspace sandbox: unsupported');
+  });
+
+  it('keeps unrecognized Codex login failures at unknown', async () => {
+    const result = await runDoctor(
+      createDependencies({
+        commandVersion: async (command) =>
+          command === 'git'
+            ? 'git version 2.47.0'
+            : command === 'codex'
+              ? 'codex-cli 0.95.0'
+              : null,
+        commandOutput: async (_command, args) =>
+          args[0] === 'login'
+            ? {
+                exitCode: 2,
+                stdout: '',
+                stderr: 'Configuration could not be loaded',
+              }
+            : {
+                exitCode: 0,
+                stdout:
+                  '--ask-for-approval --sandbox --json --ephemeral --color --ignore-user-config -C',
+                stderr: '',
+              },
+      })
+    );
+    const codex = result.checks.find((check) => check.name === 'Codex CLI');
+
+    expect(codex?.message).toContain('Authentication: unknown');
+  });
 });

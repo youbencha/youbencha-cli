@@ -20,11 +20,18 @@ youBencha is a testing and benchmarking framework designed to help developers ev
 - **Agent CLI** - At least one of:
   - **GitHub Copilot CLI** - For the `copilot-cli` agent type
   - **Claude Code CLI** - For the `claude-code` agent type; Anthropic's native installer is recommended, with npm also supported
+  - **Codex CLI** - For the `codex-cli` agent type and non-interactive `codex exec` runs
 
-Both adapters run headlessly with structured output, close stdin, enforce
-timeouts and byte-bounded output previews, and retain complete raw event
-artifacts. See the focused adapter guides for installation, authentication, and
-CI configuration.
+All adapters run headlessly with structured output, close stdin, enforce
+timeouts, and byte-bound both output previews and durable process artifacts.
+Codex artifacts are complete when under quota and redact credential-like
+environment values before retention. See the focused adapter guides for
+installation, authentication, and CI configuration.
+
+Codex runs with JSONL events, ephemeral sessions, a workspace-write sandbox,
+and no interactive approvals. See the
+[Codex CLI adapter guide](docs/codex-cli-adapter.md) for its reproducibility and
+credential boundaries.
 
 ## Installation
 
@@ -330,13 +337,13 @@ yb suggest-testcase --agent <type> --output-dir <path> [--agent-file <path>]
 Options:
   --agent <type>           Agent tool to use (e.g., copilot-cli) (required)
   --output-dir <path>      Path to successful agent output folder (required)
-  --agent-file <path>      Custom agent file (default: agents/suggest-testcase.agent.md)
+  --agent-file <path>      Custom agent file (default: agents/suggest-suite.agent.md)
   --save <path>            Path to save generated test case (optional)
 ```
 
-**Interactive Workflow:**
+**Workflow:**
 
-The `suggest-testcase` command launches an interactive AI agent session that:
+The `suggest-testcase` command launches an AI agent session that:
 
 1. Analyzes your agent's output folder
 2. Asks about your baseline/source for comparison
@@ -344,6 +351,11 @@ The `suggest-testcase` command launches an interactive AI agent session that:
 4. Detects patterns in the changes (auth, tests, API, docs, etc.)
 5. Recommends appropriate evaluators with reasoning
 6. Generates a complete test case configuration
+
+Copilot CLI, Aider, and Cursor use their interactive workflows. Codex CLI runs
+headlessly, inspects the output directory without asking questions, and prints
+the generated YAML. Pass `--save <path>` to also write the Codex result to a
+file.
 
 **Example Session:**
 

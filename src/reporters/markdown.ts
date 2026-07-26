@@ -394,6 +394,17 @@ export class MarkdownReporter implements Reporter {
     lines.push(`- ${formatArtifactLink(bundle.artifacts.agent_log)}`);
     lines.push('');
 
+    if (
+      bundle.artifacts.agent_artifacts &&
+      bundle.artifacts.agent_artifacts.length > 0
+    ) {
+      lines.push('**Agent Artifacts:**');
+      for (const artifact of bundle.artifacts.agent_artifacts) {
+        lines.push(`- ${formatArtifactLink(artifact)}`);
+      }
+      lines.push('');
+    }
+
     if (bundle.artifacts.reports.length > 0) {
       lines.push('**Reports:**');
       for (const report of bundle.artifacts.reports) {

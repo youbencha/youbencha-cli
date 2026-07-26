@@ -1,61 +1,48 @@
 /**
  * Suite Configuration Schema (DEPRECATED)
- * 
- * @deprecated Use testcase.schema.ts instead. This file is kept for backward compatibility.
- * The terminology has been updated from "suite" to "test case" to be more developer-friendly.
- * 
- * This schema is re-exported from testcase.schema.ts and will be removed in a future version.
+ *
+ * @deprecated Use testcase.schema.ts instead. This compatibility schema keeps
+ * the legacy top-level shape while deriving supported agent types from the
+ * active agent registry.
  */
 
 import { z } from 'zod';
+import { agentConfigSchema as activeAgentConfigSchema } from './agent-config/index.js';
 
 /**
- * Agent configuration schema
+ * Legacy agent shape. Configuration remains permissive for backward
+ * compatibility, but its discriminator is validated by the active registry.
  */
-const agentConfigSchema = z.object({
-  type: z.literal('copilot-cli'), // MVP: only copilot-cli supported
-  agent_name: z.string().optional(), // Optional agent name (e.g., for copilot-cli agents in .github/agents/)
-  model: z.string().min(1).optional(), // Optional model name (accepts any valid model string)
-  config: z
-    .object({
-      prompt: z
-        .string()
-        .min(1, 'Prompt is required')
-        .max(50000, 'Prompt exceeds maximum length of 50000 characters')
-        .optional(),
-    })
-    .catchall(z.any()) // Allow other agent-specific config
-    .optional(),
+const legacyCopilotAgentConfigSchema = z.object({
+  type: z.literal('copilot-cli'),
+  agent_name: z.string().optional(),
+  model: z.string().min(1).optional(),
+  config: z.record(z.any()).optional(),
 });
 
-/**
- * Evaluator configuration schema
- */
+const agentConfigSchema = z.union([
+  activeAgentConfigSchema,
+  legacyCopilotAgentConfigSchema,
+]);
+
 const evaluatorConfigSchema = z.object({
   name: z.string(),
-  config: z.record(z.any()).optional(), // Evaluator-specific configuration
+  config: z.record(z.any()).optional(),
 });
 
-/**
- * Suite Configuration schema with validation rules
- */
 export const suiteConfigSchema = z
   .object({
-    // Repository configuration
     repo: z
       .string()
       .min(1, 'Repository URL is required')
       .refine(
         (url) => {
-          // Only allow HTTP(S) URLs for security
           if (!url.startsWith('http://') && !url.startsWith('https://')) {
             return false;
           }
-          
-          // Validate URL format
+
           try {
             const parsed = new URL(url);
-            // Prevent localhost/internal network access
             const hostname = parsed.hostname.toLowerCase();
             if (
               hostname === 'localhost' ||
@@ -74,25 +61,18 @@ export const suiteConfigSchema = z
           }
         },
         {
-          message: 'Repository must be a valid HTTP(S) URL to a public repository',
+          message:
+            'Repository must be a valid HTTP(S) URL to a public repository',
         }
       ),
     branch: z.string().optional(),
     commit: z.string().optional(),
-
-    // Agent configuration
     agent: agentConfigSchema,
-
-    // Expected reference configuration (optional)
-    expected_source: z.literal('branch').optional(), // MVP: only 'branch' supported
+    expected_source: z.literal('branch').optional(),
     expected: z.string().optional(),
-
-    // Evaluators configuration
     evaluators: z
       .array(evaluatorConfigSchema)
       .min(1, 'At least one evaluator is required'),
-
-    // Execution configuration (optional)
     workspace_dir: z.string().optional(),
     workspace_name: z
       .string()
@@ -105,35 +85,12 @@ export const suiteConfigSchema = z
       .optional(),
     timeout: z.number().positive().optional(),
   })
-  .refine(
-    (data) => {
-      // If expected_source is provided, expected must also be provided
-      if (data.expected_source && !data.expected) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message:
-        'When expected_source is provided, expected value must also be provided',
-      path: ['expected'],
-    }
-  );
+  .refine((data) => !data.expected_source || Boolean(data.expected), {
+    message:
+      'When expected_source is provided, expected value must also be provided',
+    path: ['expected'],
+  });
 
-/**
- * Inferred TypeScript type from schema
- * @deprecated Use TestCaseConfig from testcase.schema.ts instead
- */
 export type SuiteConfig = z.infer<typeof suiteConfigSchema>;
-
-/**
- * Helper type for agent configuration
- * @deprecated Use AgentConfig from testcase.schema.ts instead
- */
 export type AgentConfig = z.infer<typeof agentConfigSchema>;
-
-/**
- * Helper type for evaluator configuration
- * @deprecated Use EvaluatorConfig from testcase.schema.ts instead
- */
 export type EvaluatorConfig = z.infer<typeof evaluatorConfigSchema>;

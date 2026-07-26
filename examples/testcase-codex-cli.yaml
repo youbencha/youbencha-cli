@@ -1,0 +1,20 @@
+name: 'Codex README documentation'
+description: 'Runs Codex non-interactively with reproducible benchmark defaults'
+
+repo: https://github.com/youbencha/hello-world.git
+branch: main
+
+agent:
+  type: codex-cli
+  config:
+    prompt: 'Add one concise usage example to README.md and verify the Markdown.'
+    sandbox: workspace-write
+    approval_policy: never
+    ephemeral: true
+    ignore_user_config: true
+    ignore_rules: false
+    reasoning_effort: high
+    search: false
+
+evaluators:
+  - name: git-diff

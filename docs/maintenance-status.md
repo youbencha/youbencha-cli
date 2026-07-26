@@ -11,10 +11,10 @@ baseline.
 
 ## Executive summary
 
-The project has a substantial beta implementation: 56 TypeScript source files
-plus one Markdown prompt template, 44 Jest test files, 37 example files, two
-agent adapters, three built-in evaluator families, lifecycle hooks, reporters,
-and cross-platform CI intent.
+The project has a substantial beta implementation: TypeScript source files plus
+one Markdown prompt template, Jest coverage, published examples, three agent
+adapters, three built-in evaluator families, lifecycle hooks, reporters, and
+cross-platform CI intent.
 The compiler and linter pass, and the npm package can be assembled.
 
 The main risk is reproducibility rather than missing product structure. A clean
@@ -35,6 +35,19 @@ scripts need reconciliation before the next publish.
 | Elevated full test retry    | Inconclusive             | Timed out after 185 seconds; the suite still attempted live external work.                                                                                    |
 | Dependency version query    | Completed                | Multiple in-range updates and several major-version migrations are available.                                                                                 |
 | Vulnerability audit         | Not run                  | The environment rejected sending the full lock graph to npm's audit service without separate user authorization.                                              |
+
+## Codex adapter verification
+
+The 2026-07-26 Codex adapter pass added hermetic fake-executable integration
+coverage at both the adapter and complete orchestrator levels, plus an
+explicitly opt-in live smoke test. Focused adapter, parser, process-runner,
+schema, doctor, manifest, reporter, and published-content checks passed.
+Durable process artifacts are now quota-bounded, and Codex redacts
+credential-like environment values before parsing and retention. The live test
+remained skipped by default as designed; enable it only with
+`CODEX_CLI_INTEGRATION_TESTS=1` in an installed and authenticated environment.
+The final repository-wide run passed 76 suites and 1,027 tests, with one suite
+and two live/opt-in tests skipped by design.
 
 ## Priority maintenance backlog
 
@@ -62,6 +75,9 @@ Validate the chosen path from a clean checkout on Node 20 and 22.
   CLI or platform path is available.
 - Keep real agent/network tests behind explicit environment flags and consider a
   separate npm script or CI job for them.
+- Codex coverage follows this pattern: its default integration test uses a fake
+  executable, while `CODEX_CLI_INTEGRATION_TESTS=1` explicitly enables the
+  bounded live smoke test.
 
 The goal is for `npm test -- --runInBand` to work offline on Windows, Linux, and
 macOS. See `tests/AGENTS.md` for the current locations.

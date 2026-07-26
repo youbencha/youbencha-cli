@@ -36,6 +36,11 @@ export interface DoctorDependencies {
   nodeVersion: string;
   cwd: string;
   commandVersion(command: string): Promise<string | null>;
+  commandOutput?(
+    command: string,
+    args: readonly string[]
+  ): Promise<{ exitCode: number; stdout: string; stderr: string } | null>;
+  hasCodexApiKey?: boolean;
   isWritable(targetPath: string): Promise<boolean>;
   pathExists(targetPath: string): Promise<boolean>;
   findActiveConfigFile(): Promise<string | null>;
@@ -44,6 +49,17 @@ export interface DoctorDependencies {
 }
 
 async function getCommandVersion(command: string): Promise<string | null> {
+  const result = await getCommandOutput(command, ['--version']);
+  if (!result || result.exitCode !== 0) {
+    return null;
+  }
+  return (result.stdout || result.stderr).trim() || 'installed';
+}
+
+async function getCommandOutput(
+  command: string,
+  args: readonly string[]
+): Promise<{ exitCode: number; stdout: string; stderr: string } | null> {
   const executable = await resolveCliExecutable(command, { env: process.env });
   if (!executable) {
     return null;
@@ -55,7 +71,7 @@ async function getCommandVersion(command: string): Promise<string | null> {
   try {
     const result = await runCliProcess({
       executable,
-      args: ['--version'],
+      args: [...args],
       cwd: process.cwd(),
       env: { ...process.env },
       timeoutMs: 5000,
@@ -63,10 +79,14 @@ async function getCommandVersion(command: string): Promise<string | null> {
       stdoutArtifactPath: path.join(probeDir, 'stdout.log'),
       stderrArtifactPath: path.join(probeDir, 'stderr.log'),
     });
-    if (result.error || result.timedOut || result.exitCode !== 0) {
+    if (result.error || result.timedOut) {
       return null;
     }
-    return (result.stdout || result.stderr).trim() || 'installed';
+    return {
+      exitCode: result.exitCode ?? 1,
+      stdout: result.stdout,
+      stderr: result.stderr,
+    };
   } finally {
     await fs.rm(probeDir, { recursive: true, force: true });
   }
@@ -108,6 +128,8 @@ const defaultDependencies: DoctorDependencies = {
   nodeVersion: process.versions.node,
   cwd: process.cwd(),
   commandVersion: getCommandVersion,
+  commandOutput: getCommandOutput,
+  hasCodexApiKey: Boolean(process.env.CODEX_API_KEY),
   isWritable,
   pathExists,
   findActiveConfigFile,
@@ -163,12 +185,17 @@ export async function runDoctor(
   const agentCommands = [
     { command: 'copilot', label: 'GitHub Copilot CLI' },
     { command: 'claude', label: 'Claude Code CLI' },
+    { command: 'codex', label: 'Codex CLI' },
   ];
   const installedAgents: string[] = [];
+  let codexVersion: string | null = null;
   for (const agent of agentCommands) {
     const version = await dependencies.commandVersion(agent.command);
     if (version) {
       installedAgents.push(`${agent.label} (${version})`);
+    }
+    if (agent.command === 'codex') {
+      codexVersion = version;
     }
   }
   checks.push(
@@ -183,9 +210,129 @@ export async function runDoctor(
           status: 'warn',
           message: 'No supported agent CLI was found on PATH',
           remediation:
-            'Install GitHub Copilot CLI or Claude Code, authenticate it, then rerun yb doctor. For Claude, verify with "claude auth status --json"; for Copilot, run "copilot" once or configure a supported headless token.',
+            'Install GitHub Copilot CLI, Claude Code, or Codex CLI; authenticate it; then rerun yb doctor.',
         }
   );
+
+  if (!codexVersion) {
+    checks.push({
+      name: 'Codex CLI',
+      status: 'warn',
+      message: 'Installed: no',
+      remediation:
+        'Install the standalone Codex CLI, run "codex login", and verify persisted authentication with "codex login status".',
+    });
+  } else {
+    const loginStatus = dependencies.commandOutput
+      ? await dependencies.commandOutput('codex', ['login', 'status'])
+      : null;
+    const globalHelp = dependencies.commandOutput
+      ? await dependencies.commandOutput('codex', ['--help'])
+      : null;
+    const execHelp = dependencies.commandOutput
+      ? await dependencies.commandOutput('codex', ['exec', '--help'])
+      : null;
+    const loginText = `${loginStatus?.stdout ?? ''}\n${loginStatus?.stderr ?? ''}`;
+    const persistedLogin =
+      loginStatus?.exitCode === 0 &&
+      !/\bnot (?:signed|logged) in\b/i.test(loginText) &&
+      /\b(signed in|logged in|authenticated)\b/i.test(loginText);
+    const recognizedSignedOut =
+      /\b(not (?:signed|logged) in|unauthenticated|authentication required)\b/i.test(
+        loginText
+      );
+    const authentication = persistedLogin
+      ? 'signed in'
+      : dependencies.hasCodexApiKey
+        ? 'CODEX_API_KEY available'
+        : recognizedSignedOut
+          ? 'unavailable'
+          : 'unknown';
+    type CapabilityStatus = 'supported' | 'unsupported' | 'unknown';
+    const capability = (
+      probe: { exitCode: number; stdout: string; stderr: string } | null,
+      requiredFlags: readonly string[]
+    ): CapabilityStatus => {
+      if (!probe) {
+        return 'unknown';
+      }
+      const helpText = `${probe.stdout}\n${probe.stderr}`;
+      if (probe.exitCode !== 0) {
+        return /\b(unknown|unrecognized|invalid)\b.*\b(command|argument|option)\b/i.test(
+          helpText
+        )
+          ? 'unsupported'
+          : 'unknown';
+      }
+      return requiredFlags.every((flag) => helpText.includes(flag))
+        ? 'supported'
+        : 'unsupported';
+    };
+    const combineCapabilities = (
+      ...statuses: CapabilityStatus[]
+    ): CapabilityStatus =>
+      statuses.includes('unsupported')
+        ? 'unsupported'
+        : statuses.includes('unknown')
+          ? 'unknown'
+          : 'supported';
+    const nonInteractiveExec =
+      execHelp?.exitCode === 0
+        ? 'supported'
+        : execHelp &&
+            /\b(unknown|unrecognized|invalid)\b.*\b(command|argument)\b/i.test(
+              `${execHelp.stdout}\n${execHelp.stderr}`
+            )
+          ? 'unsupported'
+          : 'unknown';
+    const jsonlOutput = capability(execHelp, ['--json']);
+    const approvalControl = capability(globalHelp, ['--ask-for-approval']);
+    const sandboxControl = capability(execHelp, ['--sandbox']);
+    const workspaceSandbox = combineCapabilities(
+      approvalControl,
+      sandboxControl
+    );
+    const requiredHeadlessFlags = combineCapabilities(
+      approvalControl,
+      capability(execHelp, [
+        '--json',
+        '--ephemeral',
+        '--color',
+        '--sandbox',
+        '--ignore-user-config',
+        '-C',
+      ])
+    );
+    const capabilitiesReady =
+      nonInteractiveExec === 'supported' &&
+      jsonlOutput === 'supported' &&
+      workspaceSandbox === 'supported' &&
+      requiredHeadlessFlags === 'supported';
+    checks.push({
+      name: 'Codex CLI',
+      status:
+        (authentication === 'signed in' ||
+          authentication === 'CODEX_API_KEY available') &&
+        capabilitiesReady
+          ? 'pass'
+          : 'warn',
+      message: [
+        'Installed: yes',
+        `Version: ${codexVersion}`,
+        `Authentication: ${authentication}`,
+        `Non-interactive exec: ${nonInteractiveExec}`,
+        `JSONL output: ${jsonlOutput}`,
+        `Workspace sandbox: ${workspaceSandbox}`,
+        `Required headless flags: ${requiredHeadlessFlags}`,
+      ].join('; '),
+      remediation:
+        (authentication === 'signed in' ||
+          authentication === 'CODEX_API_KEY available') &&
+        capabilitiesReady
+          ? undefined
+          : 'Install a current standalone Codex CLI. Run "codex login" for local use, or provide CODEX_API_KEY only to the trusted youBencha process. Inspect persisted login with "codex login status".',
+    });
+  }
 
   let effectiveConfig: Config | undefined;
   try {

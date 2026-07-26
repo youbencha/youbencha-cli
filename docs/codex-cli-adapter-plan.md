@@ -1,6 +1,6 @@
 # Codex CLI adapter integration plan
 
-**Status:** Proposed  
+**Status:** Implemented (2026-07-26)
 **Priority:** High after the shared process foundation  
 **Target duration:** 1–3 weeks  
 **Depends on:** Workstream A and the structured telemetry contract from the

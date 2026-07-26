@@ -125,4 +125,101 @@ describe('effective configuration', () => {
     expect(resolved.output_dir).toBe('.custom-output');
     expect(resolved.evaluators[0].config?.prompt).toBe('Judge these changes');
   });
+
+  it('preserves Codex defaults while resolving the effective prompt', () => {
+    const resolved = resolveEffectiveTestCaseConfig(
+      {
+        name: 'Codex effective config',
+        description: 'Resolves a Codex prompt without dropping safe defaults',
+        repo: 'https://github.com/example/project.git',
+        agent: {
+          type: 'codex-cli',
+          config: { prompt: '${TASK}', reasoning_effort: 'high' },
+        },
+        evaluators: [{ name: 'git-diff' }],
+      },
+      configFile,
+      globalConfig
+    );
+
+    expect(resolved.agent.config).toEqual(
+      expect.objectContaining({
+        prompt: 'Implement the requested behavior',
+        sandbox: 'workspace-write',
+        approval_policy: 'never',
+        ephemeral: true,
+        ignore_user_config: true,
+        ignore_rules: false,
+        search: false,
+      })
+    );
+  });
+
+  it('materializes and validates the inherited agentic judge adapter type', () => {
+    const base = {
+      name: 'Inherited judge adapter',
+      description: 'Uses the main adapter for an agentic judge',
+      repo: 'https://github.com/example/project.git',
+      agent: {
+        type: 'codex-cli',
+        config: { prompt: '${TASK}' },
+      },
+      evaluators: [
+        {
+          name: 'agentic-judge',
+          config: {
+            assertions: { quality: 'The change is correct.' },
+          },
+        },
+      ],
+    };
+
+    const resolved = resolveEffectiveTestCaseConfig(
+      base,
+      configFile,
+      globalConfig
+    );
+    expect(resolved.evaluators[0].config).toMatchObject({
+      type: 'codex-cli',
+      assertions: { quality: 'The change is correct.' },
+    });
+
+    expect(() =>
+      resolveEffectiveTestCaseConfig(
+        {
+          ...base,
+          evaluators: [
+            {
+              name: 'agentic-judge',
+              config: {
+                agent_name: 'reviewer',
+                assertions: { quality: 'The change is correct.' },
+              },
+            },
+          ],
+        },
+        configFile,
+        globalConfig
+      )
+    ).toThrow(/codex-cli does not support agent_name/);
+
+    expect(() =>
+      resolveEffectiveTestCaseConfig(
+        {
+          ...base,
+          evaluators: [
+            {
+              name: 'agentic-judge',
+              config: {
+                max_ai_credits: 1,
+                assertions: { quality: 'The change is correct.' },
+              },
+            },
+          ],
+        },
+        configFile,
+        globalConfig
+      )
+    ).toThrow(/codex-cli does not support: max_ai_credits/);
+  });
 });

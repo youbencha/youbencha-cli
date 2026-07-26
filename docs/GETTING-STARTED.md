@@ -11,6 +11,7 @@ ready.
 - **An AI coding agent** (only for `yb run`) - At least one of:
   - GitHub Copilot CLI (`copilot`), used by the `copilot-cli` agent type
   - Claude Code CLI (`claude`), used by the `claude-code` agent type
+  - Codex CLI (`codex`), used by the `codex-cli` agent type
 
 Run `yb doctor` to check these prerequisites and see actionable fixes.
 
@@ -351,6 +352,12 @@ supports appropriately scoped fine-grained personal access tokens, not classic
 personal access tokens. See the
 [Claude Code](claude-code-adapter.md) and
 [Copilot CLI](copilot-cli-adapter.md) guides for CI examples and limits.
+
+For Codex, verify `codex --version` and `codex login status`. In trusted
+automation, scope `CODEX_API_KEY` to the single `yb run` process; do not expose
+it to repository-controlled setup, build, or test steps. See the
+[Codex CLI adapter](codex-cli-adapter.md) guide for sandbox defaults,
+configuration, artifacts, and opt-in live testing.
 
 ### "Configuration validation failed"
 

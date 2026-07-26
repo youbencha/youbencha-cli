@@ -15,7 +15,7 @@ branch: main
 
 # Agent configuration
 agent:
-  type: copilot-cli  # Supported: copilot-cli or claude-code
+  type: copilot-cli  # Supported: copilot-cli, claude-code, or codex-cli
   config:
     prompt: |
       Add a friendly welcome message to the README file.

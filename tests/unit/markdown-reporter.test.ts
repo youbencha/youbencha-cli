@@ -222,6 +222,7 @@ describe('MarkdownReporter', () => {
 
       expect(result).toContain('## Artifacts');
       expect(result).toContain('agent-log.json');
+      expect(result).toContain('codex-cli-logs/events-run.jsonl');
       expect(result).toContain('report.md');
     });
 
@@ -232,6 +233,9 @@ describe('MarkdownReporter', () => {
 
       expect(result).toContain(
         '[`artifacts/agent-log.json`](artifacts/agent-log.json)'
+      );
+      expect(result).toContain(
+        '[`codex-cli-logs/events-run.jsonl`](codex-cli-logs/events-run.jsonl)'
       );
       expect(result).toContain('[`artifacts/report.md`](artifacts/report.md)');
     });
@@ -503,6 +507,7 @@ function createMockResultsBundle(): ResultsBundle {
     },
     artifacts: {
       agent_log: 'artifacts/agent-log.json',
+      agent_artifacts: ['codex-cli-logs/events-run.jsonl'],
       reports: ['artifacts/report.md'],
       evaluator_artifacts: [],
     },

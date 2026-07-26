@@ -240,6 +240,7 @@ describe('Copilot adapter process integration', () => {
         ])
       );
       expect(capturedRequest?.maxCapturedOutputBytes).toBe(128);
+      expect(capturedRequest?.maxArtifactOutputBytes).toBe(64 * 1024 * 1024);
       expect(capturedRequest?.args).toContain('--no-ask-user');
       expect(capturedRequest?.args).toContain('-C');
       expect(result.telemetry?.eventsArtifactPath).toBeDefined();
@@ -248,6 +249,56 @@ describe('Copilot adapter process integration', () => {
         'utf8'
       );
       expect(rawArtifact).toContain('x'.repeat(20_000));
+    } finally {
+      await rm(testDirectory, { recursive: true, force: true });
+    }
+  });
+
+  it('fails when the durable event artifact reaches its safety limit', async () => {
+    const testDirectory = await mkdtemp(
+      path.join(os.tmpdir(), 'youbencha-copilot-artifact-limit-')
+    );
+    const adapter = new CopilotCLIAdapter({
+      resolveExecutable: async (): Promise<ResolvedExecutable> => executable,
+      runProcess: async (request): Promise<CliProcessResult> => {
+        const lines = [
+          jsonEvent('assistant.message', {
+            messageId: 'message-1',
+            content: 'Result before the quota boundary.',
+          }),
+          JSON.stringify({ type: 'result', exitCode: 0 }),
+        ].join('\n');
+        await writeFile(request.stdoutArtifactPath, lines, 'utf8');
+        await writeFile(request.stderrArtifactPath, '', 'utf8');
+        return processResult({
+          stdout: lines,
+          exitCode: 0,
+          stdoutArtifactTruncated: true,
+        });
+      },
+    });
+
+    try {
+      const result = await adapter.execute({
+        ...context,
+        workspaceDir: testDirectory,
+        artifactsDir: path.join(testDirectory, 'artifacts'),
+      });
+
+      expect(result.status).toBe('failed');
+      expect(result.exitCode).toBe(1);
+      expect(result.errors).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            message: expect.stringContaining('structured result is incomplete'),
+          }),
+        ])
+      );
+      expect(result.telemetry?.diagnostics).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining('event artifact reached its'),
+        ])
+      );
     } finally {
       await rm(testDirectory, { recursive: true, force: true });
     }
@@ -424,6 +475,10 @@ function processResult(
     stderrBytes: 0,
     stdoutTruncated: false,
     stderrTruncated: false,
+    stdoutArtifactBytes: 0,
+    stderrArtifactBytes: 0,
+    stdoutArtifactTruncated: false,
+    stderrArtifactTruncated: false,
     timedOut: false,
     ...overrides,
   };

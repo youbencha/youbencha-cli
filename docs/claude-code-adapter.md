@@ -100,7 +100,7 @@ are:
 | `setting_sources`                    | Any of `user`, `project`, and `local`                                      |
 | `tools`                              | Tools made available to the session                                        |
 | `allowed_tools` / `disallowed_tools` | Non-interactive tool policy rules                                          |
-| `max_output_bytes`                   | Bounds previews and parsed payloads; artifacts remain complete             |
+| `max_output_bytes`                   | Bounds in-memory previews and parsed payloads                               |
 
 Claude CLI options evolve between releases. During availability checks,
 youBencha reads `claude --help` and records the permission modes and effort
@@ -169,7 +169,9 @@ with character-count estimates.
 `max_output_bytes` bounds the assistant text, tool payloads, errors, and final
 response retained by the JSONL parser as well as process previews. Terminal
 status, measured usage, and cost are still parsed after that bound is reached.
-The raw event artifact remains complete, and telemetry records when retained
+The event and stderr artifacts are independently capped at 64 MiB per stream.
+If the event artifact reaches that safety limit, the execution fails because
+the structured result may be incomplete. Telemetry records when retained
 content was truncated.
 
 ## Local and CI examples

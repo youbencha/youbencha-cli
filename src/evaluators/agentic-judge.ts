@@ -13,6 +13,8 @@ import { EvaluationResult } from '../schemas/result.schema.js';
 import { AgentAdapter, AgentExecutionContext } from '../adapters/base.js';
 import { CopilotCLIAdapter } from '../adapters/copilot-cli.js';
 import { ClaudeCodeAdapter } from '../adapters/claude-code.js';
+import { CodexCLIAdapter } from '../adapters/codex-cli.js';
+import { resolveAgenticJudgeAdapterType } from '../schemas/evaluator-config.schema.js';
 import * as logger from '../lib/logger.js';
 
 // Use the built template file in the prompts directory
@@ -61,7 +63,10 @@ export class AgenticJudgeEvaluator implements Evaluator {
     try {
       // Check if agent type is configured (either in test case config or evaluator config)
       const agentConfig = context.testCaseConfig?.agent;
-      const agentType = (agentConfig?.type || context.config.type) as string;
+      const agentType = resolveAgenticJudgeAdapterType(
+        context.config,
+        agentConfig?.type
+      );
 
       if (!agentType) {
         return false;
@@ -113,11 +118,10 @@ export class AgenticJudgeEvaluator implements Evaluator {
       }
       // Get adapter for configured agent type from test case config (or evaluator config for eval-only)
       const agentConfig = context.testCaseConfig?.agent;
-      const configuredEvaluatorType = context.config?.type;
-      const agentType =
-        typeof configuredEvaluatorType === 'string'
-          ? configuredEvaluatorType
-          : agentConfig?.type;
+      const agentType = resolveAgenticJudgeAdapterType(
+        context.config,
+        agentConfig?.type
+      );
       logger.debug(
         `Agentic judge adapter: ${agentType || agentConfig?.type || '(not configured)'}`
       );
@@ -491,6 +495,8 @@ export class AgenticJudgeEvaluator implements Evaluator {
         return new CopilotCLIAdapter();
       case 'claude-code':
         return new ClaudeCodeAdapter();
+      case 'codex-cli':
+        return new CodexCLIAdapter();
       // Add more adapters here as they're implemented
       default:
         return null;

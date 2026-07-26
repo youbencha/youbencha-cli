@@ -12,6 +12,9 @@ variants:
   - name: claude-default
     agent:
       type: claude-code
+  - name: codex-default
+    agent:
+      type: codex-cli
 
 repetitions: 2
 

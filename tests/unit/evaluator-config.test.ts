@@ -56,4 +56,39 @@ describe('evaluator-specific configuration schemas', () => {
       assertions: { quality: 'The change is correct.' },
     });
   });
+
+  test('validates inherited adapter-specific agentic judge fields', () => {
+    expect(() =>
+      parseEvaluatorConfig(
+        'agentic-judge',
+        {
+          agent_name: 'reviewer',
+          assertions: { quality: 'The change is correct.' },
+        },
+        { inheritedAgentType: 'codex-cli' }
+      )
+    ).toThrow(/codex-cli does not support agent_name/);
+
+    expect(() =>
+      parseEvaluatorConfig(
+        'agentic-judge',
+        {
+          effort: 'high',
+          assertions: { quality: 'The change is correct.' },
+        },
+        { inheritedAgentType: 'copilot-cli' }
+      )
+    ).toThrow(/copilot-cli does not support: effort/);
+
+    expect(() =>
+      parseEvaluatorConfig(
+        'agentic-judge',
+        {
+          reasoning_effort: 'high',
+          assertions: { quality: 'The change is correct.' },
+        },
+        { inheritedAgentType: 'claude-code' }
+      )
+    ).toThrow(/claude-code does not support reasoning_effort/);
+  });
 });

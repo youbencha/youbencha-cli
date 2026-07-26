@@ -69,7 +69,7 @@ agent:
 | `log_level`          | `none`, `error`, `warning`, `info`, `debug`, `all`, or `default` |
 | `allow_all_tools`    | Emit `--allow-all-tools`; defaults to `true` for compatibility   |
 | `allow_all_paths`    | Emit `--allow-all-paths`; defaults to `true` for compatibility   |
-| `max_output_bytes`   | Per-stream in-memory preview bound; artifacts remain complete    |
+| `max_output_bytes`   | Per-stream in-memory preview and parser-retention bound           |
 | `legacy_text_output` | Request and accept legacy plain-text output; defaults to `false` |
 
 The permission defaults intentionally preserve existing youBencha behavior.
@@ -114,7 +114,9 @@ activity, and requires a valid terminal response. `max_output_bytes` also
 bounds event content retained by the parser while it continues reading
 terminal and usage events. The budget charges both UTF-8 text and a minimum
 overhead for every retained collection entry, so many tiny events cannot grow
-telemetry without bound. Raw artifacts remain complete, and telemetry records
+telemetry without bound. Event and stderr artifacts are independently capped at
+64 MiB per stream. If the event artifact reaches that safety limit, the
+execution fails because the structured result may be incomplete. Telemetry records
 when retained content was truncated.
 
 Reported token and credit values use `measurement_source: measured`. Copilot

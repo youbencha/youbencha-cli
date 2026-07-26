@@ -11,6 +11,7 @@
 
 import { CopilotCLIAdapter } from '../../src/adapters/copilot-cli.js';
 import { AgentExecutionContext } from '../../src/adapters/base.js';
+import type { CliProcessResult } from '../../src/lib/cli-process.js';
 
 describe('CopilotCLIAdapter', () => {
   let adapter: CopilotCLIAdapter;
@@ -31,38 +32,22 @@ describe('CopilotCLIAdapter', () => {
 
   describe('checkAvailability', () => {
     it('should return true when copilot-cli is available', async () => {
-      // This test will check if copilot-cli is in PATH
-      // Mock implementation will be needed for CI/CD
-      const isAvailable = await adapter.checkAvailability();
-      expect(typeof isAvailable).toBe('boolean');
+      adapter = availableAdapter();
+      await expect(adapter.checkAvailability()).resolves.toBe(true);
     });
 
-    // This test only works reliably on Unix-like systems where PATH controls binary lookup
-    // On Windows, 'where' can find executables through other means like App Paths registry
-    (process.platform === 'win32' ? it.skip : it)(
-      'should return false when copilot-cli is not in PATH',
-      async () => {
-        // Test with modified PATH that excludes copilot-cli
-        const originalPath = process.env.PATH;
-        process.env.PATH = '';
+    it('should return false when copilot-cli is not in PATH', async () => {
+      adapter = new CopilotCLIAdapter({
+        resolveExecutable: async (): Promise<null> => null,
+      });
+      await expect(adapter.checkAvailability()).resolves.toBe(false);
+    });
 
-        const isAvailable = await adapter.checkAvailability();
-        expect(isAvailable).toBe(false);
-
-        process.env.PATH = originalPath;
-      }
-    );
-
-    it('should check authentication status', async () => {
-      // Should verify copilot-cli authentication
-      // This may fail in CI without proper setup
-      try {
-        const isAvailable = await adapter.checkAvailability();
-        expect(typeof isAvailable).toBe('boolean');
-      } catch (error) {
-        // Expected in environments without copilot-cli
-        expect(error).toBeDefined();
-      }
+    it('should not make an AI request while checking installation', async () => {
+      const requests: string[][] = [];
+      adapter = availableAdapter(requests);
+      await expect(adapter.checkAvailability()).resolves.toBe(true);
+      expect(requests).toEqual([['--version']]);
     });
   });
 
@@ -494,3 +479,30 @@ describe('CopilotCLIAdapter', () => {
     });
   });
 });
+
+function availableAdapter(requests: string[][] = []): CopilotCLIAdapter {
+  return new CopilotCLIAdapter({
+    resolveExecutable: async () => ({
+      path: process.execPath,
+      kind: 'native',
+    }),
+    runProcess: async (request): Promise<CliProcessResult> => {
+      requests.push(request.args);
+      return {
+        exitCode: 0,
+        signal: null,
+        stdout: 'GitHub Copilot CLI 1.2.3',
+        stderr: '',
+        stdoutBytes: 24,
+        stderrBytes: 0,
+        stdoutTruncated: false,
+        stderrTruncated: false,
+        stdoutArtifactBytes: 24,
+        stderrArtifactBytes: 0,
+        stdoutArtifactTruncated: false,
+        stderrArtifactTruncated: false,
+        timedOut: false,
+      };
+    },
+  });
+}

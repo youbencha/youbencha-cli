@@ -23,6 +23,7 @@ import {
 import { AgentAdapter, AgentExecutionContext } from '../adapters/base.js';
 import { CopilotCLIAdapter } from '../adapters/copilot-cli.js';
 import { ClaudeCodeAdapter } from '../adapters/claude-code.js';
+import { CodexCLIAdapter } from '../adapters/codex-cli.js';
 import { Evaluator, EvaluationContext } from '../evaluators/base.js';
 import { GitDiffEvaluator } from '../evaluators/git-diff.js';
 import { ExpectedDiffEvaluator } from '../evaluators/expected-diff.js';
@@ -524,9 +525,8 @@ export class Orchestrator {
 
     // Get artifacts manifest
     const allArtifacts = await getArtifactManifest(artifactsDir);
-    const evaluatorArtifacts = allArtifacts.filter(
-      (f) => !f.includes('youbencha.log.json') && !f.includes('results.json')
-    );
+    const { agentArtifacts, evaluatorArtifacts } =
+      partitionArtifactManifest(allArtifacts);
 
     // Generate config hash
     const configHash = createHash('sha256')
@@ -567,6 +567,7 @@ export class Orchestrator {
       summary,
       artifacts: {
         agent_log: path.basename(agentLogPath),
+        agent_artifacts: agentArtifacts,
         reports: [],
         evaluator_artifacts: evaluatorArtifacts,
       },
@@ -1032,9 +1033,8 @@ export class Orchestrator {
     const allArtifacts = await getArtifactManifest(
       workspace.paths.artifactsDir
     );
-    const evaluatorArtifacts = allArtifacts.filter(
-      (f) => !f.includes('youbencha.log.json') && !f.includes('results.json')
-    );
+    const { agentArtifacts, evaluatorArtifacts } =
+      partitionArtifactManifest(allArtifacts);
 
     // Generate config hash
     const configHash = this.generateConfigHash(testCaseConfig);
@@ -1067,6 +1067,7 @@ export class Orchestrator {
       summary,
       artifacts: {
         agent_log: path.basename(agentLogPath),
+        agent_artifacts: agentArtifacts,
         reports: [], // Reports generated separately via yb report command
         evaluator_artifacts: evaluatorArtifacts,
       },
@@ -1126,6 +1127,8 @@ export class Orchestrator {
         return new CopilotCLIAdapter();
       case 'claude-code':
         return new ClaudeCodeAdapter();
+      case 'codex-cli':
+        return new CodexCLIAdapter();
       default:
         throw new Error(`Unknown agent adapter type: ${adapterType}`);
     }
@@ -1312,4 +1315,31 @@ export class Orchestrator {
 
     return results;
   }
+}
+
+function partitionArtifactManifest(allArtifacts: string[]): {
+  agentArtifacts: string[];
+  evaluatorArtifacts: string[];
+} {
+  const agentDirectories = new Set([
+    'claude-code-logs',
+    'codex-cli-logs',
+    'copilot-logs',
+  ]);
+  const agentArtifacts: string[] = [];
+  const evaluatorArtifacts: string[] = [];
+
+  for (const artifact of allArtifacts) {
+    const segments = artifact.split(/[\\/]/);
+    if (agentDirectories.has(segments[0])) {
+      agentArtifacts.push(artifact);
+    } else if (
+      artifact !== 'youbencha.log.json' &&
+      artifact !== 'results.json'
+    ) {
+      evaluatorArtifacts.push(artifact);
+    }
+  }
+
+  return { agentArtifacts, evaluatorArtifacts };
 }

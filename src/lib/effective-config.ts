@@ -52,7 +52,10 @@ function substituteConfiguredVariables<T>(data: T, config: Config): T {
 function resolveEvaluatorPrompts(
   evaluators: readonly ResolvedEvaluatorConfig[],
   baseDir: string,
-  requireAgentType = false
+  options: {
+    requireAgentType?: boolean;
+    inheritedAgentType?: string;
+  } = {}
 ): ResolvedEvaluatorConfig[] {
   return evaluators.map((evaluator) => {
     const resolvedConfig = { ...(evaluator.config ?? {}) };
@@ -71,7 +74,8 @@ function resolveEvaluatorPrompts(
     return {
       ...evaluator,
       config: parseEvaluatorConfig(evaluator.name, resolvedConfig, {
-        requireAgentType,
+        requireAgentType: options.requireAgentType,
+        inheritedAgentType: options.inheritedAgentType,
       }),
     };
   });
@@ -91,7 +95,8 @@ export function resolveEffectiveTestCaseConfig(
   const baseDir = path.dirname(path.resolve(configFile));
   const evaluators = resolveEvaluatorPrompts(
     resolveEvaluatorConfigs(parsed.evaluators, baseDir),
-    baseDir
+    baseDir,
+    { inheritedAgentType: parsed.agent.type }
   );
   validateEvaluatorNames(evaluators);
 
@@ -102,7 +107,7 @@ export function resolveEffectiveTestCaseConfig(
     ? { ...parsed.agent.config, prompt: resolvedPrompt, prompt_file: undefined }
     : parsed.agent.config;
 
-  return {
+  return testCaseConfigSchema.parse({
     ...parsed,
     workspace_dir: parsed.workspace_dir ?? globalConfig.workspace_dir,
     timeout:
@@ -115,7 +120,7 @@ export function resolveEffectiveTestCaseConfig(
       config: agentConfig,
     },
     evaluators: evaluators as EvaluatorConfig[],
-  };
+  });
 }
 
 /**
@@ -130,7 +135,9 @@ export function resolveEffectiveEvalConfig(
     substituteConfiguredVariables(data, globalConfig)
   );
   const baseDir = path.dirname(path.resolve(configFile));
-  const evaluators = resolveEvaluatorPrompts(parsed.evaluators, baseDir, true);
+  const evaluators = resolveEvaluatorPrompts(parsed.evaluators, baseDir, {
+    requireAgentType: true,
+  });
   validateEvaluatorNames(evaluators);
 
   return {

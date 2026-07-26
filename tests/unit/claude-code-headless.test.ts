@@ -397,6 +397,7 @@ describe('ClaudeCodeAdapter shared process integration', () => {
         structuredOutputFormat: 'stream-json',
       });
       expect(capturedRequest?.maxCapturedOutputBytes).toBe(256);
+      expect(capturedRequest?.maxArtifactOutputBytes).toBe(64 * 1024 * 1024);
       expect(capturedRequest?.args).toContain('--no-session-persistence');
       expect(result.telemetry?.diagnostics).toEqual(
         expect.arrayContaining([
@@ -408,6 +409,63 @@ describe('ClaudeCodeAdapter shared process integration', () => {
       await expect(
         fs.readFile(result.telemetry?.eventsArtifactPath ?? '', 'utf8')
       ).resolves.toContain('Finished successfully.');
+    } finally {
+      await fs.rm(testDirectory, { recursive: true, force: true });
+    }
+  });
+
+  it('fails when the durable event artifact reaches its safety limit', async () => {
+    const testDirectory = await fs.mkdtemp(
+      path.join(os.tmpdir(), 'youbencha-claude-artifact-limit-')
+    );
+    const adapter = new ClaudeCodeAdapter({
+      resolveExecutable: async (): Promise<ResolvedExecutable> => executable,
+      runProcess: async (request): Promise<CliProcessResult> => {
+        await fs.mkdir(path.dirname(request.stdoutArtifactPath), {
+          recursive: true,
+        });
+        await fs.writeFile(
+          request.stdoutArtifactPath,
+          JSON.stringify({
+            type: 'result',
+            subtype: 'success',
+            is_error: false,
+            result: 'Result before the quota boundary.',
+          }),
+          'utf8'
+        );
+        await fs.writeFile(request.stderrArtifactPath, '', 'utf8');
+        return processResult({
+          exitCode: 0,
+          stdoutArtifactTruncated: true,
+        });
+      },
+    });
+
+    try {
+      const result = await adapter.execute({
+        workspaceDir: testDirectory,
+        repoDir: testDirectory,
+        artifactsDir: path.join(testDirectory, 'artifacts'),
+        config: { prompt: 'Do the task.' },
+        timeout: 30_000,
+        env: {},
+      });
+
+      expect(result.status).toBe('failed');
+      expect(result.exitCode).toBe(1);
+      expect(result.errors).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            message: expect.stringContaining('structured result is incomplete'),
+          }),
+        ])
+      );
+      expect(result.telemetry?.diagnostics).toEqual(
+        expect.arrayContaining([
+          expect.stringContaining('event artifact reached its'),
+        ])
+      );
     } finally {
       await fs.rm(testDirectory, { recursive: true, force: true });
     }
@@ -565,6 +623,10 @@ function processResult(
     stderrBytes: 0,
     stdoutTruncated: false,
     stderrTruncated: false,
+    stdoutArtifactBytes: 0,
+    stderrArtifactBytes: 0,
+    stdoutArtifactTruncated: false,
+    stderrArtifactTruncated: false,
     timedOut: false,
     ...overrides,
   };

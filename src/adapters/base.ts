@@ -48,6 +48,19 @@ export interface AgentExecutionTelemetry {
 }
 
 /**
+ * Non-secret installation and authentication diagnostics.
+ *
+ * Authentication can be unknown when a CLI has no side-effect-free probe.
+ */
+export interface AgentAvailability {
+  installed: boolean;
+  authenticated: boolean | 'unknown';
+  version?: string;
+  executableKind?: string;
+  messages: string[];
+}
+
+/**
  * Context provided to agent adapter for execution
  */
 export interface AgentExecutionContext {
@@ -159,6 +172,15 @@ export interface AgentAdapter {
    * @throws Error with descriptive message if agent cannot be used
    */
   checkAvailability(): Promise<boolean>;
+
+  /**
+   * Optionally report installation and authentication as distinct states.
+   * The environment is used only for presence checks such as CODEX_API_KEY;
+   * implementations must never return or persist credential values.
+   */
+  diagnoseAvailability?(
+    env?: Readonly<Record<string, string | undefined>>
+  ): Promise<AgentAvailability>;
 
   /**
    * Execute the agent with the given configuration

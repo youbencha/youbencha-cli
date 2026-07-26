@@ -31,6 +31,8 @@ Real agent execution is opt-in:
 
 - `COPILOT_CLI_INTEGRATION_TESTS=1` enables tests that invoke Copilot CLI.
 - `CLAUDE_CODE_INTEGRATION_TESTS=1` enables tests that invoke Claude Code.
+- `CODEX_CLI_INTEGRATION_TESTS=1` enables the bounded Codex CLI live smoke
+  test. `CODEX_CLI_INTEGRATION_MODEL` optionally selects its model.
 
 Do not set these variables unless the corresponding CLI is installed,
 authenticated, and the task calls for live integration testing.

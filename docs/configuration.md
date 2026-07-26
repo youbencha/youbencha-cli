@@ -60,16 +60,35 @@ agent:
     max_output_bytes: 5242880
 ```
 
+```yaml
+agent:
+  type: codex-cli
+  model: gpt-5.4
+  config:
+    prompt: 'Fix the failing tests.'
+    sandbox: workspace-write
+    approval_policy: never
+    ephemeral: true
+    ignore_user_config: true
+    reasoning_effort: high
+    search: false
+    output_limit_bytes: 10485760
+```
+
 `prompt` and `prompt_file` are mutually exclusive. `max_output_bytes` bounds
-the stdout and stderr previews held in memory. For Claude it also bounds parsed
-event payloads retained in memory. Complete structured stdout and stderr
-artifacts are still written separately, and Claude terminal usage/status fields
-continue to be parsed after payload truncation. The same adapter-specific fields
-may be placed directly in an `agentic-judge` evaluator's `config`.
+the Copilot and Claude stdout and stderr previews held in memory. For Claude it
+also bounds parsed event payloads retained in memory. Codex uses the distinct
+`output_limit_bytes` field for its retained response and event content; its
+maximum is 16 MiB. Durable structured stdout and stderr artifacts are written
+separately subject to the documented artifact quota and credential redaction,
+and terminal usage/status fields continue to be parsed after payload
+truncation. The same adapter-specific fields may be placed directly in an
+`agentic-judge` evaluator's `config`.
 
 See [Claude Code adapter](claude-code-adapter.md) and
-[GitHub Copilot CLI adapter](copilot-cli-adapter.md) for authentication,
-permissions, reproducibility, and all supported fields.
+[GitHub Copilot CLI adapter](copilot-cli-adapter.md), and
+[Codex CLI adapter](codex-cli-adapter.md) for authentication, permissions,
+reproducibility, and all supported fields.
 
 ## Experiment Definitions
 
@@ -94,6 +113,9 @@ variants:
     agent:
       type: claude-code
       model: sonnet
+  - name: codex-default
+    agent:
+      type: codex-cli
 
 repetitions: 2
 

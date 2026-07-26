@@ -192,6 +192,72 @@ describe('CLI process boundary', () => {
       );
     });
 
+    it('bounds durable artifacts while continuing to drain process output', async () => {
+      const request = makeRequest([
+        '-e',
+        "process.stdout.write('stdout-over-limit'); process.stderr.write('stderr-over-limit')",
+      ]);
+      request.maxArtifactOutputBytes = 6;
+
+      const result = await runCliProcess(request);
+
+      expect(result.exitCode).toBe(0);
+      expect(result.stdout).toBe('stdout-over-limit');
+      expect(result.stderr).toBe('stderr-over-limit');
+      expect(result.stdoutArtifactBytes).toBe(6);
+      expect(result.stderrArtifactBytes).toBe(6);
+      expect(result.stdoutArtifactTruncated).toBe(true);
+      expect(result.stderrArtifactTruncated).toBe(true);
+      await expect(readFile(request.stdoutArtifactPath, 'utf8')).resolves.toBe(
+        'stdout'
+      );
+      await expect(readFile(request.stderrArtifactPath, 'utf8')).resolves.toBe(
+        'stderr'
+      );
+    });
+
+    it('redacts raw and JSON-escaped credentials before durable writes', async () => {
+      const secret = 'token-"quoted\\value';
+      const escaped = JSON.stringify(secret).slice(1, -1);
+      const child = createFakeChild();
+      const request = makeRequest([]);
+      request.artifactRedactions = [secret];
+
+      const result = await runCliProcess(request, {
+        spawnProcess: () => {
+          queueMicrotask(() => {
+            child.stdout?.write(`{"message":"${escaped.slice(0, 8)}`);
+            child.stdout?.end(`${escaped.slice(8)}"}\n`);
+            child.stderr?.write(`failure ${secret.slice(0, 7)}`);
+            child.stderr?.end(secret.slice(7));
+            child.emit('exit', 0, null);
+          });
+          return child;
+        },
+      });
+
+      const stdoutArtifact = await readFile(request.stdoutArtifactPath, 'utf8');
+      const stderrArtifact = await readFile(request.stderrArtifactPath, 'utf8');
+      expect(JSON.parse(stdoutArtifact)).toEqual({ message: '[REDACTED]' });
+      expect(stderrArtifact).toBe('failure [REDACTED]');
+      expect(stdoutArtifact).not.toContain(secret);
+      expect(stdoutArtifact).not.toContain(escaped);
+      expect(stderrArtifact).not.toContain(secret);
+      expect(result.stdoutArtifactRedactionCount).toBe(1);
+      expect(result.stderrArtifactRedactionCount).toBe(1);
+    });
+
+    it('rejects an invalid durable artifact quota before spawning', async () => {
+      const request = makeRequest([]);
+      request.maxArtifactOutputBytes = -1;
+      const spawnProcess = jest.fn();
+
+      await expect(runCliProcess(request, { spawnProcess })).rejects.toThrow(
+        'maxArtifactOutputBytes'
+      );
+      expect(spawnProcess).not.toHaveBeenCalled();
+    });
+
     it('attempts graceful then forced process-tree termination on timeout', async () => {
       const child = createFakeChild();
       const terminationCalls: boolean[] = [];
