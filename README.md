@@ -18,8 +18,13 @@ youBencha is a testing and benchmarking framework designed to help developers ev
 - **Node.js 20+** - youBencha requires Node.js version 20 or higher
 - **Git** - For cloning repositories during evaluation
 - **Agent CLI** - At least one of:
-  - **GitHub Copilot CLI** - For copilot-cli agent type
-  - **Claude Code CLI** - For claude-code agent type (install via `npm install -g @anthropic-ai/claude-code`)
+  - **GitHub Copilot CLI** - For the `copilot-cli` agent type
+  - **Claude Code CLI** - For the `claude-code` agent type; Anthropic's native installer is recommended, with npm also supported
+
+Both adapters run headlessly with structured output, close stdin, enforce
+timeouts and byte-bounded output previews, and retain complete raw event
+artifacts. See the focused adapter guides for installation, authentication, and
+CI configuration.
 
 ## Installation
 
@@ -46,6 +51,7 @@ npm link
 This creates a global symlink to your local package, making the `yb` command available system-wide. Any changes you make require rebuilding (`npm run build`) to take effect.
 
 To unlink later:
+
 ```bash
 npm unlink -g youbencha
 ```
@@ -83,7 +89,7 @@ youBencha supports both **YAML** and **JSON** formats for configuration files.
 **Option A: YAML format (`testcase.yaml`)**
 
 ```yaml
-name: "README Comment Addition"
+name: 'README Comment Addition'
 description: "Tests the agent's ability to add a helpful comment explaining the repository purpose"
 
 repo: https://github.com/youbencha/hello-world.git
@@ -92,7 +98,7 @@ branch: main
 agent:
   type: copilot-cli
   config:
-    prompt: "Add a comment to README explaining what this repository is about"
+    prompt: 'Add a comment to README explaining what this repository is about'
 
 evaluators:
   - name: git-diff
@@ -101,8 +107,8 @@ evaluators:
       type: copilot-cli
       agent_name: agentic-judge
       assertions:
-        readme_modified: "README.md was modified. Score 1 if true, 0 if false."
-        helpful_comment_added: "A helpful comment was added to README.md. Score 1 if true, 0 if false."
+        readme_modified: 'README.md was modified. Score 1 if true, 0 if false.'
+        helpful_comment_added: 'A helpful comment was added to README.md. Score 1 if true, 0 if false.'
 ```
 
 **Option B: JSON format (`testcase.json`)**
@@ -222,6 +228,7 @@ yb eval -c <eval-config-file>
 ```
 
 **Use cases:**
+
 - Re-evaluate agent outputs with different evaluator configurations
 - Evaluate manual code changes using youBencha's evaluators
 - Test custom evaluators during development
@@ -256,12 +263,12 @@ baseline workflow, reports, and CI example.
 
 `yb run` and `yb eval` return a stable quality-gate result:
 
-| Code | Meaning |
-| --- | --- |
-| `0` | Agent execution and all evaluators passed |
-| `1` | Configuration, tool, agent execution, or other runtime error |
-| `2` | At least one evaluator failed |
-| `3` | Evaluation was incomplete because at least one evaluator was skipped |
+| Code | Meaning                                                              |
+| ---- | -------------------------------------------------------------------- |
+| `0`  | Agent execution and all evaluators passed                            |
+| `1`  | Configuration, tool, agent execution, or other runtime error         |
+| `2`  | At least one evaluator failed                                        |
+| `3`  | Evaluation was incomplete because at least one evaluator was skipped |
 
 Both commands generate `report.md` beside `results.json` when artifacts are
 retained. Treat codes `2` and `3` as failed CI checks unless the workflow has an
@@ -330,6 +337,7 @@ Options:
 **Interactive Workflow:**
 
 The `suggest-testcase` command launches an interactive AI agent session that:
+
 1. Analyzes your agent's output folder
 2. Asks about your baseline/source for comparison
 3. Requests your original instructions/intent
@@ -381,24 +389,24 @@ youBencha supports comparing agent outputs against an expected reference branch.
 Add an expected reference to your test case configuration:
 
 ```yaml
-name: "Feature Implementation"
+name: 'Feature Implementation'
 description: "Tests the agent's ability to implement a feature matching the reference implementation"
 
 repo: https://github.com/youbencha/hello-world.git
 
 branch: main
 expected_source: branch
-expected: feature/completed  # The reference branch
+expected: feature/completed # The reference branch
 
 agent:
   type: copilot-cli
   config:
-    prompt: "Implement the feature"
+    prompt: 'Implement the feature'
 
 evaluators:
   - name: expected-diff
     config:
-      threshold: 0.80  # Require 80% similarity to pass
+      threshold: 0.80 # Require 80% similarity to pass
 ```
 
 ### Threshold Guidelines
@@ -411,6 +419,7 @@ The `threshold` determines how similar the agent output must be to the expected 
 - **<0.7** - Significantly different (lenient)
 
 **Recommended thresholds:**
+
 - **0.95+** for generated files (e.g., migrations, configs)
 - **0.80-0.90** for implementation code
 - **0.70-0.80** for creative tasks with multiple valid solutions
@@ -418,18 +427,21 @@ The `threshold` determines how similar the agent output must be to the expected 
 ### Use Cases
 
 **1. Test-Driven Development**
+
 ```yaml
 expected: tests-implemented
 # Compare agent implementation against expected test-driven approach
 ```
 
 **2. Refactoring Verification**
+
 ```yaml
 expected: refactored-solution
 # Ensure agent refactoring matches expected improvements
 ```
 
 **3. Bug Fix Validation**
+
 ```yaml
 expected: bug-fixed
 # Compare agent's bug fix with known correct fix
@@ -474,6 +486,7 @@ Analyzes Git changes made by the agent with assertion-based pass/fail thresholds
 **Metrics:** files_changed, lines_added, lines_removed, total_changes, change_entropy
 
 **Supported Assertions:**
+
 - `max_files_changed` - Maximum number of files that can be changed
 - `max_lines_added` - Maximum number of lines that can be added
 - `max_lines_removed` - Maximum number of lines that can be removed
@@ -482,6 +495,7 @@ Analyzes Git changes made by the agent with assertion-based pass/fail thresholds
 - `max_change_entropy` - Maximum entropy (enforces focused changes)
 
 **Example:**
+
 ```yaml
 evaluators:
   - name: git-diff
@@ -489,7 +503,7 @@ evaluators:
       assertions:
         max_files_changed: 5
         max_lines_added: 100
-        max_change_entropy: 2.0  # Keep changes focused
+        max_change_entropy: 2.0 # Keep changes focused
 ```
 
 ### expected-diff
@@ -505,6 +519,7 @@ Compares agent output against expected reference branch.
 Uses an AI agent to evaluate code quality based on custom assertions. The agent reads files, searches for patterns, and makes judgments like a human reviewer.
 
 **Features:**
+
 - Evaluable assertions as pass/fail
 - Supports multiple independent judges for different areas
 - Each judge maintains focused context (1-3 assertions recommended)
@@ -521,16 +536,16 @@ evaluators:
       type: copilot-cli
       agent_name: agentic-judge
       assertions:
-        has_try_catch: "Code includes try-catch blocks. Score 1 if present, 0 if absent."
-        errors_logged: "Errors are properly logged. Score 1 if logged, 0 if not."
-  
+        has_try_catch: 'Code includes try-catch blocks. Score 1 if present, 0 if absent.'
+        errors_logged: 'Errors are properly logged. Score 1 if logged, 0 if not.'
+
   # Judge 2: Documentation
   - name: agentic-judge-documentation
     config:
       type: copilot-cli
       agent_name: agentic-judge
       assertions:
-        functions_documented: "Functions have JSDoc. Score 1 if documented, 0 if not."
+        functions_documented: 'Functions have JSDoc. Score 1 if documented, 0 if not.'
 ```
 
 **Naming Convention:** Use `agentic-judge-<focus-area>` or `agentic-judge:<focus-area>` to create specialized judges.
@@ -586,7 +601,7 @@ post_evaluation:
       url: ${SLACK_WEBHOOK_URL}
       method: POST
       headers:
-        Content-Type: "application/json"
+        Content-Type: 'application/json'
       retry_on_failure: true
       timeout_ms: 5000
 ```
@@ -599,25 +614,28 @@ post_evaluation:
     config:
       command: ./scripts/notify-slack.sh
       args:
-        - "${RESULTS_PATH}"
+        - '${RESULTS_PATH}'
       env:
-        SLACK_WEBHOOK_URL: "${SLACK_WEBHOOK_URL}"
+        SLACK_WEBHOOK_URL: '${SLACK_WEBHOOK_URL}'
       timeout_ms: 30000
 ```
 
 ### Value Propositions
 
 **Single Result**: Immediate feedback on one evaluation
+
 - Quick validation during prompt engineering
 - Debugging agent failures
 - Understanding scope of changes
 
 **Suite of Results**: Cross-test comparison
+
 - Identify difficult tasks
 - Compare agent configurations
 - Aggregate metrics and pass rates
 
 **Results Over Time**: Regression detection and trends
+
 - Track performance changes across model/prompt updates
 - Cost optimization and ROI tracking
 - Long-term quality trends
@@ -625,6 +643,7 @@ post_evaluation:
 ### Example Scripts
 
 See `examples/scripts/` for ready-to-use scripts:
+
 - `notify-slack.sh` - Post results to Slack
 - `analyze-trends.sh` - Analyze time-series data
 - `detect-regression.sh` - Compare last two runs
@@ -639,6 +658,7 @@ See `examples/scripts/` for ready-to-use scripts:
 - [Reusable Evaluators Guide](docs/reusable-evaluators.md) - Sharing evaluator configurations
 - [Multiple Agentic Judges Guide](docs/multiple-agentic-judges.md) - Using multiple focused evaluators
 - [Claude Code Adapter](docs/claude-code-adapter.md) - Using Claude Code as an agent
+- [GitHub Copilot CLI Adapter](docs/copilot-cli-adapter.md) - Headless Copilot configuration and authentication
 
 ### Project Structure
 

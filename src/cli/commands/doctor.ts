@@ -7,13 +7,14 @@
  */
 
 import * as fs from 'fs/promises';
+import * as os from 'node:os';
 import * as path from 'path';
-import { execFile } from 'child_process';
 import { constants as fsConstants } from 'fs';
 import { configSchema, Config } from '../../schemas/config.schema.js';
 import { parseConfig } from '../../lib/config-parser.js';
 import { findActiveConfigFile, loadConfig } from '../../lib/config-loader.js';
 import { getAgentFiles } from '../../lib/agent-files.js';
+import { resolveCliExecutable, runCliProcess } from '../../lib/cli-process.js';
 import * as logger from '../../lib/logger.js';
 
 export type DoctorStatus = 'pass' | 'warn' | 'fail';
@@ -42,21 +43,33 @@ export interface DoctorDependencies {
   loadConfig(): Promise<Config>;
 }
 
-function getCommandVersion(command: string): Promise<string | null> {
-  return new Promise((resolve) => {
-    execFile(
-      command,
-      ['--version'],
-      { encoding: 'utf8', timeout: 5000, windowsHide: true },
-      (error, stdout, stderr) => {
-        if (error) {
-          resolve(null);
-          return;
-        }
-        resolve((stdout || stderr).trim() || 'installed');
-      }
-    );
-  });
+async function getCommandVersion(command: string): Promise<string | null> {
+  const executable = await resolveCliExecutable(command, { env: process.env });
+  if (!executable) {
+    return null;
+  }
+
+  const probeDir = await fs.mkdtemp(
+    path.join(os.tmpdir(), `youbencha-doctor-${command}-`)
+  );
+  try {
+    const result = await runCliProcess({
+      executable,
+      args: ['--version'],
+      cwd: process.cwd(),
+      env: { ...process.env },
+      timeoutMs: 5000,
+      maxCapturedOutputBytes: 16 * 1024,
+      stdoutArtifactPath: path.join(probeDir, 'stdout.log'),
+      stderrArtifactPath: path.join(probeDir, 'stderr.log'),
+    });
+    if (result.error || result.timedOut || result.exitCode !== 0) {
+      return null;
+    }
+    return (result.stdout || result.stderr).trim() || 'installed';
+  } finally {
+    await fs.rm(probeDir, { recursive: true, force: true });
+  }
 }
 
 async function pathExists(targetPath: string): Promise<boolean> {
@@ -163,14 +176,14 @@ export async function runDoctor(
       ? {
           name: 'Agent CLI',
           status: 'pass',
-          message: installedAgents.join('; '),
+          message: `${installedAgents.join('; ')}. Installation verified; authentication is checked when the adapter runs.`,
         }
       : {
           name: 'Agent CLI',
           status: 'warn',
           message: 'No supported agent CLI was found on PATH',
           remediation:
-            'Install and authenticate GitHub Copilot CLI or Claude Code before running a test case.',
+            'Install GitHub Copilot CLI or Claude Code, authenticate it, then rerun yb doctor. For Claude, verify with "claude auth status --json"; for Copilot, run "copilot" once or configure a supported headless token.',
         }
   );
 

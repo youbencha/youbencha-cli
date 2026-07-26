@@ -40,6 +40,7 @@ describe('OrchestratorSingleRunExecutor', () => {
           completion_tokens: 3,
           total_tokens: 5,
           estimated_cost_usd: 0.01,
+          measurement_source: 'estimated',
         },
         errors: [],
         environment: {
@@ -85,8 +86,141 @@ describe('OrchestratorSingleRunExecutor', () => {
       tokenCount: 5,
       costUsd: 0.01,
       usageQuality: 'estimated',
-      tokenQuality: 'measured',
+      tokenQuality: 'estimated',
       costQuality: 'estimated',
+    });
+  });
+
+  test('prefers measured cost and uses measurement source for quality', async () => {
+    const artifacts = path.join(temporaryDirectory, 'artifacts');
+    await fs.mkdir(artifacts);
+    await fs.writeFile(
+      path.join(artifacts, 'youbencha.log.json'),
+      JSON.stringify({
+        version: '1.0.0',
+        agent: { name: 'fake', version: '1', adapter_version: '1' },
+        model: { name: 'model', provider: 'test', parameters: {} },
+        execution: {
+          started_at: '2026-01-01T00:00:00.000Z',
+          completed_at: '2026-01-01T00:00:01.000Z',
+          duration_ms: 1000,
+          exit_code: 0,
+          status: 'success',
+        },
+        messages: [],
+        usage: {
+          prompt_tokens: 2,
+          completion_tokens: 3,
+          total_tokens: 5,
+          cost_usd: 0.02,
+          estimated_cost_usd: 0.01,
+          measurement_source: 'measured',
+        },
+        errors: [],
+        environment: {
+          os: 'test',
+          node_version: '20',
+          youbencha_version: 'test',
+          working_directory: temporaryDirectory,
+        },
+      })
+    );
+    const result = {
+      execution: { environment: { workspace_dir: temporaryDirectory } },
+      artifacts: { agent_log: 'youbencha.log.json' },
+    } as ResultsBundle;
+    const executor = new OrchestratorSingleRunExecutor({
+      configFiles: new Map([['task', 'testcase.yaml']]),
+      orchestrator: { runEvaluation: jest.fn(async () => result) },
+    });
+
+    const execution = await executor.execute(
+      {
+        cellId: 'a'.repeat(64),
+        testcaseId: 'task',
+        variantName: 'fake',
+        repetition: 0,
+        configHash: 'b'.repeat(64),
+        config: {} as TestCaseConfig,
+      },
+      {
+        experimentId: 'experiment',
+        attemptId: 'attempt',
+        attemptNumber: 1,
+      }
+    );
+
+    expect(execution).toMatchObject({
+      tokenCount: 5,
+      costUsd: 0.02,
+      usageQuality: 'measured',
+      tokenQuality: 'measured',
+      costQuality: 'measured',
+    });
+  });
+
+  test('does not invent quality when measurement provenance is absent', async () => {
+    const artifacts = path.join(temporaryDirectory, 'artifacts');
+    await fs.mkdir(artifacts);
+    await fs.writeFile(
+      path.join(artifacts, 'youbencha.log.json'),
+      JSON.stringify({
+        version: '1.0.0',
+        agent: { name: 'fake', version: '1', adapter_version: '1' },
+        model: { name: 'model', provider: 'test', parameters: {} },
+        execution: {
+          started_at: '2026-01-01T00:00:00.000Z',
+          completed_at: '2026-01-01T00:00:01.000Z',
+          duration_ms: 1000,
+          exit_code: 0,
+          status: 'success',
+        },
+        messages: [],
+        usage: {
+          prompt_tokens: 2,
+          completion_tokens: 3,
+          total_tokens: 5,
+          cost_usd: 0.02,
+        },
+        errors: [],
+        environment: {
+          os: 'test',
+          node_version: '20',
+          youbencha_version: 'test',
+          working_directory: temporaryDirectory,
+        },
+      })
+    );
+    const result = {
+      execution: { environment: { workspace_dir: temporaryDirectory } },
+      artifacts: { agent_log: 'youbencha.log.json' },
+    } as ResultsBundle;
+    const executor = new OrchestratorSingleRunExecutor({
+      configFiles: new Map([['task', 'testcase.yaml']]),
+      orchestrator: { runEvaluation: jest.fn(async () => result) },
+    });
+
+    const execution = await executor.execute(
+      {
+        cellId: 'a'.repeat(64),
+        testcaseId: 'task',
+        variantName: 'fake',
+        repetition: 0,
+        configHash: 'b'.repeat(64),
+        config: {} as TestCaseConfig,
+      },
+      {
+        experimentId: 'experiment',
+        attemptId: 'attempt',
+        attemptNumber: 1,
+      }
+    );
+
+    expect(execution).toMatchObject({
+      costUsd: 0.02,
+      usageQuality: 'unavailable',
+      tokenQuality: 'unavailable',
+      costQuality: 'unavailable',
     });
   });
 

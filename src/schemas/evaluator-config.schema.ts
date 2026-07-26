@@ -1,4 +1,10 @@
 import { z } from 'zod';
+import {
+  claudeCodeConfigShape,
+  validateClaudeCodeConfig,
+} from './agent-config/claude-code.js';
+import { copilotCliConfigShape } from './agent-config/copilot-cli.js';
+import { validatePromptSource } from './agent-config/common.js';
 
 const nonNegativeThreshold = z.number().nonnegative();
 
@@ -31,8 +37,8 @@ export const agenticJudgeEvaluatorConfigSchema = z
     agent_name: z.string().min(1).optional(),
     model: z.string().min(1).optional(),
     timeout: z.number().positive().optional(),
-    prompt: z.string().min(1).optional(),
-    prompt_file: z.string().min(1).optional(),
+    ...claudeCodeConfigShape,
+    ...copilotCliConfigShape,
     'instructions-file': z.string().min(1).optional(),
     assertions: z.record(z.string(), z.string().min(1)).optional(),
     criteria: z
@@ -42,15 +48,47 @@ export const agenticJudgeEvaluatorConfigSchema = z
       ])
       .optional(),
   })
-  .passthrough()
+  .strict()
   .superRefine((config, context) => {
-    if (config.prompt && config.prompt_file) {
+    validatePromptSource(config, context);
+    if (config.type === 'claude-code') {
+      validateClaudeCodeConfig(config, context);
+    }
+
+    const claudeOnlyKeys = [
+      'system_prompt',
+      'append_system_prompt',
+      'permission_mode',
+      'max_turns',
+      'max_budget_usd',
+      'effort',
+      'fallback_model',
+      'setting_sources',
+      'tools',
+      'allowed_tools',
+      'disallowed_tools',
+    ] as const;
+    const copilotOnlyKeys = [
+      'reasoning_effort',
+      'max_ai_credits',
+      'log_level',
+      'allow_all_tools',
+      'allow_all_paths',
+    ] as const;
+    const incompatibleKeys =
+      config.type === 'claude-code'
+        ? copilotOnlyKeys.filter((key) => config[key] !== undefined)
+        : config.type === 'copilot-cli'
+          ? claudeOnlyKeys.filter((key) => config[key] !== undefined)
+          : [];
+    if (incompatibleKeys.length > 0) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Cannot specify both "prompt" and "prompt_file".',
-        path: ['prompt_file'],
+        message: `${config.type} does not support: ${incompatibleKeys.join(', ')}`,
+        path: [incompatibleKeys[0]],
       });
     }
+
     if (!config.assertions && !config.criteria) {
       context.addIssue({
         code: z.ZodIssueCode.custom,

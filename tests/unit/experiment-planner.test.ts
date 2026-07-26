@@ -46,7 +46,7 @@ describe('experiment loading and planning', () => {
         '    agent:',
         '      type: copilot-cli',
         '      config:',
-        '        api_token: should-not-leak',
+        '        reasoning_effort: high',
         '  - name: second',
         '    agent:',
         '      type: claude-code',
@@ -84,7 +84,7 @@ describe('experiment loading and planning', () => {
     expect(new Set(first.cells.map((cell) => cell.cellId)).size).toBe(4);
   });
 
-  it('redacts secrets and absolute paths from effective plan output', async () => {
+  it('redacts absolute paths from effective plan output', async () => {
     const plan = planExperiment(
       await loadExperiment(path.join(temporaryDirectory, 'experiment.yaml'), {
         ...defaultConfig,
@@ -93,9 +93,8 @@ describe('experiment loading and planning', () => {
     );
     const serialized = JSON.stringify(plan.redactedEffectiveConfiguration);
 
-    expect(serialized).not.toContain('should-not-leak');
     expect(serialized).not.toContain(temporaryDirectory);
-    expect(serialized).toContain('[REDACTED]');
+    expect(serialized).toContain('<absolute-path>');
   });
 
   it('canonicalizes key order and path separators', () => {

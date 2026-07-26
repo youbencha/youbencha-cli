@@ -1,268 +1,205 @@
-# Claude Code Adapter
+# Claude Code adapter
 
-The Claude Code adapter enables youBencha to evaluate Anthropic's Claude Code CLI as an AI coding agent.
+The `claude-code` adapter runs Claude Code without a TTY, consumes its
+`stream-json` event protocol, and returns only the final assistant response to
+youBencha evaluators. The complete event stream and stderr remain available as
+artifacts.
 
-## Overview
+## Install and update
 
-The Claude Code adapter implements the `AgentAdapter` interface to:
-- Execute Claude Code CLI in non-interactive print mode (`-p` flag)
-- Capture all output (stdout/stderr) to artifacts
-- Normalize execution results to the youBencha Log format
-- Support various configuration options (model, agent, prompt files)
+Anthropic's native installer is recommended:
 
-## Prerequisites
+```bash
+# macOS and Linux
+curl -fsSL https://claude.ai/install.sh | bash
+```
 
-Before using the Claude Code adapter, ensure you have:
+```powershell
+# Windows PowerShell
+irm https://claude.ai/install.ps1 | iex
+```
 
-1. **Claude Code CLI installed**: Install via npm:
-   ```bash
-   npm install -g @anthropic-ai/claude-code
-   ```
+The npm package remains an option:
 
-2. **Authentication configured**: Either:
-   - Run `claude /login` for interactive authentication, or
-   - Set the `ANTHROPIC_API_KEY` environment variable
+```text
+npm install -g @anthropic-ai/claude-code
+```
 
-3. **Verify installation**:
-   ```bash
-   claude --version
-   ```
+Use `claude update` to update the active installation. The `latest` channel
+receives new features first; use the `stable` channel when benchmark
+repeatability is more important than immediate feature access. Record
+`claude --version` with benchmark results.
+
+## Authentication
+
+Check local authentication without starting an agent turn:
+
+```text
+claude auth status --json
+```
+
+For interactive development, authenticate through Claude Code. For unattended
+CI, provide one documented headless credential through the job's secret store:
+
+- `ANTHROPIC_API_KEY` for API-key authentication; or
+- `CLAUDE_CODE_OAUTH_TOKEN` for a provisioned Claude Code OAuth token.
+
+Never put a credential in test-case YAML, command arguments, or logs.
+
+## Headless command contract
+
+The adapter invokes the resolved `claude` executable with an argument array
+equivalent to:
+
+```text
+claude --print --output-format stream-json --verbose \
+  --no-session-persistence [options] <prompt>
+```
+
+It closes stdin, never asks a question, applies the youBencha timeout, bounds
+stdout/stderr previews by bytes, and terminates the process tree on timeout.
+Raw output is not parsed from terminal decorations or human-oriented text.
+
+For compatibility, the default permission policy remains bypass mode. Set
+`permission_mode: dontAsk` with explicit tool rules when denied actions should
+fail instead of being broadly allowed.
 
 ## Configuration
-
-### Basic Configuration
-
-The simplest test case configuration:
-
-```yaml
-name: "Basic Claude Code Evaluation"
-description: "Run Claude Code to analyze a repository"
-
-repo: "https://github.com/example/repo.git"
-branch: "main"
-
-agent:
-  type: claude-code
-  config:
-    prompt: "Analyze this repository and list the main files"
-
-evaluators:
-  - name: git-diff
-```
-
-### With Prompt File
-
-Use an external file for the prompt:
-
-```yaml
-agent:
-  type: claude-code
-  config:
-    prompt_file: ./prompts/code-review.md  # Relative to workspace
-```
-
-> **Note**: `prompt` and `prompt_file` are mutually exclusive.
-
-### With Model Selection
-
-Specify a particular Claude model:
-
-```yaml
-agent:
-  type: claude-code
-  model: claude-sonnet-4
-  config:
-    prompt: "Review the code for security issues"
-```
-
-### With Custom Agent
-
-Use a custom Claude Code agent/subagent:
 
 ```yaml
 agent:
   type: claude-code
   agent_name: code-reviewer
+  model: sonnet
   config:
-    prompt: "Review the code quality"
+    prompt: 'Review the implementation and fix correctness issues.'
+    permission_mode: dontAsk
+    max_turns: 8
+    max_budget_usd: 2
+    effort: high
+    fallback_model: haiku
+    setting_sources: [project]
+    tools: [Read, Grep, Edit]
+    allowed_tools: [Read, Grep, Edit]
+    disallowed_tools: [WebFetch]
+    max_output_bytes: 10485760
 ```
 
-### Full Configuration Example
+`prompt` and `prompt_file` are mutually exclusive. Supported adapter options
+are:
+
+| Field                                | Meaning                                                                    |
+| ------------------------------------ | -------------------------------------------------------------------------- |
+| `system_prompt`                      | Replace Claude Code's system prompt                                        |
+| `append_system_prompt`               | Append additional system instructions                                      |
+| `permission_mode`                    | `acceptEdits`, `auto`, `bypassPermissions`, `manual`, `dontAsk`, or `plan` |
+| `max_turns`                          | Maximum agent turns                                                        |
+| `max_budget_usd`                     | Provider spend ceiling; can incur usage charges up to this value           |
+| `effort`                             | `low`, `medium`, `high`, `xhigh`, `max`, or `ultracode`                    |
+| `fallback_model`                     | Model used if the configured model is unavailable                          |
+| `setting_sources`                    | Any of `user`, `project`, and `local`                                      |
+| `tools`                              | Tools made available to the session                                        |
+| `allowed_tools` / `disallowed_tools` | Non-interactive tool policy rules                                          |
+| `max_output_bytes`                   | Bounds previews and parsed payloads; artifacts remain complete             |
+
+Claude CLI options evolve between releases. During availability checks,
+youBencha reads `claude --help` and records the permission modes and effort
+levels advertised by the installed CLI. If that capability data says a
+configured option is unavailable, execution fails with the installed version
+and supported choices. If capability discovery is unavailable, the option is
+passed through and telemetry records a diagnostic. For example, `ultracode`
+can be configured for versions that advertise it, while older versions fail
+before starting an agent turn.
+
+`max_budget_usd` is accepted by older supported Claude releases, but full
+budget enforcement across spawned subagents requires Claude Code 2.1.217 or
+newer. When the detected version is older, provenance includes this caveat
+without rejecting the run.
+
+`max_tokens` and `temperature` are API parameters, not supported Claude Code
+CLI flags. Current configuration validation rejects them with guidance to use
+`max_turns` or `max_budget_usd`.
+
+### Named agents
+
+`agent_name` selects `.claude/agents/<name>.md` with Claude Code's native
+`--agent` flag. youBencha validates the name and confirms the copied definition
+exists before invocation. It does not rewrite the prompt.
+
+The same adapter options can be applied to an agentic judge:
 
 ```yaml
-name: "Advanced Claude Code Evaluation"
-description: "Comprehensive evaluation with all options"
-
-repo: "https://github.com/example/repo.git"
-branch: "main"
-
-agent:
-  type: claude-code
-  agent_name: security-auditor
-  model: claude-sonnet-4
-  config:
-    prompt_file: ./prompts/security-audit.md
-    
-    # Optional: Append to system prompt
-    append_system_prompt: |
-      Focus on OWASP Top 10 vulnerabilities.
-      Provide severity ratings for each finding.
-    
-    # Optional: Permission mode (auto, plan, ask)
-    permission_mode: auto
-    
-    # Optional: Restrict allowed tools
-    allowed_tools:
-      - Read
-      - Write
-      - ListDirectory
-    
-    # Optional: Token limit
-    max_tokens: 8192
-
 evaluators:
-  - name: git-diff
   - name: agentic-judge
     config:
+      type: claude-code
+      agent_name: agentic-judge
+      max_turns: 4
+      max_budget_usd: 1
+      setting_sources: [project]
       assertions:
-        - description: "Security issues identified"
-
-timeout: 600000  # 10 minutes
+        correct: 'The implementation is correct.'
 ```
 
-## Configuration Options
+## Reproducibility
 
-| Option | Type | Required | Description |
-|--------|------|----------|-------------|
-| `type` | string | Yes | Must be `"claude-code"` |
-| `agent_name` | string | No | Custom agent/subagent name |
-| `model` | string | No | Claude model to use (e.g., `claude-sonnet-4`) |
-| `config.prompt` | string | One of prompt/prompt_file | Inline prompt text |
-| `config.prompt_file` | string | One of prompt/prompt_file | Path to prompt file |
-| `config.append_system_prompt` | string | No | Additional system prompt text |
-| `config.permission_mode` | string | No | `auto`, `plan`, or `ask` |
-| `config.allowed_tools` | string[] | No | List of allowed tool names |
-| `config.max_tokens` | number | No | Maximum response tokens |
+Claude Code can read user, project, and local instruction/settings sources.
+Use `setting_sources` to make the intended sources explicit, keep project
+instructions in version control, disable session persistence, pin a CLI
+version/channel, and record the configured and provider-reported model. A model
+alias can move over time; use a versioned model identifier for strict
+comparisons.
 
-## Output Artifacts
+## Artifacts and usage
 
-The adapter creates the following artifacts:
+Each run writes:
 
-```
+```text
 artifacts/
 └── claude-code-logs/
-    └── terminal-output-2025-11-25T10-30-00-000Z.log
+    ├── events-<timestamp>.jsonl
+    └── stderr-<timestamp>.log
 ```
 
-The terminal output log contains the complete stdout/stderr from Claude Code execution.
+The normalized log records provider-reported prompt, cached prompt, completion,
+reasoning, total-token, and cost fields when present. `measurement_source` is
+`measured`, `estimated`, or `unavailable`; unavailable values are not replaced
+with character-count estimates.
 
-## youBencha Log Structure
+`max_output_bytes` bounds the assistant text, tool payloads, errors, and final
+response retained by the JSONL parser as well as process previews. Terminal
+status, measured usage, and cost are still parsed after that bound is reached.
+The raw event artifact remains complete, and telemetry records when retained
+content was truncated.
 
-The adapter normalizes Claude Code output to the standard youBencha Log format:
+## Local and CI examples
 
-```json
-{
-  "version": "1.0.0",
-  "agent": {
-    "name": "claude-code",
-    "version": "1.2.3",
-    "adapter_version": "1.0.0"
-  },
-  "model": {
-    "name": "claude-sonnet-4",
-    "provider": "Anthropic",
-    "parameters": {}
-  },
-  "execution": {
-    "started_at": "2025-11-25T10:30:00.000Z",
-    "completed_at": "2025-11-25T10:31:00.000Z",
-    "duration_ms": 60000,
-    "exit_code": 0,
-    "status": "success"
-  },
-  "messages": [...],
-  "usage": {
-    "prompt_tokens": 100,
-    "completion_tokens": 500,
-    "total_tokens": 600,
-    "estimated_cost_usd": 0.0015
-  },
-  "errors": [],
-  "environment": {...}
-}
+Local development can retain the compatibility permission default:
+
+```yaml
+agent:
+  type: claude-code
+  config:
+    prompt: 'Fix the failing unit tests.'
+    max_turns: 8
 ```
 
-## Error Handling
+For CI, use explicit non-interactive restrictions and spend limits:
 
-### CLI Not Found
-
-If Claude Code CLI is not installed:
-```
-Agent not configured or not available - check agent.type in evaluator config and ensure agent is installed
-```
-
-**Solution**: Install Claude Code CLI with `npm install -g @anthropic-ai/claude-code`
-
-### Authentication Failed
-
-If authentication is not configured:
-```
-Claude Code requires authentication. Run "claude /login" or set ANTHROPIC_API_KEY environment variable.
-```
-
-**Solution**: Run `claude /login` or set the `ANTHROPIC_API_KEY` environment variable
-
-### Prompt Not Provided
-
-If neither `prompt` nor `prompt_file` is specified:
-```
-One of "prompt" or "prompt_file" is required in agent config
+```yaml
+agent:
+  type: claude-code
+  model: claude-sonnet-versioned-id
+  config:
+    prompt_file: prompts/ci-task.md
+    permission_mode: dontAsk
+    setting_sources: [project]
+    allowed_tools: [Read, Grep, Edit, Bash]
+    disallowed_tools: [WebFetch]
+    max_turns: 6
+    max_budget_usd: 1
+    max_output_bytes: 5242880
+timeout: 300000
 ```
 
-### Invalid Prompt File Path
-
-If `prompt_file` contains path traversal:
-```
-Invalid prompt_file path "../secret.txt". Path must be relative and not contain path traversal.
-```
-
-## Security Considerations
-
-1. **Path Validation**: The adapter rejects absolute paths and path traversal attempts in `prompt_file`
-2. **Output Size Limiting**: Output is limited to 10MB to prevent memory issues
-3. **Shell Escaping**: Prompts are properly escaped to prevent injection
-4. **No Shell Mode**: Commands are executed without shell to prevent shell injection
-
-## Comparison with Copilot CLI Adapter
-
-| Feature | Claude Code | Copilot CLI |
-|---------|-------------|-------------|
-| Provider | Anthropic | GitHub/OpenAI |
-| CLI Flag | `-p` (print) | `-p` (prompt) |
-| Agent Selection | `--agents` | `--agent` |
-| Model Selection | `--model` | `--model` |
-| Output Format | Structured text | Structured text |
-| Token Info | Parsed from output | Parsed from output |
-
-## Troubleshooting
-
-### Timeout Issues
-
-If Claude Code takes too long:
-- Increase the `timeout` value in your test case config
-- Break complex prompts into smaller tasks
-- Use a faster model (e.g., claude-haiku)
-
-### Output Truncation
-
-If you see `[OUTPUT TRUNCATED: Exceeded 10MB limit]`:
-- The output exceeded the 10MB safety limit
-- Consider breaking the task into smaller parts
-- Check if the prompt is causing excessive output
-
-### Missing Token Information
-
-Token counts are estimated if not found in output:
-- Prompt tokens: ~1 token per 4 characters
-- Completion tokens: ~1 token per 8 characters
-- These are approximations for reporting purposes
+Run `yb doctor`, then `claude auth status --json`, before a CI smoke test.

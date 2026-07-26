@@ -92,9 +92,15 @@ export function normalizeExperimentProvenance(
     left.cellId.localeCompare(right.cellId, 'en')
   );
   const cells = sorted.map((input): NormalizedCellProvenance => {
-    const requestedModel = safeOptional(input.config.agent.model);
-    const resolvedModel = safeOptional(input.log?.model.name);
-    const cliVersion = safeOptional(input.log?.agent.version);
+    const requestedModel = safeOptional(
+      input.log?.provenance?.configured_model ?? input.config.agent.model
+    );
+    const resolvedModel = safeOptional(
+      input.log?.provenance?.reported_model ?? input.log?.model.name
+    );
+    const cliVersion = safeOptional(
+      input.log?.provenance?.cli_version ?? input.log?.agent.version
+    );
     const sourceCommit = safeOptional(input.result.test_case.commit);
     const youbenchaVersion =
       safeOptional(input.result.execution.youbencha_version) ?? 'unknown';

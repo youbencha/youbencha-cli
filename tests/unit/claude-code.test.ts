@@ -1,25 +1,21 @@
 /**
  * Unit tests for Claude Code Adapter
- * 
+ *
  * Tests the ClaudeCodeAdapter implementation including:
  * - Availability checking
  * - Agent execution
  * - Log normalization
  * - Command building
  * - Output parsing
- * 
+ *
  * TDD: These tests define expected behavior for the adapter
  */
 
 import { ClaudeCodeAdapter } from '../../src/adapters/claude-code.js';
-import { AgentExecutionContext, AgentExecutionResult } from '../../src/adapters/base.js';
-import { exec } from 'child_process';
-
-// Mock child_process to avoid real system calls in unit tests
-jest.mock('child_process', () => ({
-  exec: jest.fn(),
-  spawn: jest.fn(),
-}));
+import {
+  AgentExecutionContext,
+  AgentExecutionResult,
+} from '../../src/adapters/base.js';
 
 describe('ClaudeCodeAdapter', () => {
   let adapter: ClaudeCodeAdapter;
@@ -39,64 +35,14 @@ describe('ClaudeCodeAdapter', () => {
     });
   });
 
-  describe('checkAvailability', () => {
-    it('should return true when claude CLI is available and authenticated', async () => {
-      const mockExec = exec as jest.MockedFunction<typeof exec>;
-      
-      // Mock successful which/where command
-      mockExec.mockImplementationOnce((cmd, callback) => {
-        callback?.(null, { stdout: '/usr/local/bin/claude', stderr: '' } as any, '');
-        return {} as any;
-      });
-      
-      // Mock successful --version command
-      mockExec.mockImplementationOnce((cmd, callback) => {
-        callback?.(null, { stdout: 'Claude Code CLI 1.0.0', stderr: '' } as any, '');
-        return {} as any;
-      });
-
-      const isAvailable = await adapter.checkAvailability();
-      expect(isAvailable).toBe(true);
-    });
-
-    it('should return false when claude CLI is not found', async () => {
-      const mockExec = exec as jest.MockedFunction<typeof exec>;
-      
-      // Mock failed which/where command
-      mockExec.mockImplementationOnce((cmd, callback) => {
-        callback?.(new Error('Command not found') as any, { stdout: '', stderr: 'not found' } as any, '');
-        return {} as any;
-      });
-
-      const isAvailable = await adapter.checkAvailability();
-      expect(isAvailable).toBe(false);
-    });
-
-    it('should throw error when claude CLI requires authentication', async () => {
-      const mockExec = exec as jest.MockedFunction<typeof exec>;
-      
-      // Mock successful which/where command
-      mockExec.mockImplementationOnce((cmd, callback) => {
-        callback?.(null, { stdout: '/usr/local/bin/claude', stderr: '' } as any, '');
-        return {} as any;
-      });
-      
-      // Mock --version command with auth error
-      mockExec.mockImplementationOnce((cmd, callback) => {
-        callback?.(null, { stdout: '', stderr: 'Error: API key not found' } as any, '');
-        return {} as any;
-      });
-
-      await expect(adapter.checkAvailability()).rejects.toThrow(/authentication/);
-    });
-  });
-
   describe('execute', () => {
     // Skip execute tests unless CLAUDE_CODE_INTEGRATION_TESTS env var is set
     // These tests call the real CLI and will timeout in CI/development environments
     const skipIfNoClaudeCLI = (): boolean => {
       if (!process.env.CLAUDE_CODE_INTEGRATION_TESTS) {
-        console.log('Skipping: Set CLAUDE_CODE_INTEGRATION_TESTS=1 to run real Claude CLI tests');
+        console.log(
+          'Skipping: Set CLAUDE_CODE_INTEGRATION_TESTS=1 to run real Claude CLI tests'
+        );
         return true;
       }
       return false;
@@ -137,10 +83,14 @@ describe('ClaudeCodeAdapter', () => {
       if (skipIfNoClaudeCLI()) return;
       try {
         const result = await adapter.execute(mockContext);
-        
+
         // Check ISO 8601 format
-        expect(result.startedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
-        expect(result.completedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+        expect(result.startedAt).toMatch(
+          /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/
+        );
+        expect(result.completedAt).toMatch(
+          /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/
+        );
       } catch (error) {
         // Expected in environments without Claude CLI
         expect(error).toBeDefined();
@@ -214,7 +164,8 @@ describe('ClaudeCodeAdapter', () => {
     const mockResult: AgentExecutionResult = {
       exitCode: 0,
       status: 'success',
-      output: 'Model: claude-sonnet-4\nInput tokens: 100\nOutput tokens: 200\nHello world',
+      output:
+        'Model: claude-sonnet-4\nInput tokens: 100\nOutput tokens: 200\nHello world',
       startedAt: '2025-11-25T10:00:00.000Z',
       completedAt: '2025-11-25T10:01:00.000Z',
       durationMs: 60000,
@@ -238,7 +189,7 @@ describe('ClaudeCodeAdapter', () => {
       const log = adapter.normalizeLog(mockResult.output, mockResult);
 
       expect(log.agent.name).toBe('claude-code');
-      expect(log.agent.adapter_version).toBe('1.0.0');
+      expect(log.agent.adapter_version).toBe('2.0.0');
     });
 
     it('should have Anthropic as model provider', () => {
@@ -263,15 +214,16 @@ describe('ClaudeCodeAdapter', () => {
       expect(log.execution.status).toBe(mockResult.status);
     });
 
-    it('should extract usage statistics from output', () => {
+    it('should not parse usage from human-oriented text', () => {
       const log = adapter.normalizeLog(mockResult.output, mockResult);
 
-      expect(log.usage.prompt_tokens).toBe(100);
-      expect(log.usage.completion_tokens).toBe(200);
-      expect(log.usage.total_tokens).toBe(300);
+      expect(log.usage.prompt_tokens).toBe(0);
+      expect(log.usage.completion_tokens).toBe(0);
+      expect(log.usage.total_tokens).toBe(0);
+      expect(log.usage.measurement_source).toBe('unavailable');
     });
 
-    it('should estimate tokens when not found in output', () => {
+    it('should mark absent usage as unavailable', () => {
       const resultNoTokens: AgentExecutionResult = {
         ...mockResult,
         output: 'Hello world without token info',
@@ -279,9 +231,11 @@ describe('ClaudeCodeAdapter', () => {
 
       const log = adapter.normalizeLog(resultNoTokens.output, resultNoTokens);
 
-      expect(log.usage.prompt_tokens).toBeGreaterThan(0);
-      expect(log.usage.completion_tokens).toBeGreaterThan(0);
-      expect(log.usage.total_tokens).toBeGreaterThan(0);
+      expect(log.usage.prompt_tokens).toBe(0);
+      expect(log.usage.completion_tokens).toBe(0);
+      expect(log.usage.total_tokens).toBe(0);
+      expect(log.usage.measurement_source).toBe('unavailable');
+      expect(log.usage.estimated_cost_usd).toBeUndefined();
     });
 
     it('should have non-empty messages array', () => {
@@ -303,7 +257,10 @@ describe('ClaudeCodeAdapter', () => {
         ],
       };
 
-      const log = adapter.normalizeLog(resultWithErrors.output, resultWithErrors);
+      const log = adapter.normalizeLog(
+        resultWithErrors.output,
+        resultWithErrors
+      );
       expect(log.errors.length).toBeGreaterThan(0);
       expect(log.errors[0].message).toBe('Test error');
     });
@@ -315,6 +272,40 @@ describe('ClaudeCodeAdapter', () => {
       expect(log.environment.node_version).toBeDefined();
       expect(log.environment.youbencha_version).toBeDefined();
       expect(log.environment.working_directory).toBeDefined();
+    });
+
+    it('should persist headless execution provenance from telemetry', () => {
+      const log = adapter.normalizeLog(mockResult.output, {
+        ...mockResult,
+        telemetry: {
+          cliVersion: '2.1.217',
+          model: 'claude-sonnet-4',
+          resolvedExecutable: '<home>\\bin\\claude.exe',
+          configuredModel: 'sonnet',
+          headlessMode: true,
+          sessionPersistence: false,
+          structuredOutputFormat: 'stream-json',
+          legacyParserUsed: false,
+          effectiveConfig: { max_output_bytes: 1024 },
+          usage: { source: 'measured', totalTokens: 5 },
+          diagnostics: ['capability check passed'],
+        },
+      });
+
+      expect(log.provenance).toMatchObject({
+        cli_version: '2.1.217',
+        adapter_version: '2.0.0',
+        resolved_executable: '<home>\\bin\\claude.exe',
+        configured_model: 'sonnet',
+        reported_model: 'claude-sonnet-4',
+        headless: true,
+        session_persistence: false,
+        structured_output_format: 'stream-json',
+        usage_source: 'measured',
+        legacy_parser_used: false,
+        effective_config: { max_output_bytes: 1024 },
+        diagnostics: ['capability check passed'],
+      });
     });
   });
 
@@ -329,14 +320,18 @@ describe('ClaudeCodeAdapter', () => {
       expect(adapter.parseModel(output)).toBe('claude-opus-3-5');
     });
 
-    it('should return default model when not found', () => {
+    it('should return unknown when not found', () => {
       const output = 'No model information here';
-      expect(adapter.parseModel(output)).toBe('claude-sonnet-4');
+      expect(adapter.parseModel(output)).toBe('unknown');
     });
 
     it('should handle various model name formats', () => {
-      expect(adapter.parseModel('Model: claude-haiku-3-5')).toBe('claude-haiku-3-5');
-      expect(adapter.parseModel('model: claude-sonnet-4-5-20250929')).toBe('claude-sonnet-4-5-20250929');
+      expect(adapter.parseModel('Model: claude-haiku-3-5')).toBe(
+        'claude-haiku-3-5'
+      );
+      expect(adapter.parseModel('model: claude-sonnet-4-5-20250929')).toBe(
+        'claude-sonnet-4-5-20250929'
+      );
     });
   });
 
@@ -357,29 +352,6 @@ describe('ClaudeCodeAdapter', () => {
     });
   });
 
-  describe('tool call parsing', () => {
-    it('should parse [TOOL: name] pattern from output', () => {
-      const output = '[TOOL: read_file] src/index.ts\n[TOOL: write_file] output.txt';
-      const result: AgentExecutionResult = {
-        exitCode: 0,
-        status: 'success',
-        output,
-        startedAt: '2025-11-25T10:00:00.000Z',
-        completedAt: '2025-11-25T10:01:00.000Z',
-        durationMs: 60000,
-        errors: [],
-      };
-
-      const log = adapter.normalizeLog(output, result);
-      const assistantMsg = log.messages.find(m => m.role === 'assistant');
-
-      expect(assistantMsg?.tool_calls).toBeDefined();
-      expect(assistantMsg?.tool_calls?.length).toBe(2);
-      expect(assistantMsg?.tool_calls?.[0].function.name).toBe('read_file');
-      expect(assistantMsg?.tool_calls?.[1].function.name).toBe('write_file');
-    });
-  });
-
   describe('ANSI code handling', () => {
     it('should strip ANSI codes from output in normalized log', () => {
       const outputWithAnsi = '\x1B[31mError:\x1B[0m Something went wrong';
@@ -394,7 +366,7 @@ describe('ClaudeCodeAdapter', () => {
       };
 
       const log = adapter.normalizeLog(outputWithAnsi, result);
-      const assistantMsg = log.messages.find(m => m.role === 'assistant');
+      const assistantMsg = log.messages.find((m) => m.role === 'assistant');
 
       // Content should not contain ANSI codes
       expect(assistantMsg?.content).not.toContain('\x1B');

@@ -3,6 +3,7 @@
 ## Overview
 
 This guide explains how to extract maximum value from youBencha results at different scales:
+
 - **Single Result**: Quick feedback on one evaluation
 - **Suite of Results**: Cross-test comparison and pattern recognition
 - **Results Over Time**: Regression detection and trend analysis
@@ -74,11 +75,12 @@ A single evaluation produces a `ResultsBundle` JSON file with:
 2. **Scope of Changes**: How many files and lines changed? (`git-diff.metrics`)
 3. **Quality Assessment**: Did it meet specific assertions? (`agentic-judge.metrics`)
 4. **Performance**: How long did it take? (`execution.duration_ms`)
-5. **Cost Tracking**: Token usage (in `youbencha.log.json`)
+5. **Cost Tracking**: Measured token, credit, and cost usage when the provider reports it (in `youbencha.log.json`)
 
 ### Practical Use Cases
 
 **During Prompt Engineering:**
+
 ```bash
 # Quick iteration loop
 yb run -c test.yaml
@@ -90,6 +92,7 @@ jq '.evaluators[] | select(.evaluator == "git-diff") | .metrics' results.json
 ```
 
 **Debugging Failures:**
+
 ```bash
 # Inspect failed evaluators
 jq '.evaluators[] | select(.status == "failed")' results.json
@@ -141,6 +144,7 @@ For the complete workflow and field semantics, see
 When you run multiple test cases with the same agent configuration, you can compare:
 
 **Aggregate Success Rate:**
+
 ```bash
 # Run test cases
 for test in tests/*.yaml; do
@@ -152,6 +156,7 @@ jq -s 'map(.summary.overall_status == "passed") | map(select(.) | 1) | add / len
 ```
 
 **Identify Difficult Tasks:**
+
 ```bash
 # Find test cases with most failures
 jq -s 'map({
@@ -161,6 +166,7 @@ jq -s 'map({
 ```
 
 **Cost Analysis:**
+
 ```bash
 # Total execution time across test cases
 jq -s 'map(.execution.duration_ms) | add / 1000' results/*.json  # in seconds
@@ -190,6 +196,7 @@ agent:
 ```
 
 **Comparison Metrics:**
+
 ```bash
 # Success rate by model
 jq -n '[
@@ -289,16 +296,36 @@ plt.show()
 
 ### Cost Tracking
 
-**Monthly token usage and cost:**
+Check `usage.measurement_source` before aggregating. `measured` values came
+from the CLI event protocol, `estimated` values are explicitly estimates, and
+`unavailable` means the required provider data was absent. Do not treat a
+required v1 zero placeholder as measured usage. Provider-reported cost is
+`cost_usd`; legacy estimates remain in `estimated_cost_usd`.
 
 ```bash
-# Extract token counts from logs (requires youbencha.log.json)
-jq -r '[
-    .exported_at,
-    .test_case.name,
-    (.agent.youbencha_log_path | "cat .youbencha-workspace/*/artifacts/\(.)"),
-    (.agent.youbencha_log_path | `jq ".tokens.total" \(.)`)
-] | @csv' history/results.jsonl
+jq '{
+  source: .usage.measurement_source,
+  prompt: .usage.prompt_tokens,
+  cached: .usage.cached_prompt_tokens,
+  completion: .usage.completion_tokens,
+  reasoning: .usage.reasoning_tokens,
+  total: .usage.total_tokens,
+  cost_usd: .usage.cost_usd,
+  credits: .usage.credits
+}' .youbencha-workspace/.../artifacts/youbencha.log.json
+```
+
+### Headless execution provenance
+
+Current headless adapters persist reproducibility metadata in the optional
+`provenance` object of `youbencha.log.json`. It records the redacted executable,
+CLI and adapter versions, configured and reported models, effective limits and
+headless settings, output format, usage source, parser compatibility mode, and
+non-secret diagnostics. Existing version 1.0.0 logs without this object remain
+valid.
+
+```bash
+jq '.provenance' .youbencha-workspace/.../artifacts/youbencha.log.json
 ```
 
 ## Advanced Analysis Patterns
@@ -365,7 +392,7 @@ post_evaluation:
       url: ${SLACK_WEBHOOK_URL}
       method: POST
       headers:
-        Content-Type: "application/json"
+        Content-Type: 'application/json'
       retry_on_failure: true
 ```
 
@@ -377,9 +404,9 @@ post_evaluation:
     config:
       command: ./scripts/notify-slack.sh
       args:
-        - "${RESULTS_PATH}"
+        - '${RESULTS_PATH}'
       env:
-        SLACK_WEBHOOK_URL: "${SLACK_WEBHOOK_URL}"
+        SLACK_WEBHOOK_URL: '${SLACK_WEBHOOK_URL}'
 ```
 
 ```bash
@@ -414,9 +441,9 @@ post_evaluation:
       command: python3
       args:
         - ./scripts/export-to-db.py
-        - "${RESULTS_PATH}"
+        - '${RESULTS_PATH}'
       env:
-        DATABASE_URL: "${DATABASE_URL}"
+        DATABASE_URL: '${DATABASE_URL}'
 ```
 
 ```python

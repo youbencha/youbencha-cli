@@ -47,7 +47,11 @@ describe('Integration: Run Command', () => {
     if (process.platform === 'win32') {
       await fs.writeFile(
         fakeAgentPath,
-        'Write-Output "Offline test agent completed"\r\n'
+        [
+          `Write-Output '{"type":"assistant.message","data":{"messageId":"m1","content":"Offline test agent completed"}}'`,
+          `Write-Output '{"type":"result","data":{"exitCode":0,"usage":{"inputTokens":1,"outputTokens":1}}}'`,
+          '',
+        ].join('\r\n')
       );
       await fs.writeFile(
         path.join(fakeBinDir, 'where.cmd'),
@@ -56,7 +60,12 @@ describe('Integration: Run Command', () => {
     } else {
       await fs.writeFile(
         fakeAgentPath,
-        '#!/usr/bin/env sh\nprintf "%s\\n" "Offline test agent completed"\n'
+        [
+          '#!/usr/bin/env sh',
+          `printf '%s\\n' '{"type":"assistant.message","data":{"messageId":"m1","content":"Offline test agent completed"}}'`,
+          `printf '%s\\n' '{"type":"result","data":{"exitCode":0,"usage":{"inputTokens":1,"outputTokens":1}}}'`,
+          '',
+        ].join('\n')
       );
       await fs.chmod(fakeAgentPath, 0o755);
     }

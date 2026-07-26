@@ -1,11 +1,11 @@
 /**
  * Unit tests for GitHub Copilot CLI Adapter
- * 
+ *
  * Tests the CopilotCLIAdapter implementation including:
  * - Availability checking
  * - Agent execution
  * - Log normalization
- * 
+ *
  * TDD: These tests MUST FAIL initially before implementation
  */
 
@@ -39,16 +39,19 @@ describe('CopilotCLIAdapter', () => {
 
     // This test only works reliably on Unix-like systems where PATH controls binary lookup
     // On Windows, 'where' can find executables through other means like App Paths registry
-    (process.platform === 'win32' ? it.skip : it)('should return false when copilot-cli is not in PATH', async () => {
-      // Test with modified PATH that excludes copilot-cli
-      const originalPath = process.env.PATH;
-      process.env.PATH = '';
-      
-      const isAvailable = await adapter.checkAvailability();
-      expect(isAvailable).toBe(false);
-      
-      process.env.PATH = originalPath;
-    });
+    (process.platform === 'win32' ? it.skip : it)(
+      'should return false when copilot-cli is not in PATH',
+      async () => {
+        // Test with modified PATH that excludes copilot-cli
+        const originalPath = process.env.PATH;
+        process.env.PATH = '';
+
+        const isAvailable = await adapter.checkAvailability();
+        expect(isAvailable).toBe(false);
+
+        process.env.PATH = originalPath;
+      }
+    );
 
     it('should check authentication status', async () => {
       // Should verify copilot-cli authentication
@@ -68,7 +71,9 @@ describe('CopilotCLIAdapter', () => {
     // These tests call the real CLI and will timeout in CI/development environments
     const skipIfNoCopilotCLI = (): boolean => {
       if (!process.env.COPILOT_CLI_INTEGRATION_TESTS) {
-        console.log('Skipping: Set COPILOT_CLI_INTEGRATION_TESTS=1 to run real CLI tests');
+        console.log(
+          'Skipping: Set COPILOT_CLI_INTEGRATION_TESTS=1 to run real CLI tests'
+        );
         return true;
       }
       return false;
@@ -94,7 +99,7 @@ describe('CopilotCLIAdapter', () => {
       // Will be skipped in CI without proper setup
       try {
         const result = await adapter.execute(mockContext);
-        
+
         expect(result).toHaveProperty('exitCode');
         expect(result).toHaveProperty('status');
         expect(result).toHaveProperty('output');
@@ -112,7 +117,7 @@ describe('CopilotCLIAdapter', () => {
       if (skipIfNoCopilotCLI()) return;
       // Mock successful execution
       const result = await adapter.execute(mockContext);
-      
+
       if (result.exitCode === 0) {
         expect(result.status).toBe('success');
       }
@@ -128,7 +133,7 @@ describe('CopilotCLIAdapter', () => {
 
       try {
         const result = await adapter.execute(invalidContext);
-        
+
         if (result.exitCode !== 0) {
           expect(result.status).toBe('failed');
           expect(result.errors.length).toBeGreaterThan(0);
@@ -148,7 +153,7 @@ describe('CopilotCLIAdapter', () => {
 
       try {
         const result = await adapter.execute(timeoutContext);
-        
+
         if (result.status === 'timeout') {
           expect(result.durationMs).toBeGreaterThanOrEqual(100);
           expect(result.errors.length).toBeGreaterThan(0);
@@ -163,7 +168,7 @@ describe('CopilotCLIAdapter', () => {
       if (skipIfNoCopilotCLI()) return;
       try {
         const result = await adapter.execute(mockContext);
-        
+
         expect(typeof result.output).toBe('string');
         // Output should contain agent logs
       } catch (error) {
@@ -193,11 +198,11 @@ describe('CopilotCLIAdapter', () => {
       if (skipIfNoCopilotCLI()) return;
       try {
         const result = await adapter.execute(mockContext);
-        
+
         const startTime = new Date(result.startedAt).getTime();
         const endTime = new Date(result.completedAt).getTime();
         const expectedDuration = endTime - startTime;
-        
+
         // Allow 10ms tolerance for timing differences
         expect(result.durationMs).toBeGreaterThanOrEqual(0);
         expect(Math.abs(result.durationMs - expectedDuration)).toBeLessThan(10);
@@ -253,7 +258,7 @@ describe('CopilotCLIAdapter', () => {
 
     it('should transform raw output to youBencha Log schema', () => {
       const log = adapter.normalizeLog(mockRawOutput, mockResult);
-      
+
       expect(log).toHaveProperty('version');
       expect(log.version).toBe('1.0.0');
       expect(log).toHaveProperty('agent');
@@ -267,7 +272,7 @@ describe('CopilotCLIAdapter', () => {
 
     it('should set correct agent metadata', () => {
       const log = adapter.normalizeLog(mockRawOutput, mockResult);
-      
+
       expect(log.agent.name).toBe('copilot-cli');
       expect(log.agent.version).toBeDefined();
       expect(log.agent.adapter_version).toBe(adapter.version);
@@ -275,7 +280,7 @@ describe('CopilotCLIAdapter', () => {
 
     it('should set correct model information', () => {
       const log = adapter.normalizeLog(mockRawOutput, mockResult);
-      
+
       expect(log.model.name).toBeDefined();
       expect(log.model.provider).toBe('GitHub');
       expect(log.model.parameters).toBeDefined();
@@ -283,7 +288,7 @@ describe('CopilotCLIAdapter', () => {
 
     it('should populate execution metadata correctly', () => {
       const log = adapter.normalizeLog(mockRawOutput, mockResult);
-      
+
       expect(log.execution.started_at).toBe(mockResult.startedAt);
       expect(log.execution.completed_at).toBe(mockResult.completedAt);
       expect(log.execution.duration_ms).toBe(mockResult.durationMs);
@@ -293,21 +298,21 @@ describe('CopilotCLIAdapter', () => {
 
     it('should parse messages from output', () => {
       const log = adapter.normalizeLog(mockRawOutput, mockResult);
-      
+
       expect(Array.isArray(log.messages)).toBe(true);
       expect(log.messages.length).toBeGreaterThan(0);
-      
+
       // Should have at least system and assistant messages
-      const roles = log.messages.map(m => m.role);
+      const roles = log.messages.map((m) => m.role);
       expect(roles).toContain('assistant');
     });
 
     it('should extract tool calls from messages', () => {
       const log = adapter.normalizeLog(mockRawOutput, mockResult);
-      
+
       // Check if any messages have tool calls
-      const messagesWithTools = log.messages.filter(m => m.tool_calls);
-      
+      const messagesWithTools = log.messages.filter((m) => m.tool_calls);
+
       if (messagesWithTools.length > 0) {
         expect(messagesWithTools[0].tool_calls).toBeDefined();
         expect(Array.isArray(messagesWithTools[0].tool_calls)).toBe(true);
@@ -316,7 +321,7 @@ describe('CopilotCLIAdapter', () => {
 
     it('should populate usage metrics', () => {
       const log = adapter.normalizeLog(mockRawOutput, mockResult);
-      
+
       expect(log.usage.prompt_tokens).toBeGreaterThanOrEqual(0);
       expect(log.usage.completion_tokens).toBeGreaterThanOrEqual(0);
       expect(log.usage.total_tokens).toBeGreaterThanOrEqual(0);
@@ -340,7 +345,7 @@ describe('CopilotCLIAdapter', () => {
       };
 
       const log = adapter.normalizeLog(mockRawOutput, errorResult);
-      
+
       expect(log.errors.length).toBeGreaterThan(0);
       expect(log.errors[0].message).toBe('File not found');
       expect(log.errors[0].timestamp).toBe('2025-11-04T10:02:00.000Z');
@@ -349,19 +354,55 @@ describe('CopilotCLIAdapter', () => {
 
     it('should capture environment information', () => {
       const log = adapter.normalizeLog(mockRawOutput, mockResult);
-      
+
       expect(log.environment.os).toBeDefined();
       expect(log.environment.node_version).toBeDefined();
       expect(log.environment.youbencha_version).toBeDefined();
       expect(log.environment.working_directory).toBeDefined();
     });
 
+    it('should persist headless execution provenance from telemetry', () => {
+      const log = adapter.normalizeLog(mockRawOutput, {
+        ...mockResult,
+        telemetry: {
+          cliVersion: '1.0.75',
+          model: 'gpt-5',
+          resolvedExecutable: '<home>\\bin\\copilot.cmd',
+          configuredModel: 'gpt-5',
+          headlessMode: true,
+          structuredOutputFormat: 'jsonl',
+          legacyParserUsed: false,
+          effectiveConfig: { max_output_bytes: 2048 },
+          usage: { source: 'measured', credits: 1 },
+          diagnostics: ['structured output'],
+        },
+      });
+
+      expect(log.provenance).toMatchObject({
+        cli_version: '1.0.75',
+        adapter_version: '2.0.0',
+        resolved_executable: '<home>\\bin\\copilot.cmd',
+        configured_model: 'gpt-5',
+        reported_model: 'gpt-5',
+        headless: true,
+        structured_output_format: 'jsonl',
+        usage_source: 'measured',
+        legacy_parser_used: false,
+        effective_config: { max_output_bytes: 2048 },
+        diagnostics: ['structured output'],
+      });
+    });
+
     it('should generate valid ISO 8601 timestamps for messages', () => {
       const log = adapter.normalizeLog(mockRawOutput, mockResult);
-      
-      log.messages.forEach(message => {
-        expect(message.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
-        expect(new Date(message.timestamp).toISOString()).toBe(message.timestamp);
+
+      log.messages.forEach((message) => {
+        expect(message.timestamp).toMatch(
+          /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
+        );
+        expect(new Date(message.timestamp).toISOString()).toBe(
+          message.timestamp
+        );
       });
     });
 
@@ -372,7 +413,7 @@ describe('CopilotCLIAdapter', () => {
       };
 
       const log = adapter.normalizeLog('', emptyResult);
-      
+
       expect(log).toBeDefined();
       expect(log.messages.length).toBeGreaterThanOrEqual(0);
       expect(log.execution.status).toBe('success');
@@ -380,9 +421,11 @@ describe('CopilotCLIAdapter', () => {
 
     it('should conform to youBencha Log schema', async () => {
       const log = adapter.normalizeLog(mockRawOutput, mockResult);
-      
+
       // This will throw if schema validation fails
-      const { youBenchaLogSchema } = await import('../../src/schemas/youbenchalog.schema.js');
+      const { youBenchaLogSchema } = await import(
+        '../../src/schemas/youbenchalog.schema.js'
+      );
       expect(() => youBenchaLogSchema.parse(log)).not.toThrow();
     });
   });
@@ -390,15 +433,18 @@ describe('CopilotCLIAdapter', () => {
   describe('error handling', () => {
     // This test only works reliably on Unix-like systems where PATH controls binary lookup
     // On Windows, 'where' can find executables through other means like App Paths registry
-    (process.platform === 'win32' ? it.skip : it)('should handle missing copilot-cli binary', async () => {
-      const originalPath = process.env.PATH;
-      process.env.PATH = '';
-      
-      const isAvailable = await adapter.checkAvailability();
-      expect(isAvailable).toBe(false);
-      
-      process.env.PATH = originalPath;
-    });
+    (process.platform === 'win32' ? it.skip : it)(
+      'should handle missing copilot-cli binary',
+      async () => {
+        const originalPath = process.env.PATH;
+        process.env.PATH = '';
+
+        const isAvailable = await adapter.checkAvailability();
+        expect(isAvailable).toBe(false);
+
+        process.env.PATH = originalPath;
+      }
+    );
 
     it('should handle authentication errors', async () => {
       // Test behavior when copilot is not authenticated
@@ -441,7 +487,7 @@ describe('CopilotCLIAdapter', () => {
       };
 
       const log = adapter.normalizeLog(malformedOutput, result);
-      
+
       // Should still produce valid log
       expect(log).toBeDefined();
       expect(log.version).toBe('1.0.0');

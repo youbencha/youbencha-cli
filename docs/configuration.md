@@ -28,6 +28,49 @@ yb config init --force
 
 This creates a commented configuration file with all available options.
 
+## Test-case agent configuration
+
+Agent configuration is a discriminated, adapter-specific schema. Unknown
+adapter fields fail validation instead of being silently ignored.
+
+```yaml
+agent:
+  type: copilot-cli
+  model: account-selected-model
+  config:
+    prompt_file: prompts/task.md
+    reasoning_effort: high
+    max_ai_credits: 5
+    allow_all_tools: false
+    allow_all_paths: false
+    max_output_bytes: 5242880
+```
+
+```yaml
+agent:
+  type: claude-code
+  model: sonnet
+  config:
+    prompt: 'Fix the failing tests.'
+    permission_mode: dontAsk
+    max_turns: 6
+    max_budget_usd: 1
+    setting_sources: [project]
+    allowed_tools: [Read, Grep, Edit]
+    max_output_bytes: 5242880
+```
+
+`prompt` and `prompt_file` are mutually exclusive. `max_output_bytes` bounds
+the stdout and stderr previews held in memory. For Claude it also bounds parsed
+event payloads retained in memory. Complete structured stdout and stderr
+artifacts are still written separately, and Claude terminal usage/status fields
+continue to be parsed after payload truncation. The same adapter-specific fields
+may be placed directly in an `agentic-judge` evaluator's `config`.
+
+See [Claude Code adapter](claude-code-adapter.md) and
+[GitHub Copilot CLI adapter](copilot-cli-adapter.md) for authentication,
+permissions, reproducibility, and all supported fields.
+
 ## Experiment Definitions
 
 Experiment files are separate from `.youbencharc` and test-case files. They
@@ -114,7 +157,7 @@ output_dir: .youbencha-eval
 Default timeout for operations in milliseconds.
 
 ```yaml
-timeout_ms: 300000  # 5 minutes
+timeout_ms: 300000 # 5 minutes
 ```
 
 - Default: `300000` (5 minutes)
@@ -158,8 +201,8 @@ These variables can be referenced in test case configurations using `${VAR_NAME}
 **Example test case using variables:**
 
 ```yaml
-name: "Example Test"
-description: "Testing ${PROJECT_NAME}"
+name: 'Example Test'
+description: 'Testing ${PROJECT_NAME}'
 
 repo: ${REPO_BASE}/hello-world.git
 branch: ${DEFAULT_BRANCH}
@@ -167,7 +210,7 @@ branch: ${DEFAULT_BRANCH}
 agent:
   type: copilot-cli
   config:
-    prompt: "Add documentation for ${PROJECT_NAME}"
+    prompt: 'Add documentation for ${PROJECT_NAME}'
 ```
 
 ### agent
@@ -176,8 +219,8 @@ Default agent configuration.
 
 ```yaml
 agent:
-  timeout_ms: 600000  # 10 minutes
-  model: gpt-4o       # Default model for agents that support it
+  timeout_ms: 600000 # 10 minutes
+  model: gpt-4o # Default model for agents that support it
 ```
 
 - `timeout_ms`: Default timeout for agent execution
@@ -268,6 +311,7 @@ evaluators:
 Variables defined in the `variables` section can be used in your test case configurations:
 
 **Configuration (.youbencharc):**
+
 ```yaml
 variables:
   ORG: myorg
@@ -276,9 +320,10 @@ variables:
 ```
 
 **Test Case (testcase.yaml):**
+
 ```yaml
-name: "Test ${REPO}"
-description: "Testing ${ORG}/${REPO} on ${BRANCH}"
+name: 'Test ${REPO}'
+description: 'Testing ${ORG}/${REPO} on ${BRANCH}'
 
 repo: https://github.com/${ORG}/${REPO}.git
 branch: ${BRANCH}
@@ -286,7 +331,7 @@ branch: ${BRANCH}
 agent:
   type: copilot-cli
   config:
-    prompt: "Fix the bug in ${REPO} module"
+    prompt: 'Fix the bug in ${REPO} module'
 ```
 
 ## Best Practices
@@ -313,12 +358,15 @@ agent:
 ### Configuration Not Being Applied
 
 1. Check which config file is active:
+
    ```bash
    yb config list
    ```
+
    This shows the active config file path.
 
 2. Verify the configuration file syntax:
+
    ```bash
    # YAML files can be validated with online tools
    cat .youbencharc | head -20
@@ -329,6 +377,7 @@ agent:
 ### Variables Not Substituting
 
 1. Verify variables are defined correctly:
+
    ```bash
    yb config get variables
    ```
@@ -340,6 +389,7 @@ agent:
 ### Priority Conflicts
 
 Remember the priority order:
+
 1. CLI flags (highest)
 2. Project-level config
 3. User-level config

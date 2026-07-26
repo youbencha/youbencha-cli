@@ -188,6 +188,7 @@ export class AgenticJudgeEvaluator implements Evaluator {
         repoDir: context.modifiedDir,
         artifactsDir: context.artifactsDir,
         config: {
+          ...this.getAdapterOptions(context.config),
           prompt: evaluationPrompt,
           // Pass through agent_name parameter if specified in evaluator config
           agent_name: context.config.agent_name,
@@ -278,6 +279,30 @@ export class AgenticJudgeEvaluator implements Evaluator {
         },
       };
     }
+  }
+
+  /**
+   * Forward the same adapter-specific headless options accepted for a main
+   * agent while keeping evaluator-only fields out of the CLI configuration.
+   */
+  private getAdapterOptions(
+    config: Record<string, unknown>
+  ): Record<string, unknown> {
+    const evaluatorOnlyFields = new Set([
+      'type',
+      'agent_name',
+      'model',
+      'timeout',
+      'prompt',
+      'prompt_file',
+      'instructions-file',
+      'assertions',
+      'criteria',
+    ]);
+
+    return Object.fromEntries(
+      Object.entries(config).filter(([key]) => !evaluatorOnlyFields.has(key))
+    );
   }
 
   /**

@@ -66,18 +66,16 @@ export class OrchestratorSingleRunExecutor implements SingleRunExecutor {
       const log = youBenchaLogSchema.parse(
         JSON.parse(await fs.readFile(logPath, 'utf8')) as unknown
       );
+      const usageQuality = log.usage.measurement_source ?? 'unavailable';
+      const costUsd = log.usage.cost_usd ?? log.usage.estimated_cost_usd;
       return {
         result,
         resultPath,
         tokenCount: log.usage.total_tokens,
-        costUsd: log.usage.estimated_cost_usd,
-        usageQuality:
-          log.usage.estimated_cost_usd === undefined ? 'measured' : 'estimated',
-        tokenQuality: 'measured',
-        costQuality:
-          log.usage.estimated_cost_usd === undefined
-            ? 'unavailable'
-            : 'estimated',
+        costUsd,
+        usageQuality,
+        tokenQuality: usageQuality,
+        costQuality: costUsd === undefined ? 'unavailable' : usageQuality,
       };
     } catch {
       return {

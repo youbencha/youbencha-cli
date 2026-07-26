@@ -134,6 +134,32 @@ describe('experiment provenance normalization', () => {
     expect(normalized.warnings[0]).toContain('resolved model');
   });
 
+  it('prefers persisted headless provenance over compatibility fields', () => {
+    const normalized = normalizeExperimentProvenance([
+      {
+        cellId: 'd'.repeat(64),
+        testcaseId: 'task',
+        configHash: 'a'.repeat(64),
+        config,
+        result,
+        log: {
+          ...log,
+          provenance: {
+            cli_version: '2.0.0',
+            configured_model: 'persisted-request',
+            reported_model: 'persisted-response',
+          },
+        },
+      },
+    ]);
+
+    expect(normalized.cells[0]).toMatchObject({
+      agent_cli_version: '2.0.0',
+      requested_model: 'persisted-request',
+      resolved_model: 'persisted-response',
+    });
+  });
+
   it('retains every config, commit, and tool version for mixed cells', () => {
     const secondResult: ResultsBundle = {
       ...result,

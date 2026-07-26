@@ -25,6 +25,14 @@ export {
   type SuiteConfig,
   type AssertionConfig,
 } from './testcase.schema.js';
+export {
+  claudeCodeAgentConfigSchema,
+  claudeCodeConfigSchema,
+  copilotCliAgentConfigSchema,
+  copilotCliConfigSchema,
+  type ClaudeCodeConfig,
+  type CopilotCliConfig,
+} from './agent-config/index.js';
 
 export {
   experimentDefinitionSchema,

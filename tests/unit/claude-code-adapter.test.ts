@@ -584,215 +584,6 @@ Line 5 with 'single quotes'`;
     });
   });
 
-  describe('parseToolCalls() helper', () => {
-    it('should detect [TOOL: name] patterns', () => {
-      const mockResult = {
-        exitCode: 0,
-        status: 'success' as const,
-        output: '[TOOL: read_file] test.ts',
-        startedAt: '2025-11-25T10:00:00Z',
-        completedAt: '2025-11-25T10:01:00Z',
-        durationMs: 60000,
-        errors: [],
-      };
-
-      const log = adapter.normalizeLog(mockResult.output, mockResult);
-      const assistantMsg = log.messages.find((m) => m.role === 'assistant');
-
-      expect(assistantMsg?.tool_calls).toBeDefined();
-      expect(assistantMsg?.tool_calls?.length).toBe(1);
-    });
-
-    it('should extract tool name correctly', () => {
-      const mockResult = {
-        exitCode: 0,
-        status: 'success' as const,
-        output: '[TOOL: list_files] ./src',
-        startedAt: '2025-11-25T10:00:00Z',
-        completedAt: '2025-11-25T10:01:00Z',
-        durationMs: 60000,
-        errors: [],
-      };
-
-      const log = adapter.normalizeLog(mockResult.output, mockResult);
-      const assistantMsg = log.messages.find((m) => m.role === 'assistant');
-
-      expect(assistantMsg?.tool_calls?.[0].function.name).toBe('list_files');
-    });
-
-    it('should extract tool arguments', () => {
-      const mockResult = {
-        exitCode: 0,
-        status: 'success' as const,
-        output: '[TOOL: search_files] *.ts --pattern "test"',
-        startedAt: '2025-11-25T10:00:00Z',
-        completedAt: '2025-11-25T10:01:00Z',
-        durationMs: 60000,
-        errors: [],
-      };
-
-      const log = adapter.normalizeLog(mockResult.output, mockResult);
-      const assistantMsg = log.messages.find((m) => m.role === 'assistant');
-
-      expect(assistantMsg?.tool_calls?.[0].function.arguments).toContain(
-        '*.ts'
-      );
-    });
-
-    it('should handle multiple tool calls', () => {
-      const mockResult = {
-        exitCode: 0,
-        status: 'success' as const,
-        output:
-          '[TOOL: read_file] a.ts\n[TOOL: write_file] b.ts\n[TOOL: list_files] .',
-        startedAt: '2025-11-25T10:00:00Z',
-        completedAt: '2025-11-25T10:01:00Z',
-        durationMs: 60000,
-        errors: [],
-      };
-
-      const log = adapter.normalizeLog(mockResult.output, mockResult);
-      const assistantMsg = log.messages.find((m) => m.role === 'assistant');
-
-      expect(assistantMsg?.tool_calls?.length).toBe(3);
-    });
-
-    it('should return undefined when no tool calls present', () => {
-      const mockResult = {
-        exitCode: 0,
-        status: 'success' as const,
-        output: 'Regular output without tools',
-        startedAt: '2025-11-25T10:00:00Z',
-        completedAt: '2025-11-25T10:01:00Z',
-        durationMs: 60000,
-        errors: [],
-      };
-
-      const log = adapter.normalizeLog(mockResult.output, mockResult);
-      const assistantMsg = log.messages.find((m) => m.role === 'assistant');
-
-      expect(assistantMsg?.tool_calls).toBeUndefined();
-    });
-  });
-
-  describe('parseUsage() / extractUsageMetrics() helper', () => {
-    it('should extract input tokens from output', () => {
-      const mockResult = {
-        exitCode: 0,
-        status: 'success' as const,
-        output: 'Input tokens: 1234\nOutput tokens: 5678',
-        startedAt: '2025-11-25T10:00:00Z',
-        completedAt: '2025-11-25T10:01:00Z',
-        durationMs: 60000,
-        errors: [],
-      };
-
-      const log = adapter.normalizeLog(mockResult.output, mockResult);
-
-      expect(log.usage?.prompt_tokens).toBe(1234);
-    });
-
-    it('should extract output tokens from output', () => {
-      const mockResult = {
-        exitCode: 0,
-        status: 'success' as const,
-        output: 'Input tokens: 1234\nOutput tokens: 5678',
-        startedAt: '2025-11-25T10:00:00Z',
-        completedAt: '2025-11-25T10:01:00Z',
-        durationMs: 60000,
-        errors: [],
-      };
-
-      const log = adapter.normalizeLog(mockResult.output, mockResult);
-
-      expect(log.usage?.completion_tokens).toBe(5678);
-    });
-
-    it('should calculate total tokens', () => {
-      const mockResult = {
-        exitCode: 0,
-        status: 'success' as const,
-        output: 'Input tokens: 1000\nOutput tokens: 2000',
-        startedAt: '2025-11-25T10:00:00Z',
-        completedAt: '2025-11-25T10:01:00Z',
-        durationMs: 60000,
-        errors: [],
-      };
-
-      const log = adapter.normalizeLog(mockResult.output, mockResult);
-
-      expect(log.usage?.total_tokens).toBe(3000);
-    });
-
-    it('should handle lowercase token labels', () => {
-      const mockResult = {
-        exitCode: 0,
-        status: 'success' as const,
-        output: 'input tokens: 100\noutput tokens: 200',
-        startedAt: '2025-11-25T10:00:00Z',
-        completedAt: '2025-11-25T10:01:00Z',
-        durationMs: 60000,
-        errors: [],
-      };
-
-      const log = adapter.normalizeLog(mockResult.output, mockResult);
-
-      expect(log.usage?.prompt_tokens).toBe(100);
-      expect(log.usage?.completion_tokens).toBe(200);
-    });
-
-    it('should provide estimates when tokens not in output', () => {
-      const mockResult = {
-        exitCode: 0,
-        status: 'success' as const,
-        output: 'Some output without token info',
-        startedAt: '2025-11-25T10:00:00Z',
-        completedAt: '2025-11-25T10:01:00Z',
-        durationMs: 60000,
-        errors: [],
-      };
-
-      const log = adapter.normalizeLog(mockResult.output, mockResult);
-
-      expect(log.usage?.prompt_tokens).toBeGreaterThan(0);
-      expect(log.usage?.completion_tokens).toBeGreaterThan(0);
-    });
-
-    it('should include cost estimation', () => {
-      const mockResult = {
-        exitCode: 0,
-        status: 'success' as const,
-        output: 'Input tokens: 1000\nOutput tokens: 2000',
-        startedAt: '2025-11-25T10:00:00Z',
-        completedAt: '2025-11-25T10:01:00Z',
-        durationMs: 60000,
-        errors: [],
-      };
-
-      const log = adapter.normalizeLog(mockResult.output, mockResult);
-
-      expect(log.usage?.estimated_cost_usd).toBeDefined();
-      expect(log.usage?.estimated_cost_usd).toBeGreaterThan(0);
-    });
-
-    it('should use reasonable approximation for cost', () => {
-      const mockResult = {
-        exitCode: 0,
-        status: 'success' as const,
-        output: 'Input tokens: 1000000\nOutput tokens: 1000000',
-        startedAt: '2025-11-25T10:00:00Z',
-        completedAt: '2025-11-25T10:01:00Z',
-        durationMs: 60000,
-        errors: [],
-      };
-
-      const log = adapter.normalizeLog(mockResult.output, mockResult);
-
-      // 1M input + 1M output ≈ $3 + $15 = $18
-      expect(log.usage?.estimated_cost_usd).toBeCloseTo(18, 1);
-    });
-  });
-
   describe('buildClaudeCommand() with advanced flags', () => {
     it('should include --append-system-prompt flag when specified', async () => {
       if (skipIfNoClaude()) return;
@@ -912,63 +703,6 @@ Line 5 with 'single quotes'`;
       expect(result).toBeDefined();
     });
 
-    it('should include --max-tokens flag when specified', async () => {
-      if (skipIfNoClaude()) return;
-
-      const context: AgentExecutionContext = {
-        workspaceDir: tempWorkspace,
-        repoDir: path.join(tempWorkspace, 'src-modified'),
-        artifactsDir: path.join(tempWorkspace, 'artifacts'),
-        config: {
-          prompt: 'Test prompt',
-          max_tokens: 4096,
-        },
-        timeout: 5000,
-        env: {},
-      };
-
-      const result = await adapter.execute(context);
-      expect(result).toBeDefined();
-    });
-
-    it('should include --temperature flag when specified', async () => {
-      if (skipIfNoClaude()) return;
-
-      const context: AgentExecutionContext = {
-        workspaceDir: tempWorkspace,
-        repoDir: path.join(tempWorkspace, 'src-modified'),
-        artifactsDir: path.join(tempWorkspace, 'artifacts'),
-        config: {
-          prompt: 'Test prompt',
-          temperature: 0.7,
-        },
-        timeout: 5000,
-        env: {},
-      };
-
-      const result = await adapter.execute(context);
-      expect(result).toBeDefined();
-    });
-
-    it('should handle temperature of 0.0', async () => {
-      if (skipIfNoClaude()) return;
-
-      const context: AgentExecutionContext = {
-        workspaceDir: tempWorkspace,
-        repoDir: path.join(tempWorkspace, 'src-modified'),
-        artifactsDir: path.join(tempWorkspace, 'artifacts'),
-        config: {
-          prompt: 'Test prompt',
-          temperature: 0.0,
-        },
-        timeout: 5000,
-        env: {},
-      };
-
-      const result = await adapter.execute(context);
-      expect(result).toBeDefined();
-    });
-
     it('should handle all advanced flags together', async () => {
       if (skipIfNoClaude()) return;
 
@@ -979,11 +713,11 @@ Line 5 with 'single quotes'`;
         config: {
           prompt: 'Test prompt',
           append_system_prompt: 'Expert developer',
-          permission_mode: 'auto',
+          permission_mode: 'dontAsk',
           allowed_tools: ['Read', 'Write'],
           system_prompt: 'Custom prompt',
-          max_tokens: 8000,
-          temperature: 0.0,
+          max_turns: 8,
+          max_budget_usd: 1,
         },
         timeout: 5000,
         env: {},
@@ -1006,7 +740,7 @@ Line 5 with 'single quotes'`;
           agent_name: 'code-reviewer',
           append_system_prompt: 'Expert developer',
           permission_mode: 'plan',
-          max_tokens: 4096,
+          max_turns: 4,
         },
         timeout: 5000,
         env: {},

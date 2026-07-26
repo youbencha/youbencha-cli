@@ -6,48 +6,11 @@
  */
 
 import { z } from 'zod';
+import { agentConfigSchema, type AgentConfig } from './agent-config/index.js';
 import { postEvaluationConfigSchema } from './post-evaluation.schema.js';
 import { preExecutionConfigSchema } from './pre-execution.schema.js';
 
-/**
- * Agent configuration schema
- */
-export const agentConfigSchema = z.object({
-  type: z.enum(['copilot-cli', 'claude-code']), // Supported agent types
-  agent_name: z.string().optional(), // Optional agent name (e.g., for copilot-cli agents in .github/agents/)
-  model: z.string().min(1).optional(), // Optional model name (accepts any valid model string)
-  config: z
-    .object({
-      prompt: z
-        .string()
-        .min(1, 'Prompt is required')
-        .max(50000, 'Prompt exceeds maximum length of 50000 characters')
-        .optional(),
-      prompt_file: z.string().min(1, 'Prompt file path is required').optional(),
-      system_prompt: z.string().min(1).optional(),
-      append_system_prompt: z.string().min(1).optional(),
-      permission_mode: z.string().min(1).optional(),
-      allowed_tools: z.array(z.string().min(1)).optional(),
-      max_tokens: z.number().int().positive().optional(),
-      temperature: z.number().min(0).max(2).optional(),
-      tools: z.array(z.string().min(1)).optional(),
-    })
-    .passthrough() // Preserve forward-compatible agent-specific options
-    .refine(
-      (data) => {
-        // Ensure prompt and prompt_file are mutually exclusive
-        if (data.prompt && data.prompt_file) {
-          return false;
-        }
-        return true;
-      },
-      {
-        message:
-          'Cannot specify both "prompt" and "prompt_file". Please use only one.',
-      }
-    )
-    .optional(),
-});
+export { agentConfigSchema };
 
 /**
  * Evaluator configuration schema
@@ -188,7 +151,7 @@ export type TestCaseConfig = z.infer<typeof testCaseConfigSchema>;
 /**
  * Helper type for agent configuration
  */
-export type AgentConfig = z.infer<typeof agentConfigSchema>;
+export type { AgentConfig };
 
 /**
  * Helper type for evaluator configuration

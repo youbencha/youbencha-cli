@@ -1,13 +1,16 @@
 /**
  * Contract tests for youBencha Log schema
- * 
+ *
  * These tests define the contract for the youBencha Log format.
  * Tests MUST be written first and MUST FAIL before implementation.
- * 
+ *
  * Purpose: Ensure normalized agent logs conform to standard schema
  */
 
-import { youBenchaLogSchema, YouBenchaLog } from '../../src/schemas/youbenchalog.schema';
+import {
+  youBenchaLogSchema,
+  YouBenchaLog,
+} from '../../src/schemas/youbenchalog.schema';
 
 describe('youBencha Log Schema Contract', () => {
   describe('Valid youBencha Log', () => {
@@ -69,9 +72,14 @@ describe('youBencha Log Schema Contract', () => {
         ],
         usage: {
           prompt_tokens: 150,
+          cached_prompt_tokens: 25,
           completion_tokens: 300,
-          total_tokens: 450,
+          reasoning_tokens: 50,
+          total_tokens: 525,
+          cost_usd: 0.0045,
           estimated_cost_usd: 0.0045,
+          credits: 2,
+          measurement_source: 'measured',
         },
         errors: [],
         environment: {
@@ -79,6 +87,21 @@ describe('youBencha Log Schema Contract', () => {
           node_version: '20.10.0',
           youbencha_version: '0.1.0',
           working_directory: 'C:\\workspace\\test-run',
+        },
+        provenance: {
+          cli_version: '1.0.0',
+          adapter_version: '1.0.0',
+          resolved_executable: '<home>/.local/bin/copilot',
+          configured_model: 'gpt-4',
+          reported_model: 'gpt-4',
+          session_id: 'session-123',
+          headless: true,
+          session_persistence: false,
+          structured_output_format: 'json',
+          usage_source: 'measured',
+          legacy_parser_used: false,
+          effective_config: { output_format: 'json' },
+          diagnostics: [],
         },
       };
 
@@ -467,7 +490,7 @@ describe('youBencha Log Schema Contract', () => {
       const agentName: string = log.agent.name;
       const exitCode: number = log.execution.exit_code;
       const status: 'success' | 'failed' | 'timeout' = log.execution.status;
-      
+
       expect(agentName).toBe('Test Agent');
       expect(exitCode).toBe(0);
       expect(status).toBe('success');

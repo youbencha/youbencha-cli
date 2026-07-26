@@ -1,10 +1,10 @@
 /**
  * Integration test for Model Selection Feature
- * 
+ *
  * Tests that model configuration flows correctly through the entire system
  */
 
-import { CopilotCLIAdapter } from '../../src/adapters/copilot-cli.js';
+import { buildCopilotCommand } from '../../src/adapters/copilot-cli.js';
 import { AgentExecutionContext } from '../../src/adapters/base.js';
 import * as path from 'path';
 import * as os from 'os';
@@ -33,8 +33,6 @@ describe('Model Selection Integration', () => {
 
   describe('Copilot CLI Adapter with Model', () => {
     it('should build command with model parameter', () => {
-      const adapter = new CopilotCLIAdapter();
-      
       const context: AgentExecutionContext = {
         workspaceDir: testWorkspaceDir,
         repoDir: testWorkspaceDir,
@@ -47,32 +45,18 @@ describe('Model Selection Integration', () => {
         env: {},
       };
 
-      // Access private method via type assertion for testing
-      const buildMethod = (adapter as any).buildCopilotCommand.bind(adapter);
-      const { command, args } = buildMethod(context);
+      const { command, args } = buildCopilotCommand(context);
 
-      // On Unix-like systems
-      if (process.platform !== 'win32') {
-        expect(command).toBe('copilot');
-        expect(args).toContain('--model');
-        expect(args).toContain('gpt-5.1');
-        
-        // Verify model comes before agent flag
-        const modelIndex = args.indexOf('--model');
-        expect(modelIndex).toBeGreaterThan(-1);
-        expect(args[modelIndex + 1]).toBe('gpt-5.1');
-      } else {
-        // On Windows, command is powershell.exe
-        expect(command).toBe('powershell.exe');
-        const commandString = args[args.length - 1];
-        expect(commandString).toContain('--model');
-        expect(commandString).toContain('gpt-5.1');
-      }
+      expect(command).toBe('copilot');
+      expect(args).toContain('--model');
+      expect(args).toContain('gpt-5.1');
+
+      const modelIndex = args.indexOf('--model');
+      expect(modelIndex).toBeGreaterThan(-1);
+      expect(args[modelIndex + 1]).toBe('gpt-5.1');
     });
 
     it('should build command without model parameter when not specified', () => {
-      const adapter = new CopilotCLIAdapter();
-      
       const context: AgentExecutionContext = {
         workspaceDir: testWorkspaceDir,
         repoDir: testWorkspaceDir,
@@ -84,22 +68,13 @@ describe('Model Selection Integration', () => {
         env: {},
       };
 
-      const buildMethod = (adapter as any).buildCopilotCommand.bind(adapter);
-      const { command, args } = buildMethod(context);
+      const { command, args } = buildCopilotCommand(context);
 
-      if (process.platform !== 'win32') {
-        expect(command).toBe('copilot');
-        expect(args).not.toContain('--model');
-      } else {
-        expect(command).toBe('powershell.exe');
-        const commandString = args[args.length - 1];
-        expect(commandString).not.toContain('--model');
-      }
+      expect(command).toBe('copilot');
+      expect(args).not.toContain('--model');
     });
 
     it('should build command with both model and agent parameters', () => {
-      const adapter = new CopilotCLIAdapter();
-      
       const context: AgentExecutionContext = {
         workspaceDir: testWorkspaceDir,
         repoDir: testWorkspaceDir,
@@ -113,42 +88,25 @@ describe('Model Selection Integration', () => {
         env: {},
       };
 
-      const buildMethod = (adapter as any).buildCopilotCommand.bind(adapter);
-      const { command, args } = buildMethod(context);
+      const { command, args } = buildCopilotCommand(context);
 
-      if (process.platform !== 'win32') {
-        expect(command).toBe('copilot');
-        expect(args).toContain('--model');
-        expect(args).toContain('claude-sonnet-4.5');
-        expect(args).toContain('--agent');
-        expect(args).toContain('custom-agent');
-        
-        // Verify model comes before agent
-        const modelIndex = args.indexOf('--model');
-        const agentIndex = args.indexOf('--agent');
-        expect(modelIndex).toBeLessThan(agentIndex);
-      } else {
-        expect(command).toBe('powershell.exe');
-        const commandString = args[args.length - 1];
-        expect(commandString).toContain('--model');
-        expect(commandString).toContain('claude-sonnet-4.5');
-        expect(commandString).toContain('--agent');
-        expect(commandString).toContain('custom-agent');
-      }
+      expect(command).toBe('copilot');
+      expect(args).toContain('--model');
+      expect(args).toContain('claude-sonnet-4.5');
+      expect(args).toContain('--agent');
+      expect(args).toContain('custom-agent');
+
+      const modelIndex = args.indexOf('--model');
+      const agentIndex = args.indexOf('--agent');
+      expect(modelIndex).toBeLessThan(agentIndex);
     });
   });
 
   describe('Different Model Types', () => {
-    const models = [
-      'claude-sonnet-4.5',
-      'gpt-5.1',
-      'custom-model',
-    ];
+    const models = ['claude-sonnet-4.5', 'gpt-5.1', 'custom-model'];
 
-    models.forEach(model => {
+    models.forEach((model) => {
       it(`should handle model ${model}`, () => {
-        const adapter = new CopilotCLIAdapter();
-        
         const context: AgentExecutionContext = {
           workspaceDir: testWorkspaceDir,
           repoDir: testWorkspaceDir,
@@ -161,17 +119,10 @@ describe('Model Selection Integration', () => {
           env: {},
         };
 
-        const buildMethod = (adapter as any).buildCopilotCommand.bind(adapter);
-        const result = buildMethod(context);
+        const result = buildCopilotCommand(context);
 
-        if (process.platform !== 'win32') {
-          expect(result.args).toContain('--model');
-          expect(result.args).toContain(model);
-        } else {
-          const commandString = result.args[result.args.length - 1];
-          expect(commandString).toContain('--model');
-          expect(commandString).toContain(model);
-        }
+        expect(result.args).toContain('--model');
+        expect(result.args).toContain(model);
       });
     });
   });

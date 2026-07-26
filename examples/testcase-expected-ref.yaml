@@ -1,41 +1,41 @@
 # Example Test Case Configuration: Expected Reference Comparison
-# 
+#
 # This test case demonstrates comparing agent output against an expected reference branch.
 # The expected-diff evaluator compares files between the agent-modified code
 # and a reference branch to measure how similar the output is to the expected result.
 
 # Test case metadata
-name: "Change README title with expected reference"
+name: 'Change README title with expected reference'
 description: "Tests the agent's ability to change the title in README.md to match an expected output"
 
 # Repository configuration
 repo: https://github.com/octocat/Spoon-Knife.git
-branch: main  # Branch where agent will make changes
+branch: main # Branch where agent will make changes
 
 # Expected reference configuration
 expected_source: branch
-expected: change-the-title  # Reference branch to compare against (use a different branch in practice)
+expected: change-the-title # Reference branch to compare against (use a different branch in practice)
 
 # Agent configuration
 agent:
   type: copilot-cli
   config:
     prompt: "Change the title in the README.md to 'The Spoon-Knife Repository'"
-    tools:
-      - read
-      - write
-      - search
+    # Explicitly preserve the current compatibility permission policy.
+    allow_all_tools: true
+    allow_all_paths: true
+    max_ai_credits: 5
 
 # Evaluators
 evaluators:
   # Git-diff: Track what changes the agent made
   - name: git-diff
     config: {}
-  
+
   # Expected-diff: Compare agent output with expected reference
   - name: expected-diff
     config:
-      threshold: 0.80  # Require 80% similarity to pass
+      threshold: 0.80 # Require 80% similarity to pass
       # Threshold interpretation:
       # - 1.0 = 100% identical to expected
       # - 0.9-0.99 = Very similar (minor differences)
@@ -47,13 +47,13 @@ evaluators:
       type: copilot-cli
       agent_name: agentic-judge
       assertions:
-        readme_modified: "README.md was modified. Score 1 if true, 0 if false."
-        mentions_spoon_knife: "README.md mentions The Spoon-Knife Repository. Score 1 if true, 0 if false."
-        no_other_files_modified: "No other files were modified. Score 1 if true, 0 if false."
+        readme_modified: 'README.md was modified. Score 1 if true, 0 if false.'
+        mentions_spoon_knife: 'README.md mentions The Spoon-Knife Repository. Score 1 if true, 0 if false.'
+        no_other_files_modified: 'No other files were modified. Score 1 if true, 0 if false.'
 
 # Optional: Workspace and execution configuration
 workspace_dir: .youbencha-workspace
-timeout: 300000  # 5 minutes (in milliseconds)
+timeout: 300000 # 5 minutes (in milliseconds)
 
 # Usage Examples:
 #

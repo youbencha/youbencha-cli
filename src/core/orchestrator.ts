@@ -352,7 +352,7 @@ export class Orchestrator {
           prompt_tokens: 0,
           completion_tokens: 0,
           total_tokens: 0,
-          estimated_cost_usd: 0,
+          measurement_source: 'unavailable',
         },
         errors: [],
         environment: {
@@ -816,9 +816,13 @@ export class Orchestrator {
     // Display agent context before execution
     if (resolvedPrompt) {
       if (promptFileFromConfig) {
-        logger.info(`Agent prompt loaded from file: "${promptFileFromConfig}"`);
+        logger.info(
+          `Agent prompt loaded from file: "${promptFileFromConfig}" (${resolvedPrompt.length} characters)`
+        );
       } else {
-        logger.info(`Agent prompt: "${resolvedPrompt}"`);
+        logger.info(
+          `Agent prompt loaded from inline configuration (${resolvedPrompt.length} characters)`
+        );
       }
     }
     logger.info(`Agent type: ${testCaseConfig.agent.type}`);
@@ -876,14 +880,21 @@ export class Orchestrator {
     const agentLog = adapter.normalizeLog(result.output, result);
 
     // Display usage metrics if available
-    if (agentLog.usage) {
+    if (agentLog.usage && agentLog.usage.measurement_source !== 'unavailable') {
       logger.info(
-        `Token usage: ${agentLog.usage.total_tokens} tokens (prompt: ${agentLog.usage.prompt_tokens}, completion: ${agentLog.usage.completion_tokens})`
+        `Token usage (${agentLog.usage.measurement_source ?? 'legacy'}): ${agentLog.usage.total_tokens} tokens (prompt: ${agentLog.usage.prompt_tokens}, completion: ${agentLog.usage.completion_tokens})`
       );
-      if (agentLog.usage.estimated_cost_usd) {
+      if (agentLog.usage.cost_usd !== undefined) {
+        logger.info(
+          `Provider-reported cost: $${agentLog.usage.cost_usd.toFixed(4)}`
+        );
+      } else if (agentLog.usage.estimated_cost_usd !== undefined) {
         logger.info(
           `Estimated cost: $${agentLog.usage.estimated_cost_usd.toFixed(4)}`
         );
+      }
+      if (agentLog.usage.credits !== undefined) {
+        logger.info(`Provider-reported credits: ${agentLog.usage.credits}`);
       }
     }
 

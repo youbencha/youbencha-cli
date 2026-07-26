@@ -204,6 +204,20 @@ describe('Orchestrator', () => {
       expect(Array.isArray(result.artifacts.reports)).toBe(true);
       expect(Array.isArray(result.artifacts.evaluator_artifacts)).toBe(true);
     }, 120000);
+
+    test('logs prompt provenance and length without logging prompt content', async () => {
+      const info = jest.spyOn(console, 'info').mockImplementation(() => {});
+      const secretPrompt = 'sensitive prompt content';
+      mockTestCaseConfig.agent.config = { prompt: secretPrompt };
+
+      await orchestrator.runEvaluation(mockTestCaseConfig, mockConfigFile);
+
+      const output = info.mock.calls.flat().join('\n');
+      expect(output).not.toContain(secretPrompt);
+      expect(output).toContain(
+        `Agent prompt loaded from inline configuration (${secretPrompt.length} characters)`
+      );
+    }, 120000);
   });
 
   describe('Error Handling', () => {

@@ -2,7 +2,9 @@
 
 ## Overview
 
-youBencha now supports specifying custom agent names in the test case configuration. This allows you to use named agents (e.g., GitHub Copilot CLI agents defined in `.github/agents/`) during both the coding agent run and the agentic-judge evaluation.
+youBencha supports custom agent names for both GitHub Copilot CLI definitions
+in `.github/agents/` and Claude Code definitions in `.claude/agents/`. Named
+agents work during the coding run and an `agentic-judge` evaluation.
 
 ## Features
 
@@ -13,12 +15,13 @@ Specify an agent name in the `agent` section of your test case configuration:
 ```yaml
 agent:
   type: copilot-cli
-  agent_name: my-custom-agent  # Agent name from .github/agents/
+  agent_name: my-custom-agent # Agent name from .github/agents/
   config:
-    prompt: "Your task description here"
+    prompt: 'Your task description here'
 ```
 
 When an agent name is specified:
+
 - The `.github/agents/` directory is automatically copied to the workspace before execution
 - The agent is invoked with the `--agent <name>` flag
 - Agent-specific instructions and configurations are applied
@@ -32,36 +35,36 @@ evaluators:
   - name: agentic-judge
     config:
       type: copilot-cli
-      agent_name: evaluation-agent  # Agent name for evaluation
+      agent_name: evaluation-agent # Agent name for evaluation
       assertions:
-        code_quality: "Assessment assertions here"
+        code_quality: 'Assessment assertions here'
 ```
 
 ## Complete Example
 
 ```yaml
-name: "Code Review Test Case"
-description: "Tests code review improvements using a named agent"
+name: 'Code Review Test Case'
+description: 'Tests code review improvements using a named agent'
 
 repo: https://github.com/youbencha/hello-world.git
 branch: main
 
 agent:
   type: copilot-cli
-  agent_name: code-reviewer  # Named agent for coding
+  agent_name: code-reviewer # Named agent for coding
   config:
-    prompt: "Review and improve the code"
+    prompt: 'Review and improve the code'
 
 evaluators:
   - name: git-diff
-  
+
   - name: agentic-judge
     config:
       type: copilot-cli
-      agent_name: code-reviewer  # Use same agent for evaluation
+      agent_name: code-reviewer # Use same agent for evaluation
       assertions:
-        code_quality: "Code follows best practices. Score 1-10."
-        documentation: "Code has proper documentation. Score 1-10."
+        code_quality: 'Code follows best practices. Score 1-10.'
+        documentation: 'Code has proper documentation. Score 1-10.'
 ```
 
 ## How It Works
@@ -70,18 +73,17 @@ evaluators:
 
 When a named agent is used, youBencha automatically:
 
-1. **Before Agent Execution**: Copies `.github/agents/` from your project root to the workspace
-2. **During Execution**: Passes the agent name via `--agent` flag to the CLI
+1. **Before Agent Execution**: Copies `.github/agents/` and `.claude/agents/` from your project root to the workspace
+2. **During Execution**: Passes the agent name via the CLI's native `--agent` flag; the prompt is not rewritten
 3. **For Agentic Judge**: Repeats the process if `agent_name` is specified in evaluator config
 
 This ensures the agent definitions are available in the isolated workspace environment.
 
 ### Platform Support
 
-The implementation handles platform-specific command execution:
-
-- **Windows**: Uses PowerShell with proper escaping and the call operator (`&`)
-- **Unix/Linux/macOS**: Direct command execution with proper argument passing
+The implementation resolves native executables and npm shims on each platform.
+Native binaries use `shell: false`; one reviewed non-interactive runner handles
+Windows `.cmd`, `.bat`, and PowerShell shims without concatenating prompt text.
 
 ## Benefits
 
@@ -98,7 +100,7 @@ The `agent_name` field is optional. Existing configurations without agent names 
 agent:
   type: copilot-cli
   config:
-    prompt: "Your prompt here"  # Works without agent name
+    prompt: 'Your prompt here' # Works without agent name
 ```
 
 ## See Also

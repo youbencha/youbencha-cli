@@ -79,7 +79,7 @@ describe('experiment CLI integration', () => {
         repo: 'https://user:repo-password@example.com/repository.git?token=query-secret',
         agent: {
           type: 'copilot-cli',
-          config: { prompt: 'Do work', api_key: 'config-secret' },
+          config: { prompt: 'Do work', max_ai_credits: 1 },
         },
         evaluators: [{ name: 'git-diff' }],
       })
@@ -132,7 +132,6 @@ describe('experiment CLI integration', () => {
     expect(output.join('\n')).toContain('"cellCount": 1');
     expect(output.join('\n')).not.toContain('repo-password');
     expect(output.join('\n')).not.toContain('query-secret');
-    expect(output.join('\n')).not.toContain('config-secret');
   });
 
   test.each([
