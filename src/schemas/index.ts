@@ -70,6 +70,29 @@ export {
   type MeasurementQuality,
 } from './experiment-result.schema.js';
 
+export {
+  regressionTaskDefinitionSchema,
+  regressionTargetSchema,
+  regressionProfileSchema,
+  regressionComparisonSchema,
+  regressionRuleSchema,
+  regressionSuiteDefinitionSchema,
+  suiteV2SecretSchema,
+  suiteV2SetupStepSchema,
+  type RegressionTaskDefinition,
+  type RegressionSuiteDefinition,
+  type RegressionTarget,
+  type RegressionProfile,
+  type SuiteV2SetupStep,
+} from './suite-v2.schema.js';
+
+export {
+  baselineTargetMappingSchema,
+  baselineChannelAuditSchema,
+  type BaselineTargetMapping,
+  type BaselineChannelAudit,
+} from './baseline-channel.schema.js';
+
 // Evaluator Definition schema and types
 export {
   evaluatorDefinitionSchema,

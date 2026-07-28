@@ -1,0 +1,13 @@
+version: 2
+kind: task
+name: Fix expired-session handling
+description: Reject expired sessions while preserving valid sessions.
+repo: https://github.com/example/service.git
+commit: 0123456789abcdef0123456789abcdef01234567
+task:
+  prompt: Fix expired-session handling and add focused tests.
+evaluators:
+  - name: git-diff
+setup:
+  cacheable: []
+  per_attempt: []

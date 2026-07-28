@@ -13,6 +13,8 @@ export {
 export { planExperiment, type ExperimentPlan } from './planner.js';
 export {
   type PlannedExperimentCell,
+  type InterruptedExecutionContext,
+  type RemoteAttemptLifecycleEvent,
   type SingleRunExecutionContext,
   type SingleRunExecutionResult,
   type SingleRunExecutor,
@@ -67,6 +69,7 @@ export {
 } from './state-store.js';
 export {
   ExperimentScheduler,
+  type ExperimentRetryPolicy,
   type ExperimentSchedulerOptions,
   type ExperimentScheduleResult,
 } from './scheduler.js';
@@ -75,3 +78,9 @@ export {
   type RunExperimentOptions,
   type RunExperimentResult,
 } from './runner.js';
+export { TokenBucket, type TokenBucketOptions } from './token-bucket.js';
+export {
+  TargetCircuitBreakerExecutor,
+  TargetUnavailableError,
+  type TargetCircuitBreakerOptions,
+} from './target-circuit-breaker.js';

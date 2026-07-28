@@ -5,7 +5,8 @@
   "main": "dist/cli/index.js",
   "bin": {
     "youbencha": "dist/cli/index.js",
-    "yb": "dist/cli/index.js"
+    "yb": "dist/cli/index.js",
+    "youbencha-run-cell": "dist/e2b/runner-cli.js"
   },
   "type": "module",
   "scripts": {
@@ -51,8 +52,10 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
+    "@mongodb-js/zstd": "^2.0.1",
     "commander": "^12.1.0",
     "diff": "^5.2.0",
+    "e2b": "^2.36.1",
     "fs-extra": "^11.3.2",
     "ora": "^8.2.0",
     "simple-git": "^3.30.0",

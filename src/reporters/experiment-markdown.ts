@@ -36,16 +36,17 @@ export function generateExperimentMarkdown(
     '',
     '## Cells',
     '',
-    '| Test case | Variant | Repetition | Status | Duration | Result |',
-    '| --- | --- | ---: | --- | ---: | --- |',
+    '| Test case | Target/variant | Repetition | Status | Provider | Sandbox | Duration | Sandbox runtime | Model cost | Sandbox cost | Result |',
+    '| --- | --- | ---: | --- | --- | --- | ---: | ---: | ---: | ---: | --- |',
   ];
 
   for (const cell of result.cells) {
     const resultLink = cell.result_path
       ? artifactLink('details', cell.result_path, options)
       : '';
+    const latestAttempt = cell.attempts.at(-1);
     lines.push(
-      `| ${escapeMarkdownCell(cell.testcase_id)} | ${escapeMarkdownCell(cell.variant_name)} | ${cell.repetition + 1} | ${escapeMarkdownCell(cell.status)} | ${cell.duration_ms ?? ''} | ${resultLink} |`
+      `| ${escapeMarkdownCell(cell.testcase_id)} | ${escapeMarkdownCell(cell.variant_name)} | ${cell.repetition + 1} | ${escapeMarkdownCell(cell.status)} | ${escapeMarkdownCell(latestAttempt?.execution_provider ?? 'host-trusted')} | ${escapeMarkdownCell(latestAttempt?.remote?.sandbox_id ?? '')} | ${cell.duration_ms ?? ''} | ${cell.sandbox_runtime_ms ?? ''} | ${cell.cost_usd ?? ''} | ${cell.sandbox_cost_usd ?? 'unavailable'} | ${resultLink} |`
     );
   }
 

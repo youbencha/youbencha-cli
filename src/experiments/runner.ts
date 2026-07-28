@@ -1,11 +1,11 @@
 import * as path from 'path';
 import { randomUUID } from 'crypto';
-import type { ExperimentDefinition } from '../schemas/experiment.schema.js';
 import type { ExperimentState } from '../schemas/experiment-result.schema.js';
 import type { ExperimentPlan } from './planner.js';
 import type { SingleRunExecutor } from './single-run-executor.js';
 import {
   ExperimentScheduler,
+  type ExperimentRetryPolicy,
   type ExperimentScheduleResult,
 } from './scheduler.js';
 import { ExperimentStateStore } from './state-store.js';
@@ -13,12 +13,13 @@ import { ExperimentStateStore } from './state-store.js';
 export interface RunExperimentOptions {
   plan: ExperimentPlan;
   executor: SingleRunExecutor;
-  retry: ExperimentDefinition['execution']['retry'];
+  retry: ExperimentRetryPolicy;
   resultsDirectory?: string;
   experimentId?: string;
   resume?: boolean;
   signal?: AbortSignal;
   now?: () => Date;
+  random?: () => number;
   delay?: (milliseconds: number, signal?: AbortSignal) => Promise<void>;
 }
 
@@ -39,8 +40,10 @@ function newExperimentId(now: Date): string {
 async function prepareResumeState(
   store: ExperimentStateStore,
   plan: ExperimentPlan,
+  executor: SingleRunExecutor,
   now: () => Date,
-  maxAttempts: number
+  maxAttempts: number,
+  signal?: AbortSignal
 ): Promise<ExperimentState> {
   const { manifest, state } = await store.load(plan.definitionHash);
   const planById = new Map(plan.cells.map((cell) => [cell.cellId, cell]));
@@ -99,6 +102,46 @@ async function prepareResumeState(
     } else if (cell.status === 'running') {
       const attempt = cell.attempts[cell.attempts.length - 1];
       if (attempt?.status === 'running') {
+        if (
+          attempt.execution_provider === 'e2b' &&
+          attempt.remote !== undefined &&
+          (attempt.remote.lifecycle_state === 'creating' ||
+            attempt.remote.lifecycle_state === 'running' ||
+            attempt.remote.lifecycle_state === 'collecting' ||
+            attempt.remote.lifecycle_state === 'killing')
+        ) {
+          if (executor.reconcileInterrupted === undefined) {
+            throw new Error(
+              `Cannot safely resume E2B attempt ${attempt.attempt_id}: the executor does not support remote reconciliation`
+            );
+          }
+          await executor.reconcileInterrupted({
+            experimentId: state.experiment_id,
+            cellId: cell.cell_id,
+            targetId: cell.variant_name,
+            attemptId: attempt.attempt_id,
+            ...(attempt.remote.sandbox_id === undefined
+              ? {}
+              : { sandboxId: attempt.remote.sandbox_id }),
+            signal,
+          });
+          const reconciledAt = now();
+          attempt.remote = {
+            ...attempt.remote,
+            lifecycle_state: 'killed',
+            updated_at: reconciledAt.toISOString(),
+            sandbox_completed_at: reconciledAt.toISOString(),
+            ...(attempt.remote.sandbox_started_at === undefined
+              ? {}
+              : {
+                  sandbox_runtime_ms: Math.max(
+                    0,
+                    reconciledAt.getTime() -
+                      Date.parse(attempt.remote.sandbox_started_at)
+                  ),
+                }),
+          };
+        }
         const completed = now();
         attempt.status = 'infrastructure_failed';
         attempt.completed_at = completed.toISOString();
@@ -150,8 +193,10 @@ export async function runExperiment(
       ? await prepareResumeState(
           store,
           options.plan,
+          options.executor,
           now,
-          options.retry.max_attempts
+          options.retry.max_attempts,
+          options.signal
         )
       : await store.create(options.plan, now().toISOString());
 
@@ -177,6 +222,7 @@ export async function runExperiment(
       retry: options.retry,
       signal: runtimeAbort.signal,
       now,
+      random: options.random,
       delay: options.delay,
     });
     try {

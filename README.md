@@ -11,6 +11,9 @@ youBencha is a testing and benchmarking framework designed to help developers ev
 - **Agent-agnostic architecture** - Test any agent through pluggable adapters
 - **Flexible evaluation** - Use built-in evaluators or create custom ones
 - **Reproducible results** - Standardized logging and comprehensive result bundles
+- **Model-retirement regression suites** - Reuse target-neutral tasks while swapping models or coding harnesses
+- **Secure remote execution** - Run each attempt in a fresh, policy-validated E2B sandbox
+- **Audited promotion workflow** - Keep immutable baseline snapshots behind compare-and-swap channels
 - **Developer-friendly CLI** - Simple commands for running evaluations and generating reports
 
 ## Requirements
@@ -265,6 +268,22 @@ Interrupted and budget-limited runs can be continued with
 `yb experiment run <file> --resume <experiment-id>`; validated completed cells
 are reused. See the [Experiments Guide](docs/experiments.md) for the full schema,
 baseline workflow, reports, and CI example.
+
+### `yb regress` and baseline channels
+
+Version 2 regression suites separate reusable tasks from model/harness targets:
+
+```bash
+yb regress examples/regression/suite.yaml --profile smoke --plan
+yb regress examples/regression/suite.yaml --profile overlap
+yb baseline promote <experiment-id> --channel production --target candidate
+yb baseline show production
+```
+
+Profiles make the same suite useful for one-case smoke checks and repeated
+overlap/nightly runs. Target mappings compare a replacement with a differently
+named incumbent. See the [Regression Suites Guide](docs/regression-suites.md)
+and [Secure E2B Execution](docs/e2b-execution.md).
 
 ### CI exit codes
 
@@ -666,6 +685,8 @@ See `examples/scripts/` for ready-to-use scripts:
 - [Post-Evaluation Guide](docs/post-evaluation.md) - Complete reference for post-evaluation hooks
 - [Analyzing Results Guide](docs/analyzing-results.md) - Analysis patterns and best practices
 - [Experiments Guide](docs/experiments.md) - Agent matrices, baselines, regression policies, reports, and CI
+- [Regression Suites Guide](docs/regression-suites.md) - Target-neutral tasks, profiles, target swaps, and audited baseline channels
+- [Secure E2B Execution](docs/e2b-execution.md) - Remote isolation, credentials, lifecycle, templates, and artifacts
 - [Prompt Files Guide](docs/prompt-files.md) - Loading prompts from external files
 - [Reusable Evaluators Guide](docs/reusable-evaluators.md) - Sharing evaluator configurations
 - [Multiple Agentic Judges Guide](docs/multiple-agentic-judges.md) - Using multiple focused evaluators

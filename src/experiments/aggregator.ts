@@ -251,6 +251,11 @@ function aggregateGroup(
         'No evaluator pass/fail observations were available'
       ),
       ...statistics(sorted, (cell) => cell.duration_ms, 'duration_ms'),
+      ...statistics(
+        sorted,
+        (cell) => cell.sandbox_runtime_ms,
+        'sandbox_runtime_ms'
+      ),
       token_total: totalMetric(
         sorted,
         (cell) => cell.token_count,
@@ -262,6 +267,12 @@ function aggregateGroup(
         (cell) => cell.cost_usd,
         'cost',
         (cell) => cell.cost_quality ?? cell.usage_quality
+      ),
+      sandbox_cost_usd_total: totalMetric(
+        sorted,
+        (cell) => cell.sandbox_cost_usd,
+        'sandbox cost',
+        (cell) => cell.sandbox_cost_quality ?? 'unavailable'
       ),
       usage_measured_count: traceMetric(
         sorted.filter((cell) => cell.usage_quality === 'measured'),

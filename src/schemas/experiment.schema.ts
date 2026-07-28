@@ -17,7 +17,11 @@ export const experimentVariantSchema = z
   })
   .strict();
 
-export const retryReasonSchema = z.enum(['infrastructure_failure', 'timeout']);
+export const retryReasonSchema = z.enum([
+  'infrastructure_failure',
+  'timeout',
+  'provider_rate_limit',
+]);
 
 export const experimentDefinitionSchema = z
   .object({

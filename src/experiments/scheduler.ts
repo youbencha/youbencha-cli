@@ -1,5 +1,8 @@
 import { randomUUID } from 'crypto';
-import type { ExperimentDefinition } from '../schemas/experiment.schema.js';
+import type {
+  ExperimentDefinition,
+  RetryReason,
+} from '../schemas/experiment.schema.js';
 import type {
   ExperimentAttempt,
   ExperimentCellResult,
@@ -20,17 +23,24 @@ import {
 } from './retry.js';
 import { ExperimentStateStore } from './state-store.js';
 import { sanitizeExperimentResultsBundle } from './artifact-security.js';
+import { TargetUnavailableError } from './target-circuit-breaker.js';
 
 export interface ExperimentSchedulerOptions {
   plan: ExperimentPlan;
   state: ExperimentState;
   store: ExperimentStateStore;
   executor: SingleRunExecutor;
-  retry: ExperimentDefinition['execution']['retry'];
+  retry: ExperimentRetryPolicy;
   signal?: AbortSignal;
   now?: () => Date;
+  random?: () => number;
   delay?: (milliseconds: number, signal?: AbortSignal) => Promise<void>;
 }
+
+export type ExperimentRetryPolicy =
+  ExperimentDefinition['execution']['retry'] & {
+    jitter?: 'none' | 'full';
+  };
 
 export interface ExperimentScheduleResult {
   state: ExperimentState;
@@ -116,11 +126,13 @@ export class ExperimentScheduler {
   private readonly active = new Map<string, Promise<SettledAttempt>>();
   private readonly retryNotBefore = new Map<string, number>();
   private readonly runtimeAbort = new AbortController();
+  private readonly random: () => number;
   private readonly onExternalAbort = (): void =>
     this.runtimeAbort.abort(this.options.signal?.reason);
 
   public constructor(private readonly options: ExperimentSchedulerOptions) {
     this.now = options.now ?? ((): Date => new Date());
+    this.random = options.random ?? Math.random;
     this.delay = options.delay ?? abortableDelay;
     if (options.signal?.aborted) {
       this.onExternalAbort();
@@ -137,6 +149,7 @@ export class ExperimentScheduler {
     const runtimeStartedAt = this.now().getTime();
     const previouslyUsedMs = state.budget.duration_ms_used;
     const previouslyUsedCostUsd = state.budget.cost_usd_used;
+    const previouslyUsedSandboxRuntimeMs = state.budget.sandbox_runtime_ms_used;
     state.started_at = startedAt;
     state.status = 'running';
     state.updated_at = this.now().toISOString();
@@ -144,7 +157,8 @@ export class ExperimentScheduler {
       this.options.plan.budget,
       runtimeStartedAt,
       previouslyUsedMs,
-      previouslyUsedCostUsd
+      previouslyUsedCostUsd,
+      previouslyUsedSandboxRuntimeMs
     );
     try {
       await store.save(state);
@@ -279,6 +293,74 @@ export class ExperimentScheduler {
         attemptId: attempt.attempt_id,
         attemptNumber: attempt.attempt_number,
         signal: this.runtimeAbort.signal,
+        reportLifecycle: async (event) => {
+          if (
+            cellState.attempts[cellState.attempts.length - 1]?.attempt_id !==
+            attempt.attempt_id
+          ) {
+            throw new Error(
+              `Lifecycle update does not own the active attempt for ${cell.cellId}`
+            );
+          }
+          attempt.execution_provider = event.executionProvider;
+          attempt.remote = {
+            ...attempt.remote,
+            lifecycle_state: event.lifecycleState,
+            updated_at: this.now().toISOString(),
+            ...(event.sandboxId === undefined
+              ? {}
+              : { sandbox_id: event.sandboxId }),
+            ...(event.templateId === undefined
+              ? {}
+              : { template_id: event.templateId }),
+            ...(event.templateBuildId === undefined
+              ? {}
+              : { template_build_id: event.templateBuildId }),
+            ...(event.sdkVersion === undefined
+              ? {}
+              : { sdk_version: event.sdkVersion }),
+            ...(event.secureAccess === undefined
+              ? {}
+              : { secure_access: event.secureAccess }),
+            ...(event.resources === undefined
+              ? {}
+              : { resources: event.resources }),
+            ...(event.networkPolicy === undefined
+              ? {}
+              : { network_policy: event.networkPolicy }),
+            ...(event.runnerProtocol === undefined
+              ? {}
+              : { runner_protocol: event.runnerProtocol }),
+            ...(event.artifactProtocol === undefined
+              ? {}
+              : { artifact_protocol: event.artifactProtocol }),
+            ...(event.fixtureSnapshotId === undefined
+              ? {}
+              : { fixture_snapshot_id: event.fixtureSnapshotId }),
+            ...(event.retainedUntil === undefined
+              ? {}
+              : { retained_until: event.retainedUntil }),
+            ...(event.retentionReason === undefined
+              ? {}
+              : { retention_reason: event.retentionReason }),
+            ...(event.sandboxStartedAt === undefined
+              ? {}
+              : { sandbox_started_at: event.sandboxStartedAt }),
+            ...(event.sandboxCompletedAt === undefined
+              ? {}
+              : { sandbox_completed_at: event.sandboxCompletedAt }),
+            ...(event.sandboxRuntimeMs === undefined
+              ? {}
+              : { sandbox_runtime_ms: event.sandboxRuntimeMs }),
+          };
+          cellState.sandbox_runtime_ms = cellState.attempts.reduce(
+            (total, current) =>
+              total + (current.remote?.sandbox_runtime_ms ?? 0),
+            0
+          );
+          this.options.state.updated_at = attempt.remote.updated_at;
+          await this.options.store.save(this.options.state);
+        },
       });
       return { cell, cellState, attempt, execution };
     } catch (error) {
@@ -321,6 +403,18 @@ export class ExperimentScheduler {
         cellState.cost_quality ?? 'unavailable',
         settled.execution.costQuality ?? settled.execution.usageQuality
       );
+      if (settled.execution.sandboxRuntimeMs !== undefined) {
+        cellState.sandbox_runtime_ms = cellState.attempts.reduce(
+          (total, current) => total + (current.remote?.sandbox_runtime_ms ?? 0),
+          0
+        );
+      }
+      if (settled.execution.sandboxCostUsd !== undefined) {
+        cellState.sandbox_cost_usd =
+          (cellState.sandbox_cost_usd ?? 0) + settled.execution.sandboxCostUsd;
+      }
+      cellState.sandbox_cost_quality =
+        settled.execution.sandboxCostQuality ?? 'unavailable';
       budget.addCost(this.options.state, settled.execution.costUsd);
       try {
         const resultPath = await this.options.store.saveAttemptResult(
@@ -357,7 +451,22 @@ export class ExperimentScheduler {
           (cellState.duration_ms ?? 0) + (attempt.duration_ms ?? 0);
       }
       if (!cancelled) {
-        this.queueRetry(cellState, reason);
+        if (settled.error instanceof TargetUnavailableError) {
+          const diagnostic = `target_unavailable:${settled.error.message}`;
+          attempt.terminal_reason = diagnostic;
+          cellState.terminal_reason = diagnostic;
+          for (const pending of this.options.state.cells) {
+            if (
+              pending.status === 'pending' &&
+              pending.variant_name === settled.cell.variantName
+            ) {
+              pending.status = 'cancelled';
+              pending.terminal_reason = diagnostic;
+            }
+          }
+        } else {
+          this.queueRetry(cellState, reason);
+        }
       }
     }
 
@@ -368,7 +477,7 @@ export class ExperimentScheduler {
 
   private queueRetry(
     cellState: ExperimentCellResult,
-    reason: 'infrastructure_failure' | 'timeout'
+    reason: RetryReason
   ): void {
     const configured = this.options.retry.on.includes(reason);
     if (
@@ -383,7 +492,10 @@ export class ExperimentScheduler {
       cellState.result_path = undefined;
       this.retryNotBefore.set(
         cellState.cell_id,
-        this.now().getTime() + this.options.retry.backoff_ms
+        this.now().getTime() +
+          (this.options.retry.jitter === 'full'
+            ? Math.floor(this.random() * (this.options.retry.backoff_ms + 1))
+            : this.options.retry.backoff_ms)
       );
     } else if (
       configured &&

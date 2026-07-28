@@ -22,6 +22,9 @@ import { validateCommand } from './commands/validate.js';
 import { installAgentsCommand } from './commands/install-agents.js';
 import { doctorCommand } from './commands/doctor.js';
 import { registerExperimentCommand } from './commands/experiment.js';
+import { registerBaselineCommand } from './commands/baseline.js';
+import { registerRegressCommand } from './commands/regress.js';
+import { registerSandboxCommand } from './commands/sandbox.js';
 import {
   configInitCommand,
   configListCommand,
@@ -130,6 +133,9 @@ These files are required for the agentic-judge evaluator to function.
 
   // Register commands
   registerExperimentCommand(program);
+  registerBaselineCommand(program);
+  registerRegressCommand(program);
+  registerSandboxCommand(program);
 
   program
     .command('run')

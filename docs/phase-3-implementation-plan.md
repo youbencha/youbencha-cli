@@ -7,6 +7,15 @@
 and can run the same experiment under an explicit host or container execution
 profile.
 
+> **2026-07-26 update:** E2B remote execution and the model/harness regression
+> workflow are now explicitly proposed in
+> [`specs/005-e2b-regression-execution`](../specs/005-e2b-regression-execution/spec.md).
+> That proposal uses the execution-provider seam described here, but stages E2B
+> through the existing `SingleRunExecutor` before generalizing the provider API.
+> The E2B-specific security, lifecycle, scale, and baseline requirements in that
+> specification supersede this plan's earlier decision to defer all cloud VM
+> providers.
+
 ## 1. Scope
 
 In scope:
@@ -27,7 +36,8 @@ Out of scope:
 - automatically downloading or executing plugins from configuration;
 - running untrusted plugins inside the main CLI process;
 - building a general-purpose container orchestrator;
-- cloud VM providers in the initial Phase 3 release;
+- cloud VM providers other than the separately staged E2B proposal in
+  `specs/005-e2b-regression-execution`;
 - storing long-lived repository credentials in youBencha configuration.
 
 ## 2. Guiding security decisions
@@ -470,4 +480,3 @@ mounts.
 - Result and extension APIs have published compatibility and deprecation rules.
 - Offline tests, lint, build, package dry run, supported Node/OS CI, and security
   regression suites pass.
-

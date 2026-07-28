@@ -5,6 +5,11 @@ variants and repetitions. They add bounded scheduling, resumable state,
 aggregate metrics, immutable named baselines, regression policies, and
 CI-friendly reports without changing `yb run` or `yb eval`.
 
+This guide covers version 1 power-user experiments. For reusable,
+target-neutral tasks, model/harness swapping, mapped target comparisons, and
+audited movable channels, use the
+[version 2 regression workflow](./regression-suites.md).
+
 ## Define and inspect an experiment
 
 Start with [the published example](../examples/experiment-basic.yaml):

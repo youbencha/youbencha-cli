@@ -128,6 +128,7 @@ export class ExperimentStateStore {
   private readonly stateFile: string;
   private readonly manifestFile: string;
   private readonly lockFile: string;
+  private saveQueue: Promise<void> = Promise.resolve();
 
   public constructor(
     resultsDirectory: string,
@@ -319,7 +320,11 @@ export class ExperimentStateStore {
         attempts: [],
         usage_quality: 'unavailable',
       })),
-      budget: { duration_ms_used: 0, cost_usd_used: 0 },
+      budget: {
+        duration_ms_used: 0,
+        cost_usd_used: 0,
+        sandbox_runtime_ms_used: 0,
+      },
     };
     await atomicJson(this.manifestFile, manifestSchema.parse(manifest));
     await this.save(state);
@@ -353,8 +358,13 @@ export class ExperimentStateStore {
   }
 
   public async save(state: ExperimentState): Promise<void> {
-    await assertNoLinkedComponents(this.experimentDirectory, this.stateFile);
-    await atomicJson(this.stateFile, experimentStateSchema.parse(state));
+    const persistedState = experimentStateSchema.parse(state);
+    const operation = this.saveQueue.then(async () => {
+      await assertNoLinkedComponents(this.experimentDirectory, this.stateFile);
+      await atomicJson(this.stateFile, persistedState);
+    });
+    this.saveQueue = operation.catch(() => undefined);
+    await operation;
   }
 
   public async saveAttemptResult(

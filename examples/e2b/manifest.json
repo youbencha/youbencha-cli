@@ -1,0 +1,31 @@
+{
+  "protocol_version": "1.0.0",
+  "runner_version": "0.1.5-beta",
+  "node_version": "20.19.0",
+  "git_version": "2.43.0",
+  "harnesses": [
+    {
+      "type": "codex-cli",
+      "version": "1.2.3",
+      "adapter_schema_versions": ["1.0.0"]
+    }
+  ],
+  "template_id": "replace-with-resolved-template-id",
+  "build_id": "replace-with-immutable-build-id",
+  "artifact_protocol": {
+    "version": "1.0.0",
+    "limits": {
+      "max_files": 1000,
+      "max_file_bytes": 10485760,
+      "max_compressed_bytes": 104857600,
+      "max_uncompressed_bytes": 262144000
+    }
+  },
+  "resources": {
+    "cpu_count": 2,
+    "memory_mb": 4096
+  },
+  "runs_as_root": false,
+  "public_service": false,
+  "runtime_package_installation": false
+}

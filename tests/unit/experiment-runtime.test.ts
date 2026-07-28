@@ -9,6 +9,7 @@ import {
   ExperimentExecutionError,
   ExperimentScheduler,
   ExperimentStateStore,
+  TargetUnavailableError,
   runExperiment,
   type SingleRunExecutionResult,
   type SingleRunExecutor,
@@ -139,6 +140,56 @@ describe('experiment runtime', () => {
     ).toEqual([]);
   });
 
+  test('durably records remote lifecycle ownership updates', async () => {
+    const outcome = await runExperiment({
+      plan: plan(1),
+      executor: {
+        execute: async (_cell, context) => {
+          await context.reportLifecycle?.({
+            executionProvider: 'e2b',
+            lifecycleState: 'creating',
+            templateId: 'template-ref',
+            templateBuildId: 'build-123',
+          });
+          await context.reportLifecycle?.({
+            executionProvider: 'e2b',
+            lifecycleState: 'running',
+            sandboxId: 'sandbox-123',
+            templateId: 'template-ref',
+            templateBuildId: 'build-123',
+          });
+          return {
+            result: result(),
+            resultPath: 'ignored.json',
+            usageQuality: 'unavailable',
+          };
+        },
+      },
+      retry,
+      resultsDirectory: temporaryDirectory,
+    });
+
+    expect(outcome.state.cells[0].attempts[0]).toMatchObject({
+      execution_provider: 'e2b',
+      remote: {
+        lifecycle_state: 'running',
+        sandbox_id: 'sandbox-123',
+        template_id: 'template-ref',
+        template_build_id: 'build-123',
+      },
+    });
+    const persisted = JSON.parse(
+      await fs.readFile(
+        path.join(outcome.experimentDirectory, 'state.json'),
+        'utf8'
+      )
+    ) as { cells: Array<{ attempts: unknown[] }> };
+    expect(persisted.cells[0].attempts[0]).toMatchObject({
+      execution_provider: 'e2b',
+      remote: { sandbox_id: 'sandbox-123' },
+    });
+  });
+
   test('retries only configured failure classes with exact attempt limits', async () => {
     let calls = 0;
     const executor: SingleRunExecutor = {
@@ -178,6 +229,38 @@ describe('experiment runtime', () => {
     });
     expect(calls).toBe(1);
     expect(notRetried.finalStatus).toBe('infrastructure_failed');
+  });
+
+  test('cancels pending target fan-out after deterministic unavailability', async () => {
+    let calls = 0;
+    const outcome = await runExperiment({
+      plan: plan(3, 1),
+      executor: {
+        execute: async () => {
+          calls += 1;
+          throw new TargetUnavailableError(
+            'fake',
+            'requested model is unavailable'
+          );
+        },
+      },
+      retry: {
+        max_attempts: 3,
+        on: ['infrastructure_failure'],
+        backoff_ms: 0,
+      },
+      resultsDirectory: temporaryDirectory,
+    });
+    expect(calls).toBe(1);
+    expect(outcome.state.cells.map((cell) => cell.status)).toEqual([
+      'infrastructure_failed',
+      'cancelled',
+      'cancelled',
+    ]);
+    expect(outcome.state.cells[1].terminal_reason).toContain(
+      'target_unavailable'
+    );
+    expect(outcome.exitCode).toBe(1);
   });
 
   test('classifies exhausted configured retries as partial and accumulates usage', async () => {
@@ -359,6 +442,45 @@ describe('experiment runtime', () => {
     expect(outcome.finalStatus).toBe('passed');
   });
 
+  test('applies deterministic full jitter when configured', async () => {
+    let calls = 0;
+    let current = 0;
+    const delays: number[] = [];
+    await runExperiment({
+      plan: plan(1),
+      executor: {
+        execute: async () => {
+          calls += 1;
+          if (calls === 1) {
+            throw new ExperimentExecutionError(
+              'provider throttled',
+              'provider_rate_limit'
+            );
+          }
+          return {
+            result: result(),
+            resultPath: 'ignored.json',
+            usageQuality: 'unavailable',
+          };
+        },
+      },
+      retry: {
+        max_attempts: 2,
+        on: ['provider_rate_limit'],
+        backoff_ms: 100,
+        jitter: 'full',
+      },
+      resultsDirectory: temporaryDirectory,
+      now: () => new Date(current),
+      random: () => 0.5,
+      delay: async (milliseconds) => {
+        delays.push(milliseconds);
+        current += milliseconds;
+      },
+    });
+    expect(delays).toEqual([50]);
+  });
+
   test('cancels the default backoff promptly', async () => {
     const controller = new AbortController();
     const waiting = abortableDelay(60_000, controller.signal);
@@ -421,6 +543,48 @@ describe('experiment runtime', () => {
     expect(calls).toBe(1);
     expect(outcome.state.budget.stop_reason).toBe('duration');
     expect(outcome.state.cells[1].status).toBe('cancelled');
+  });
+
+  test('stops new starts at the cumulative sandbox runtime boundary', async () => {
+    const budgetedPlan = plan(2);
+    budgetedPlan.budget = { max_sandbox_runtime_minutes: 1 };
+    let starts = 0;
+    const outcome = await runExperiment({
+      plan: budgetedPlan,
+      executor: {
+        execute: async (_cell, context) => {
+          starts += 1;
+          await context.reportLifecycle?.({
+            executionProvider: 'e2b',
+            lifecycleState: 'running',
+            sandboxId: `sandbox-${starts}`,
+            sandboxStartedAt: '2026-01-01T00:00:00.000Z',
+          });
+          await context.reportLifecycle?.({
+            executionProvider: 'e2b',
+            lifecycleState: 'killed',
+            sandboxId: `sandbox-${starts}`,
+            sandboxStartedAt: '2026-01-01T00:00:00.000Z',
+            sandboxCompletedAt: '2026-01-01T00:01:01.000Z',
+            sandboxRuntimeMs: 61_000,
+          });
+          return {
+            result: result(),
+            resultPath: 'ignored.json',
+            usageQuality: 'unavailable',
+            sandboxRuntimeMs: 61_000,
+            sandboxCostQuality: 'unavailable',
+          };
+        },
+      },
+      retry,
+      resultsDirectory: temporaryDirectory,
+    });
+
+    expect(starts).toBe(1);
+    expect(outcome.state.budget.stop_reason).toBe('sandbox_runtime');
+    expect(outcome.state.budget.sandbox_runtime_ms_used).toBe(61_000);
+    expect(outcome.finalStatus).toBe('partial');
   });
 
   test('resumes without rerunning valid results and reruns a corrupt artifact', async () => {
@@ -506,6 +670,58 @@ describe('experiment runtime', () => {
       terminal_reason: 'interrupted',
     });
     expect(outcome.finalStatus).toBe('passed');
+  });
+
+  test('kills an owned interrupted remote attempt before resuming with a new attempt', async () => {
+    const runtimePlan = plan(1);
+    const store = new ExperimentStateStore(
+      temporaryDirectory,
+      'resume-remote-interrupted'
+    );
+    const state = await store.create(runtimePlan, new Date(0).toISOString());
+    state.status = 'running';
+    state.started_at = new Date(0).toISOString();
+    state.cells[0].status = 'running';
+    state.cells[0].attempts.push({
+      attempt_id: 'old-remote-attempt',
+      attempt_number: 1,
+      status: 'running',
+      started_at: new Date(0).toISOString(),
+      execution_provider: 'e2b',
+      remote: {
+        lifecycle_state: 'running',
+        sandbox_id: 'sandbox-old',
+        updated_at: new Date(0).toISOString(),
+      },
+    });
+    await store.save(state);
+    const reconciled: string[] = [];
+    const executor: SingleRunExecutor = {
+      reconcileInterrupted: async (context): Promise<void> => {
+        reconciled.push(context.sandboxId ?? 'missing');
+      },
+      execute: async () => ({
+        result: result(),
+        resultPath: 'ignored.json',
+        usageQuality: 'unavailable',
+      }),
+    };
+
+    const outcome = await runExperiment({
+      plan: runtimePlan,
+      executor,
+      retry: { max_attempts: 2, on: [], backoff_ms: 0 },
+      resultsDirectory: temporaryDirectory,
+      resume: true,
+      experimentId: 'resume-remote-interrupted',
+      now: () => new Date(10),
+    });
+
+    expect(reconciled).toEqual(['sandbox-old']);
+    expect(outcome.state.cells[0].attempts).toHaveLength(2);
+    expect(outcome.state.cells[0].attempts[0].remote?.lifecycle_state).toBe(
+      'killed'
+    );
   });
 
   test('aborts without starting pending work and leaves resumable state', async () => {

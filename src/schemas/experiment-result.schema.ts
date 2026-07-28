@@ -33,6 +33,43 @@ export const experimentAttemptSchema = z
     duration_ms: z.number().nonnegative().optional(),
     result_path: z.string().optional(),
     terminal_reason: z.string().optional(),
+    execution_provider: z.enum(['host-trusted', 'e2b']).optional(),
+    remote: z
+      .object({
+        lifecycle_state: z.enum([
+          'creating',
+          'running',
+          'collecting',
+          'killing',
+          'paused',
+          'killed',
+          'lost',
+        ]),
+        updated_at: z.string().datetime(),
+        sandbox_id: z.string().min(1).optional(),
+        template_id: z.string().min(1).optional(),
+        template_build_id: z.string().min(1).optional(),
+        sdk_version: z.string().min(1).optional(),
+        secure_access: z.boolean().optional(),
+        resources: z
+          .object({
+            cpu_count: z.number().positive(),
+            memory_mb: z.number().int().positive(),
+          })
+          .strict()
+          .optional(),
+        network_policy: z.unknown().optional(),
+        runner_protocol: z.string().min(1).optional(),
+        artifact_protocol: z.string().min(1).optional(),
+        fixture_snapshot_id: z.string().min(1).optional(),
+        retained_until: z.string().datetime().optional(),
+        retention_reason: z.string().min(1).optional(),
+        sandbox_started_at: z.string().datetime().optional(),
+        sandbox_completed_at: z.string().datetime().optional(),
+        sandbox_runtime_ms: z.number().nonnegative().optional(),
+      })
+      .strict()
+      .optional(),
   })
   .strict()
   .superRefine((value, context) => {
@@ -63,6 +100,9 @@ export const experimentCellResultSchema = z
     usage_quality: measurementQualitySchema.default('unavailable'),
     token_quality: measurementQualitySchema.optional(),
     cost_quality: measurementQualitySchema.optional(),
+    sandbox_runtime_ms: z.number().nonnegative().optional(),
+    sandbox_cost_usd: z.number().nonnegative().optional(),
+    sandbox_cost_quality: measurementQualitySchema.optional(),
   })
   .strict();
 
@@ -149,7 +189,7 @@ export const experimentComparisonFindingSchema = z
 export const experimentResultSchema = z
   .object({
     schema_version: z.literal('1.0.0'),
-    experiment_version: z.literal(1),
+    experiment_version: z.union([z.literal(1), z.literal(2)]),
     experiment_id: z.string().min(1),
     definition_hash: z.string().regex(/^[a-f0-9]{64}$/),
     started_at: z.string().datetime(),
@@ -232,7 +272,10 @@ export const experimentStateSchema = z
       .object({
         duration_ms_used: z.number().nonnegative(),
         cost_usd_used: z.number().nonnegative(),
-        stop_reason: z.enum(['duration', 'cost', 'cancelled']).optional(),
+        sandbox_runtime_ms_used: z.number().nonnegative().default(0),
+        stop_reason: z
+          .enum(['duration', 'cost', 'sandbox_runtime', 'cancelled'])
+          .optional(),
       })
       .strict(),
   })

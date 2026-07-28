@@ -1,0 +1,76 @@
+version: 2
+name: coding-agent-regression-e2b
+suite:
+  tasks:
+    - id: fix-auth
+      file: ./tasks/fix-auth.yaml
+  repetitions: 1
+
+profiles:
+  smoke:
+    tasks: [fix-auth]
+    targets: [candidate]
+    repetitions: 1
+    comparisons: []
+    rules: []
+
+targets:
+  - id: candidate
+    agent:
+      type: codex-cli
+      model: replacement-model
+      config:
+        reasoning_effort: high
+    harness:
+      exact_version: '1.2.3'
+      e2b_template:
+        ref: replace-with-template
+        expected_build_id: replace-with-immutable-build
+        expected_resources:
+          cpu: 2
+          memory_mb: 4096
+    runtime:
+      network:
+        outbound: allowlist
+        allow:
+          - github.com
+          - api.openai.com
+
+execution:
+  max_concurrent: 4
+  max_creations_per_second: 1
+  retry:
+    max_attempts: 2
+    on: [provider_rate_limit, timeout]
+    backoff_ms: 1000
+    jitter: full
+  provider:
+    type: e2b
+    timeout_ms: 1800000
+    collection_grace_ms: 120000
+    strict_reproducibility: true
+    lifecycle:
+      on_timeout: kill
+      retain_on: never
+    network_defaults:
+      inbound: none
+      outbound: none
+    fixture_cache:
+      mode: none
+  secrets:
+    - id: candidate-model
+      source:
+        env: CANDIDATE_MODEL_API_KEY
+      expose_as:
+        env: OPENAI_API_KEY
+      targets: [candidate]
+      components: [agent]
+      phases: [agent]
+
+budget:
+  max_duration_minutes: 60
+  max_model_cost_usd: 25
+  max_sandbox_runtime_minutes: 60
+
+regression:
+  default_candidate_target: candidate

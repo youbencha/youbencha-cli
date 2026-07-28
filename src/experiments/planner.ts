@@ -7,7 +7,11 @@ export interface ExperimentPlan {
   definitionHash: string;
   cellCount: number;
   maxConcurrent: number;
-  budget: LoadedExperiment['definition']['budget'];
+  budget:
+    | (NonNullable<LoadedExperiment['definition']['budget']> & {
+        max_sandbox_runtime_minutes?: number;
+      })
+    | undefined;
   redactedEffectiveConfiguration: unknown;
   cells: PlannedExperimentCell[];
 }
