@@ -1,280 +1,245 @@
 # Publishing Guide
 
-This guide describes how to publish new versions of youBencha to NPM.
+This guide describes how maintainers release youBencha to NPM. The recommended
+path is a GitHub release followed by the automated, protected publish workflow.
+The interactive scripts remain available as a manual fallback.
 
-## Quick Start
+## Recommended Release Flow
 
-There are two ways to publish youBencha:
-
-1. **Manual**: Using the interactive publish script (recommended for maintainers)
-2. **Automated**: Via GitHub Actions when creating releases
-
-## Method 1: Manual Publishing (Recommended)
-
-### Prerequisites
-
-1. **NPM Account**: Ensure you have an NPM account with publish access
-2. **NPM Authentication**: Login to NPM
-   ```bash
-   npm login
-   ```
-3. **Repository Access**: You must have push access to the repository
-4. **Clean State**: Ensure your working directory is clean and on `main` branch
-
-### Steps
-
-1. **Run the publish script:**
-   ```bash
-   ./scripts/publish.sh
-   ```
-
-2. **Follow the prompts:**
-   - Choose version bump type (patch/minor/major/custom)
-   - Review package contents
-   - Confirm final publish
-
-The script will:
-- ✅ Verify prerequisites
-- ✅ Run all tests and linting
-- ✅ Build the project
-- ✅ Bump version and create git tag
-- ✅ Publish to NPM with provenance
-- ✅ Push to GitHub
-
-### Version Strategy
-
-Follow [Semantic Versioning](https://semver.org/):
-
-- **Patch** (0.1.0 → 0.1.1): Bug fixes only
-  - Example: Fix crash in git-diff evaluator
-- **Minor** (0.1.0 → 0.2.0): New features, backward compatible
-  - Example: Add new evaluator type
-- **Major** (0.1.0 → 1.0.0): Breaking changes
-  - Example: Change CLI command structure
-
-### Pre-release Versions
-
-For beta/alpha releases, use custom version:
-
-```bash
-# When prompted, select "custom version"
-# Enter: 1.0.0-beta.1
+```text
+Pull request -> required CI checks -> merge to main
+             -> version bump -> GitHub release
+             -> protected GitHub Actions job -> NPM
 ```
 
-## Method 2: Automated Publishing via GitHub Actions
+The CI workflow tests supported Node.js versions on Windows, Linux, and macOS.
+When a GitHub release is published, the NPM workflow:
 
-### Setup (One-time)
+1. Checks out the release tag.
+2. Verifies that the tagged commit belongs to `main`.
+3. Verifies that the tag is exactly `v<package.json version>`;
+4. Installs locked dependencies;
+5. Runs lint, tests, build, and a package dry run;
+6. Refuses to overwrite an existing NPM version;
+7. Selects `latest` for stable versions and an appropriate prerelease tag;
+8. Publishes through NPM Trusted Publishing with provenance.
 
-1. **Create NPM Access Token:**
-   - Go to [npmjs.com](https://www.npmjs.com/) → Account Settings → Access Tokens
-   - Create new token with "Automation" type
-   - Copy the token
+## One-Time Repository Setup
 
-2. **Add Token to GitHub:**
-   - Go to Repository Settings → Secrets and variables → Actions
-   - Create new secret named `NPM_TOKEN`
-   - Paste your NPM access token
+### Configure NPM Trusted Publishing
 
-### Publishing a Release
+The `youbencha` package must already exist on NPM before a trusted publisher can
+be configured.
 
-#### Option A: Create a Release (Automatic Publish)
+1. Open the `youbencha` package on
+   [npmjs.com](https://www.npmjs.com/package/youbencha).
+2. Open **Settings** and find **Trusted Publisher**.
+3. Select **GitHub Actions** and enter:
+   - Organization or user: `youbencha`
+   - Repository: `youbencha-cli`
+   - Workflow filename: `publish.yml`
+   - Environment: `npm`
+   - Allowed action: `npm publish`
+4. Save the trusted publisher.
+5. After a successful OIDC publish, revoke the old NPM automation token and
+   remove the repository secret named `NPM_TOKEN`, if either exists.
 
-1. Go to GitHub repository → Releases → "Draft a new release"
-2. Create a new tag (e.g., `v0.2.0`)
-3. Add release title and description
-4. Click "Publish release"
+The field values are case-sensitive. The workflow uses a GitHub-hosted runner,
+Node.js 24, and `id-token: write`, as required for OIDC publishing. Trusted
+Publishing creates provenance automatically for public packages published from
+public repositories.
 
-The GitHub Action will:
-- ✅ Automatically run tests and build
-- ✅ Publish to NPM with provenance
-- ✅ Create release notes
+### Create the GitHub Environment
 
-#### Option B: Manual Workflow Trigger
+In the GitHub repository, open **Settings**, **Environments**, and create an
+environment named `npm`.
 
-1. Go to Actions → "Publish to NPM"
-2. Click "Run workflow"
-3. Select branch and optionally specify version
-4. Click "Run workflow"
+Recommended protection rules:
 
-## Post-Publication Checklist
+- require a maintainer to approve deployments;
+- prevent self-review when the project has multiple maintainers;
+- restrict deployment tags to `v*`;
+- disallow administrators from bypassing protection when practical.
 
-After publishing, verify:
+The environment name must exactly match both `publish.yml` and the trusted
+publisher configuration on NPM.
 
-- [ ] Package appears on NPM: https://www.npmjs.com/package/youbencha
-- [ ] Installation works: `npm install -g youbencha@<version>`
-- [ ] CLI commands work: `yb --version`
-- [ ] GitHub release created with correct tag
-- [ ] Documentation is up-to-date
+### Protect `main`
 
-## Package Contents
+Configure a GitHub ruleset or branch protection rule for `main` that:
 
-The published package includes:
+- requires pull requests;
+- requires the relevant CI jobs from `.github/workflows/test.yml`;
+- requires at least one approval;
+- blocks force pushes and branch deletion;
+- prevents direct release commits from bypassing CI.
 
-- ✅ `dist/` - Compiled JavaScript and type definitions
-- ✅ `examples/` - Example configurations
-- ✅ `README.md` - Main documentation
-- ✅ `GETTING-STARTED.md` - Getting started guide
-- ✅ `LICENSE` - MIT license
+No publishing secret is required. `GITHUB_TOKEN` is provided automatically by
+GitHub, and `CODECOV_TOKEN` remains optional for coverage uploads.
 
-Excluded from package:
+## Publishing a Release
 
-- ❌ Source TypeScript files (`src/`)
-- ❌ Tests (`tests/`)
-- ❌ Development configuration files
-- ❌ Internal documentation
-- ❌ GitHub workflows and templates
+### 1. Choose a Unique Version
 
-## Troubleshooting
-
-### "Not logged in to NPM"
+Check both NPM and Git before choosing a version:
 
 ```bash
-npm login
-# Enter your NPM credentials
+npm view youbencha versions --json
+git tag --list "v*"
 ```
 
-### "Version already exists"
+Versions already published to NPM cannot be reused. Existing Git tags also must
+not be moved or overwritten.
 
-If you've already published a version:
+### 2. Update the Version
+
+For a stable release:
 
 ```bash
-# Bump to next version
-npm version patch  # or minor, or major
-# Then try publishing again
+npm version patch --no-git-tag-version
 ```
 
-### "Working directory not clean"
-
-Commit or stash your changes:
+For a prerelease:
 
 ```bash
-git status
-git add .
-git commit -m "Your message"
-# Or
-git stash
+npm version 0.2.0-beta.1 --no-git-tag-version
 ```
 
-### "Tests failing"
+Commit both `package.json` and `package-lock.json` through a pull request. Update
+public documentation and examples when behavior changes.
 
-Fix the tests before publishing:
+### 3. Publish the GitHub Release
+
+1. Wait for the version pull request to pass CI and merge to `main`.
+2. Draft a GitHub release from the merged commit.
+3. Create a tag exactly matching `v<package version>`, for example
+   `v0.2.0-beta.1`.
+4. Mark beta, alpha, or release-candidate versions as prereleases.
+5. Review the release notes and publish the GitHub release.
+6. Approve the `npm` environment deployment when GitHub requests approval.
+
+Publishing the GitHub release automatically starts `.github/workflows/publish.yml`.
+There is intentionally no arbitrary branch or manual-dispatch publish path.
+
+## NPM Distribution Tags
+
+Stable versions publish under `latest`. Recognized prerelease identifiers map to
+matching NPM distribution tags:
+
+| Package version       | NPM tag  |
+| --------------------- | -------- |
+| `1.0.0`               | `latest` |
+| `1.1.0-alpha.1`       | `alpha`  |
+| `1.1.0-beta.1`        | `beta`   |
+| `1.1.0-rc.1`          | `rc`     |
+| `1.1.0-next.1`        | `next`   |
+| other prerelease form | `next`   |
+
+This prevents an unstable release from replacing the version installed by
+`npm install youbencha` without an explicit tag.
+
+## Release Gates
+
+The workflow runs:
 
 ```bash
-npm test
-# Fix any failing tests
-# Commit fixes
+npm ci
+npm run verify:release
 ```
 
-### Rollback a Published Version
+`verify:release` runs lint, the test suite, the build, and `npm pack --dry-run`.
+The package build must include
+`dist/evaluators/prompts/agentic-judge.template.md`.
 
-**⚠️ Warning**: You cannot unpublish versions that are older than 72 hours.
-
-Within 72 hours:
+Before publishing a release, maintainers can run the same checks locally:
 
 ```bash
-npm unpublish youbencha@<version>
+npm run verify:release
 ```
 
-After 72 hours, you must publish a new fixed version:
+To inspect and smoke-test the exact package:
 
 ```bash
-npm version patch
+npm pack
+npm install -g ./youbencha-<version>.tgz
+yb --version
+```
+
+Do not commit the generated tarball.
+
+## Post-Publication Verification
+
+After the workflow succeeds:
+
+```bash
+npm view youbencha@<version> version
+npm view youbencha dist-tags
+npm install -g youbencha@<version>
+yb --version
+```
+
+Also confirm that:
+
+- the package page shows provenance;
+- the intended NPM distribution tag points to the new version;
+- the GitHub release links to the correct immutable tag;
+- the CLI starts successfully from a clean installation.
+
+## Manual Fallback
+
+The scripts under `scripts/` perform an interactive local publish. They require
+an authenticated NPM maintainer, a clean `main` branch, and explicit
+confirmation:
+
+```bash
 ./scripts/publish.sh
 ```
 
-## CI/CD Configuration
+Use the fallback only when the GitHub Actions route is unavailable. It does not
+receive the protected GitHub environment or short-lived OIDC credentials.
 
-### Workflows
+## Troubleshooting
 
-Two GitHub Actions workflows are configured:
+### `ENEEDAUTH` during the GitHub workflow
 
-1. **`.github/workflows/test.yml`** - CI testing
-   - Runs on: Push to `main`, Pull Requests
-   - Tests: Multiple Node versions (20.x, 22.x)
-   - Platforms: Ubuntu, macOS, Windows
-   - Checks: Tests, Linting, Build, Package contents
+Confirm that all trusted-publisher values match exactly:
 
-2. **`.github/workflows/publish.yml`** - NPM publishing
-   - Runs on: Release creation, Manual trigger
-   - Publishes with provenance (supply chain security)
-   - Creates GitHub releases automatically
-   - Checks for duplicate versions
+- organization `youbencha`;
+- repository `youbencha-cli`;
+- workflow filename `publish.yml`;
+- environment `npm`;
+- allowed action `npm publish`.
 
-### Required Secrets
+Also confirm that the job has `id-token: write` and uses a GitHub-hosted runner.
 
-- `NPM_TOKEN` - NPM automation token for publishing
-- `GITHUB_TOKEN` - Automatically provided by GitHub Actions
-- `CODECOV_TOKEN` (Optional) - For uploading code coverage reports to Codecov
+### Release tag does not match package version
 
-## Best Practices
+The release tag must include the `v` prefix and otherwise exactly match
+`package.json`. For version `0.2.0-beta.1`, use `v0.2.0-beta.1`.
 
-1. **Always run tests before publishing**
-   ```bash
-   npm test
-   npm run lint
-   npm run build
-   ```
+Do not move the incorrect tag. Delete an unpublished draft release and create a
+new unique tag from the intended commit.
 
-2. **Review package contents**
-   ```bash
-   npm pack --dry-run
-   ```
+### Version already exists
 
-3. **Test installation locally**
-   ```bash
-   npm pack
-   npm install -g ./youbencha-<version>.tgz
-   yb --version
-   ```
+Choose a new version, update both package files, pass CI, and create a new
+release. NPM package versions are immutable.
 
-4. **Update documentation** before publishing
-   - Update README if APIs changed
-   - Update GETTING-STARTED if workflow changed
-   - Update CHANGELOG (if maintaining one)
+### Release gates fail
 
-5. **Use conventional commits** for better release notes
-   ```bash
-   git commit -m "feat: add new evaluator"
-   git commit -m "fix: resolve git-diff issue"
-   git commit -m "docs: update README"
-   ```
-
-6. **Publish during low-usage hours** to minimize impact if issues arise
-
-## Security
-
-### Provenance
-
-Published packages include provenance attestation, providing:
-
-- 🔐 Cryptographic proof of package origin
-- 🔐 Tamper detection
-- 🔐 Build environment transparency
-
-Verify provenance:
+Do not bypass them. Reproduce the failure from the tagged commit with:
 
 ```bash
-npm view youbencha@<version> --json
+npm ci
+npm run verify:release
 ```
 
-### Supply Chain Security
-
-- All dependencies are locked in `package-lock.json`
-- Tests run in isolated environments
-- No secrets exposed in logs
-- Minimal permissions for GitHub Actions
-
-## Support
-
-For issues with publishing:
-
-1. Check GitHub Actions logs for error details
-2. Review [NPM Publishing Documentation](https://docs.npmjs.com/cli/v10/commands/npm-publish)
-3. Open an issue in the repository
+Fix the issue through a pull request and publish a new release tag.
 
 ## References
 
-- [Semantic Versioning](https://semver.org/)
-- [NPM Publishing Guide](https://docs.npmjs.com/creating-and-publishing-unscoped-public-packages)
+- [NPM Trusted Publishing](https://docs.npmjs.com/trusted-publishers/)
+- [NPM publish](https://docs.npmjs.com/cli/publish/)
+- [NPM distribution tags](https://docs.npmjs.com/adding-dist-tags-to-packages/)
+- [GitHub deployment environments](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments)
 - [GitHub Actions for Node.js](https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs)
-- [npm provenance](https://docs.npmjs.com/generating-provenance-statements)

@@ -49,6 +49,20 @@ remained skipped by default as designed; enable it only with
 The final repository-wide run passed 76 suites and 1,027 tests, with one suite
 and two live/opt-in tests skipped by design.
 
+## Release automation update
+
+The 2026-07-28 release automation pass replaced the long-lived `NPM_TOKEN`
+publish path with NPM Trusted Publishing through GitHub Actions OIDC. The
+release workflow now uses a protected `npm` environment, a compatible Node.js
+and NPM runtime, concurrency control, and safe NPM distribution tags for
+prereleases. The manual fallback scripts also keep prereleases off `latest`.
+
+The repository-side workflow is complete. The GitHub `npm` environment now
+requires `vangjv` approval and restricts deployments to `v*` tags, and the
+default-branch ruleset requires all eight CI jobs. A maintainer must still
+configure the matching trusted publisher on npmjs.com before the next automated
+publish.
+
 ## Priority maintenance backlog
 
 ### 1. Restore deterministic installs and CI
@@ -94,20 +108,18 @@ Prettier expects LF. A dedicated formatting change should:
 
 Do not mix the 100-file rewrite into a functional change.
 
-### 4. Repair release safety and metadata
+### 4. Complete release account setup and select a unique version
 
-- `scripts/publish.ps1` has its test and lint gates commented out even though
-  `scripts/README.md` and `docs/PUBLISHING.md` say they run.
-- `prepublishOnly` only builds; the stronger lint/test/build command is stored
-  under the unused name `prepublishOnly2`.
+- Configure the `youbencha` trusted publisher on NPM for workflow
+  `publish.yml`, GitHub environment `npm`, and the `npm publish` action.
+- The GitHub environment and required-check rules are active. Administrator
+  bypass remains enabled by the repository's pre-existing ruleset and
+  environment policy.
 - Tags `v0.1.5-beta` and `v0.1.6-beta` already exist on older commits, while
-  `main` currently declares `0.1.5-beta`. A future tag creation can collide or
-  misrepresent the package source.
-- `package.json` lists root `GETTING-STARTED.md` in package files, but the actual
-  document is `docs/GETTING-STARTED.md`, so the dry-run package omits it.
-
-Before publishing, decide the next unique version, fix the gates, verify the
-package contents, and test installation from the generated tarball.
+  `main` currently declares `0.1.5-beta`. Choose a new version that is unique in
+  both Git and NPM.
+- Verify the generated tarball and a clean global installation before approving
+  the first OIDC-backed release.
 
 ### 5. Plan dependency upgrades in compatible groups
 

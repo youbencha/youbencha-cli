@@ -35,7 +35,7 @@ The script will:
 9. ✅ Bump the version in package.json
 10. ✅ Ask for final confirmation
 11. ✅ Commit the confirmed version bump and create a unique git tag
-12. ✅ Publish to NPM with provenance
+12. ✅ Publish to NPM with the correct stable or prerelease distribution tag
 13. ✅ Push the commit and tag to GitHub
 
 ### Version Bumping
@@ -66,9 +66,16 @@ git tag -d v<VERSION>
 
 For automated releases, use the GitHub Actions workflow instead of the manual script:
 
-1. Commit a unique version in `package.json` and `package-lock.json`
-2. Create and publish a GitHub release whose tag is exactly `v<package version>`
-3. The workflow verifies the tag, runs all release gates, rejects versions that
-   already exist on NPM, and publishes with provenance
+1. Configure the `youbencha` NPM Trusted Publisher for GitHub organization
+   `youbencha`, repository `youbencha-cli`, workflow `publish.yml`, environment
+   `npm`, and the `npm publish` action.
+2. Create a protected GitHub environment named `npm`.
+3. Commit a unique version in `package.json` and `package-lock.json`.
+4. Create and publish a GitHub release whose tag is exactly
+   `v<package version>`.
+5. The workflow verifies the tag, runs all release gates, rejects versions that
+   already exist on NPM, selects the correct distribution tag, and publishes
+   with OIDC and provenance.
 
-See `.github/workflows/publish.yml` for details.
+No `NPM_TOKEN` secret is needed. See `.github/workflows/publish.yml` and
+`docs/PUBLISHING.md` for details.

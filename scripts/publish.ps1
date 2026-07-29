@@ -123,6 +123,17 @@ $packageJson = Get-Content -Path "package.json" -Raw | ConvertFrom-Json
 $newVersion = $packageJson.version
 Write-ColorOutput "New version: $newVersion" "Green"
 
+$distTag = "latest"
+if ($newVersion -match "-([0-9A-Za-z]+)") {
+    $prerelease = $Matches[1].ToLowerInvariant()
+    if ($prerelease -in @("alpha", "beta", "rc", "next")) {
+        $distTag = $prerelease
+    } else {
+        $distTag = "next"
+    }
+}
+Write-Host "NPM distribution tag: $distTag"
+
 # Refuse to reuse a local or remote tag.
 $tagName = "v$newVersion"
 git rev-parse --verify --quiet "refs/tags/$tagName" *> $null
@@ -158,7 +169,7 @@ git tag $tagName
 # Publish to NPM
 Write-Host ""
 Write-ColorOutput "Publishing to NPM..." "Yellow"
-npm publish --provenance --access public
+npm publish --access public --tag $distTag
 if ($LASTEXITCODE -ne 0) {
     Write-ColorOutput "Publishing failed" "Red"
     exit 1

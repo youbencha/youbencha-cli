@@ -95,6 +95,21 @@ npm version $VERSION_TYPE --no-git-tag-version
 NEW_VERSION=$(node -p "require('./package.json').version")
 echo -e "${GREEN}New version: $NEW_VERSION${NC}"
 
+DIST_TAG="latest"
+if [[ "$NEW_VERSION" == *-* ]]; then
+  PRERELEASE="${NEW_VERSION#*-}"
+  PRERELEASE="${PRERELEASE%%.*}"
+  case "$PRERELEASE" in
+    alpha|beta|rc|next)
+      DIST_TAG="$PRERELEASE"
+      ;;
+    *)
+      DIST_TAG="next"
+      ;;
+  esac
+fi
+echo "NPM distribution tag: $DIST_TAG"
+
 TAG_NAME="v$NEW_VERSION"
 if git rev-parse --verify --quiet "refs/tags/$TAG_NAME" >/dev/null; then
   echo -e "${RED}Error: Tag $TAG_NAME already exists locally${NC}"
@@ -128,7 +143,7 @@ git tag "$TAG_NAME"
 # Publish to NPM
 echo ""
 echo -e "${YELLOW}Publishing to NPM...${NC}"
-npm publish --provenance --access public
+npm publish --access public --tag "$DIST_TAG"
 
 # Push to GitHub
 echo ""
