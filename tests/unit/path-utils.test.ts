@@ -1,6 +1,6 @@
 /**
  * Unit Tests: Path Utilities
- * 
+ *
  * Tests for path utility functions including workspace path generation
  * and workspace name sanitization.
  */
@@ -25,7 +25,9 @@ describe('Path Utilities', () => {
 
     it('should replace spaces with hyphens', () => {
       expect(sanitizeWorkspaceName('test name')).toBe('test-name');
-      expect(sanitizeWorkspaceName('test  multiple   spaces')).toBe('test-multiple-spaces');
+      expect(sanitizeWorkspaceName('test  multiple   spaces')).toBe(
+        'test-multiple-spaces'
+      );
     });
 
     it('should remove invalid characters', () => {
@@ -63,7 +65,9 @@ describe('Path Utilities', () => {
 
     it('should generate default run-{timestamp} format when no runId or workspaceName provided', () => {
       const paths = generateWorkspacePaths(mockRoot);
-      expect(normalizePath(paths.runDir)).toMatch(/^\/test\/workspace\/run-\d{4}-\d{2}-\d{2}-\d+$/);
+      expect(normalizePath(paths.runDir)).toMatch(
+        /^\/test\/workspace\/run-\d{4}-\d{2}-\d{2}-\d+$/
+      );
     });
 
     it('should use explicit runId when provided', () => {
@@ -73,41 +77,69 @@ describe('Path Utilities', () => {
 
     it('should use workspaceName for human-readable folder names', () => {
       const paths = generateWorkspacePaths(mockRoot, undefined, 'my-test-case');
-      expect(normalizePath(paths.runDir)).toMatch(/^\/test\/workspace\/my-test-case-\d{4}-\d{2}-\d{2}-\d+$/);
+      expect(normalizePath(paths.runDir)).toMatch(
+        /^\/test\/workspace\/my-test-case-\d{4}-\d{2}-\d{2}-\d+$/
+      );
     });
 
     it('should sanitize workspaceName before using it', () => {
-      const paths = generateWorkspacePaths(mockRoot, undefined, 'My Test Case!');
-      expect(normalizePath(paths.runDir)).toMatch(/^\/test\/workspace\/My-Test-Case-\d{4}-\d{2}-\d{2}-\d+$/);
+      const paths = generateWorkspacePaths(
+        mockRoot,
+        undefined,
+        'My Test Case!'
+      );
+      expect(normalizePath(paths.runDir)).toMatch(
+        /^\/test\/workspace\/My-Test-Case-\d{4}-\d{2}-\d{2}-\d+$/
+      );
     });
 
     it('should prefer runId over workspaceName when both provided', () => {
-      const paths = generateWorkspacePaths(mockRoot, 'explicit-id', 'workspace-name');
+      const paths = generateWorkspacePaths(
+        mockRoot,
+        'explicit-id',
+        'workspace-name'
+      );
       expect(normalizePath(paths.runDir)).toBe('/test/workspace/explicit-id');
     });
 
     it('should generate all required paths correctly', () => {
       const paths = generateWorkspacePaths(mockRoot, 'test-run');
-      
+
       expect(normalizePath(paths.root)).toBe('/test/workspace');
       expect(normalizePath(paths.runDir)).toBe('/test/workspace/test-run');
-      expect(normalizePath(paths.modifiedDir)).toBe('/test/workspace/test-run/src-modified');
+      expect(normalizePath(paths.modifiedDir)).toBe(
+        '/test/workspace/test-run/src-modified'
+      );
       expect(paths.expectedDir).toBeDefined();
-      expect(normalizePath(paths.expectedDir as string)).toBe('/test/workspace/test-run/src-expected');
-      expect(normalizePath(paths.artifactsDir)).toBe('/test/workspace/test-run/artifacts');
-      expect(normalizePath(paths.evaluatorArtifactsDir)).toBe('/test/workspace/test-run/artifacts/evaluators');
-      expect(normalizePath(paths.lockFile)).toBe('/test/workspace/test-run/.lock');
+      expect(normalizePath(paths.expectedDir as string)).toBe(
+        '/test/workspace/test-run/src-expected'
+      );
+      expect(normalizePath(paths.artifactsDir)).toBe(
+        '/test/workspace/test-run/artifacts'
+      );
+      expect(normalizePath(paths.evaluatorArtifactsDir)).toBe(
+        '/test/workspace/test-run/artifacts/evaluators'
+      );
+      expect(normalizePath(paths.lockFile)).toBe(
+        '/test/workspace/test-run/.lock'
+      );
     });
 
     it('should use default workspace root when not provided', () => {
       const originalCwd = process.cwd();
       const paths = generateWorkspacePaths();
-      
-      expect(normalizePath(paths.root)).toBe(normalizePath(path.join(originalCwd, '.youbencha-workspace')));
+
+      expect(normalizePath(paths.root)).toBe(
+        normalizePath(path.join(originalCwd, '.youbencha-workspace'))
+      );
     });
 
     it('should handle special characters in workspaceName', () => {
-      const paths = generateWorkspacePaths(mockRoot, undefined, 'Add README comment');
+      const paths = generateWorkspacePaths(
+        mockRoot,
+        undefined,
+        'Add README comment'
+      );
       expect(paths.runDir).toMatch(/Add-README-comment/);
     });
 

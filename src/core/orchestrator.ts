@@ -982,7 +982,7 @@ export class Orchestrator {
             expectedDir: workspace.paths.expectedDir,
             artifactsDir: workspace.paths.artifactsDir,
             agentLog,
-            config: evaluatorConfigWithResolvedPrompt || {},
+            config: evaluatorConfigWithResolvedPrompt,
             testCaseConfig,
           };
 

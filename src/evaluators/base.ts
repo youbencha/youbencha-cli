@@ -1,6 +1,6 @@
 /**
  * Base Evaluator Interface
- * 
+ *
  * Defines the contract that all evaluators must implement.
  * Enables pluggable evaluation of agent outputs.
  */
@@ -34,7 +34,7 @@ export interface EvaluationContext {
 
 /**
  * Evaluator interface for analyzing agent outputs
- * 
+ *
  * Each evaluator (git-diff, expected-diff, agentic-judge, etc.) implements
  * this interface to enable pluggable evaluation.
  */
@@ -59,14 +59,14 @@ export interface Evaluator {
   /**
    * Check if evaluator can run in current environment
    * Example: checking for required tools, API keys, etc.
-   * 
+   *
    * @returns Promise resolving to true if evaluator can run
    */
   checkPreconditions(context: EvaluationContext): Promise<boolean>;
 
   /**
    * Run the evaluation
-   * 
+   *
    * @param context - Evaluation context with workspace paths and config
    * @returns Promise resolving to evaluation result
    * @throws Error only for fatal errors; use EvaluationResult.status='skipped' for recoverable issues

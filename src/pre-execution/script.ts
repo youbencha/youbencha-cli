@@ -1,6 +1,6 @@
 /**
  * Script Pre-Execution
- * 
+ *
  * Executes a custom script before agent execution.
  * Useful for setup, code preprocessing, environment variable injection, etc.
  */
@@ -8,7 +8,10 @@
 import { spawn } from 'child_process';
 import * as path from 'path';
 import { PreExecution, PreExecutionContext } from './base.js';
-import { PreExecutionResult, ScriptConfig } from '../schemas/pre-execution.schema.js';
+import {
+  PreExecutionResult,
+  ScriptConfig,
+} from '../schemas/pre-execution.schema.js';
 import * as logger from '../lib/logger.js';
 
 /**
@@ -23,7 +26,7 @@ export class ScriptPreExecution implements PreExecution {
    */
   async checkPreconditions(context: PreExecutionContext): Promise<boolean> {
     const config = context.config as ScriptConfig;
-    
+
     try {
       // Basic validation - command must be non-empty
       if (!config.command || config.command.trim().length === 0) {
@@ -32,7 +35,9 @@ export class ScriptPreExecution implements PreExecution {
       }
       return true;
     } catch (error) {
-      logger.warn(`Script validation failed: ${error instanceof Error ? error.message : String(error)}`);
+      logger.warn(
+        `Script validation failed: ${error instanceof Error ? error.message : String(error)}`
+      );
       return false;
     }
   }
@@ -130,7 +135,10 @@ export class ScriptPreExecution implements PreExecution {
   /**
    * Replace variable placeholders in args
    */
-  private replaceVariables(args: string[], context: PreExecutionContext): string[] {
+  private replaceVariables(
+    args: string[],
+    context: PreExecutionContext
+  ): string[] {
     const variables: Record<string, string> = {
       '${WORKSPACE_DIR}': context.workspaceDir,
       '${REPO_DIR}': context.repoDir,
@@ -151,19 +159,19 @@ export class ScriptPreExecution implements PreExecution {
 
   /**
    * Run script with timeout
-   * 
+   *
    * Security note: Uses shell: true to support shell features like pipes and redirects.
    * IMPORTANT: Commands must ONLY come from trusted configuration files, NEVER from
    * untrusted user input. youBencha validates that config files are from the repository
    * or trusted sources, not from external/user-provided input.
-   * 
+   *
    * Shell features enabled:
    * - Pipes (|)
    * - Redirects (>, >>, <)
    * - Environment variable expansion
    * - Command chaining (&&, ||)
-   * 
-   * Mitigation: 
+   *
+   * Mitigation:
    * - Commands are from YAML/JSON config files in the repository
    * - Environment variables are controlled and sanitized
    * - Scripts run in isolated workspace directory
@@ -191,7 +199,7 @@ export class ScriptPreExecution implements PreExecution {
       const timeout = setTimeout(() => {
         timedOut = true;
         child.kill('SIGTERM');
-        
+
         // Force kill after 2 seconds
         setTimeout(() => {
           child.kill('SIGKILL');
@@ -219,7 +227,7 @@ export class ScriptPreExecution implements PreExecution {
 
       child.on('close', (code) => {
         clearTimeout(timeout);
-        
+
         if (timedOut) {
           reject(new Error(`Script timed out after ${timeoutMs}ms`));
         } else {

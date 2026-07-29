@@ -1,20 +1,22 @@
 /**
  * Shell Utilities
- * 
+ *
  * Cross-platform utilities for shell command escaping and validation.
  * Supports PowerShell (Windows) and bash/zsh (macOS/Linux).
  */
 
 /**
  * Escape a string for safe use as a shell argument.
- * 
+ *
  * @param arg - The argument to escape
  * @param shell - The target shell type ('powershell' | 'bash')
  * @returns The escaped string
  */
 export function escapeShellArg(
   arg: string,
-  shell: 'powershell' | 'bash' = process.platform === 'win32' ? 'powershell' : 'bash'
+  shell: 'powershell' | 'bash' = process.platform === 'win32'
+    ? 'powershell'
+    : 'bash'
 ): string {
   if (shell === 'powershell') {
     return escapeForPowerShell(arg);
@@ -26,7 +28,7 @@ export function escapeShellArg(
 /**
  * Escape a string for PowerShell.
  * Uses single quotes with doubled single quotes for escaping.
- * 
+ *
  * @param arg - The argument to escape
  * @returns The escaped string wrapped in single quotes
  */
@@ -40,7 +42,7 @@ function escapeForPowerShell(arg: string): string {
 /**
  * Escape a string for bash/zsh.
  * Uses single quotes with proper handling of embedded single quotes.
- * 
+ *
  * @param arg - The argument to escape
  * @returns The escaped string wrapped in single quotes
  */
@@ -54,7 +56,7 @@ function escapeForBash(arg: string): string {
 
 /**
  * Strip ANSI escape codes from a string.
- * 
+ *
  * @param text - The text containing ANSI codes
  * @returns The text with ANSI codes removed
  */
@@ -66,7 +68,7 @@ export function stripAnsiCodes(text: string): string {
 
 /**
  * Validate that a path is safe (no path traversal).
- * 
+ *
  * @param filePath - The path to validate
  * @returns true if the path is safe, false otherwise
  */
@@ -75,23 +77,23 @@ export function isPathSafe(filePath: string): boolean {
   if (filePath.startsWith('/') || /^[a-zA-Z]:[\\/]/.test(filePath)) {
     return false;
   }
-  
+
   // Reject path traversal attempts
   if (filePath.includes('..')) {
     return false;
   }
-  
+
   // Reject paths starting with backslash (Windows UNC or root)
   if (filePath.startsWith('\\')) {
     return false;
   }
-  
+
   return true;
 }
 
 /**
  * Detect the current shell type based on platform.
- * 
+ *
  * @returns 'powershell' for Windows, 'bash' for others
  */
 export function detectShell(): 'powershell' | 'bash' {

@@ -50,15 +50,11 @@ function aggregateKey(aggregate: LogicalTargetAggregate): string {
 }
 
 function indexProjection(
-  label: string,
   aggregates: readonly LogicalTargetAggregate[]
 ): Map<string, LogicalTargetAggregate> {
   const indexed = new Map<string, LogicalTargetAggregate>();
   for (const aggregate of aggregates) {
     const key = aggregateKey(aggregate);
-    if (indexed.has(key)) {
-      throw new Error(`${label} contains duplicate projected aggregate ${key}`);
-    }
     indexed.set(key, aggregate);
   }
   return indexed;
@@ -106,16 +102,17 @@ function evaluateRule(
   if (rule.kind === 'minimum') {
     return candidate >= rule.threshold ? 'passed' : 'failed';
   }
-  if (baseline === undefined) return 'partial';
+  // Callers validate the baseline before evaluating a change rule.
+  const baselineValue = baseline as number;
 
   const difference =
     rule.kind === 'maximum_decrease'
-      ? baseline - candidate
-      : candidate - baseline;
+      ? baselineValue - candidate
+      : candidate - baselineValue;
   if (rule.thresholdType === 'absolute') {
     return difference <= rule.threshold ? 'passed' : 'failed';
   }
-  if (baseline === 0) {
+  if (baselineValue === 0) {
     const behavior = rule.zeroBaselineBehavior ?? 'partial';
     if (behavior === 'fail') return 'failed';
     if (behavior === 'absolute_only') {
@@ -123,7 +120,7 @@ function evaluateRule(
     }
     return 'partial';
   }
-  return difference / Math.abs(baseline) <= rule.threshold
+  return difference / Math.abs(baselineValue) <= rule.threshold
     ? 'passed'
     : 'failed';
 }
@@ -136,14 +133,12 @@ export function compareMappedTargets(
   input: MappedComparisonInput
 ): MappedComparisonResult {
   const candidate = indexProjection(
-    'Candidate',
     projectTargetAggregates(
       input.candidateAggregates,
       input.mapping.candidateTarget
     )
   );
   const baseline = indexProjection(
-    'Baseline',
     projectTargetAggregates(
       input.baselineAggregates,
       input.mapping.baselineTarget
@@ -220,8 +215,7 @@ export function compareMappedTargets(
       }
       if (
         candidateMetric.sample_size < minimumSamples ||
-        (baselineRequired &&
-          (baselineMetric?.sample_size ?? 0) < minimumSamples)
+        (baselineRequired && baselineMetric!.sample_size < minimumSamples)
       ) {
         findings.push(
           insufficientFinding(

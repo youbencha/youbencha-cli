@@ -101,8 +101,13 @@ describe('AgenticJudgeEvaluator', () => {
 
   describe('checkPreconditions', () => {
     test('returns true when agent is configured', async () => {
+      const mockAdapter = {
+        checkAvailability: jest.fn().mockResolvedValue(true),
+      };
+      (evaluator as any).getAdapter = jest.fn().mockResolvedValue(mockAdapter);
+
       const result = await evaluator.checkPreconditions(mockContext);
-      expect(typeof result).toBe('boolean');
+      expect(result).toBe(true);
     });
 
     test('returns false when agent config is missing', async () => {

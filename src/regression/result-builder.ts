@@ -131,7 +131,8 @@ async function baselineForComparison(
       stat.isDirectory() ? path.join(explicit, 'results.json') : explicit
     );
     const target =
-      'target' in comparison.baseline && comparison.baseline.target !== undefined
+      'target' in comparison.baseline &&
+      comparison.baseline.target !== undefined
         ? comparison.baseline.target
         : comparison.candidate_target;
     return { aggregates: result.aggregates, target };
@@ -259,15 +260,11 @@ export async function buildRegressionResult(
       });
       findings.push(...result.findings);
       if (result.status === 'failed') comparisonStatus = 'failed';
-      else if (
-        result.status === 'partial' &&
-        comparisonStatus === 'passed'
-      ) {
+      else if (result.status === 'partial' && comparisonStatus === 'passed') {
         comparisonStatus = 'partial';
       }
     } catch (error) {
-      comparisonStatus =
-        comparisonStatus === 'failed' ? 'failed' : 'partial';
+      comparisonStatus = comparisonStatus === 'failed' ? 'failed' : 'partial';
       warnings.push(
         `Comparison "${comparison.id}" is partial: ${error instanceof Error ? error.message : String(error)}`
       );
@@ -295,10 +292,7 @@ export async function buildRegressionResult(
       });
       findings.push(...result.findings);
       if (result.status === 'failed') comparisonStatus = 'failed';
-      else if (
-        result.status === 'partial' &&
-        comparisonStatus === 'passed'
-      ) {
+      else if (result.status === 'partial' && comparisonStatus === 'passed') {
         comparisonStatus = 'partial';
       }
     }

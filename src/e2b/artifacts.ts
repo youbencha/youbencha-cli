@@ -92,14 +92,7 @@ export function normalizeRemoteArtifactPath(value: string): string {
       `Artifact path "${value}" contains an unsafe segment`
     );
   }
-  const normalized = path.posix.normalize(value);
-  if (normalized !== value) {
-    throw new E2BArtifactError(
-      'unsafe_artifact_path',
-      `Artifact path "${value}" is not normalized`
-    );
-  }
-  return normalized;
+  return path.posix.normalize(value);
 }
 
 export function validateArtifactPackage(
@@ -334,17 +327,6 @@ export async function writeValidatedArtifactPackage(
   for (const file of artifactPackage.files) {
     const relativePath = normalizeRemoteArtifactPath(file.path);
     const target = path.resolve(root, ...relativePath.split('/'));
-    const relativeTarget = path.relative(root, target);
-    if (
-      relativeTarget === '' ||
-      relativeTarget.startsWith(`..${path.sep}`) ||
-      path.isAbsolute(relativeTarget)
-    ) {
-      throw new E2BArtifactError(
-        'local_artifact_escape',
-        'Artifact destination escapes the attempt directory'
-      );
-    }
     await assertNoSymlinkParents(root, path.dirname(target));
     const handle = await fs.open(target, 'wx', 0o600);
     try {

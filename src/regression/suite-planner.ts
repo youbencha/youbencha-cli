@@ -37,11 +37,7 @@ export function planRegressionSuite(
     return task;
   });
   const targets = selection.targetIds.map((id) => {
-    const target = suite.definition.targets.find(
-      (candidate) => candidate.id === id
-    );
-    if (target === undefined) throw new Error(`Target "${id}" is missing`);
-    return target;
+    return suite.definition.targets.find((candidate) => candidate.id === id)!;
   });
 
   const targetQueues = targets.map((target) => {

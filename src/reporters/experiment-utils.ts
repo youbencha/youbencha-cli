@@ -57,7 +57,9 @@ function compareText(
   left: string | undefined,
   right: string | undefined
 ): number {
-  return (left ?? '').localeCompare(right ?? '', 'en');
+  // Array#join renders an undefined entry as an empty string, which keeps
+  // optional sort keys deterministic without duplicating nullish branches.
+  return [left].join('').localeCompare([right].join(''), 'en');
 }
 
 function omitStacks(value: unknown): unknown {
@@ -143,15 +145,16 @@ export function safeDisplayText(value: unknown): string {
         : JSON.stringify(value);
   const validText = [...text]
     .filter((character) => {
-      const codePoint = character.codePointAt(0);
+      // Iterating a string by code point always yields a non-empty character,
+      // and codePointAt therefore cannot be undefined here.
+      const codePoint = character.codePointAt(0)!;
       return (
-        codePoint !== undefined &&
-        (codePoint === 0x9 ||
-          codePoint === 0xa ||
-          codePoint === 0xd ||
-          (codePoint >= 0x20 && codePoint <= 0xd7ff) ||
-          (codePoint >= 0xe000 && codePoint <= 0xfffd) ||
-          (codePoint >= 0x10000 && codePoint <= 0x10ffff))
+        codePoint === 0x9 ||
+        codePoint === 0xa ||
+        codePoint === 0xd ||
+        (codePoint >= 0x20 && codePoint <= 0xd7ff) ||
+        (codePoint >= 0xe000 && codePoint <= 0xfffd) ||
+        codePoint >= 0x10000
       );
     })
     .join('');

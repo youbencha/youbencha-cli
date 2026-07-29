@@ -107,11 +107,11 @@ function sourceNetwork(repo: string): E2BNetworkPolicy {
 function providerDefaultNetwork(
   suite: LoadedRegressionSuite
 ): E2BNetworkPolicy {
-  const provider = suite.definition.execution.provider;
-  if (
-    provider.type !== 'e2b' ||
-    provider.network_defaults.outbound === 'none'
-  ) {
+  const provider = suite.definition.execution.provider as Extract<
+    LoadedRegressionSuite['definition']['execution']['provider'],
+    { type: 'e2b' }
+  >;
+  if (provider.network_defaults.outbound === 'none') {
     return { inbound: 'none', outbound: 'none' };
   }
   if (provider.network_defaults.outbound === 'unrestricted') {
@@ -202,10 +202,10 @@ function providerForTarget(
   suite: LoadedRegressionSuite,
   target: RegressionTarget
 ): E2BProviderConfig {
-  const execution = suite.definition.execution.provider;
-  if (execution.type !== 'e2b') {
-    throw new Error('The suite does not define E2B provider policy');
-  }
+  const execution = suite.definition.execution.provider as Extract<
+    LoadedRegressionSuite['definition']['execution']['provider'],
+    { type: 'e2b' }
+  >;
   const template = target.harness.e2b_template;
   if (template === undefined) {
     throw new Error(

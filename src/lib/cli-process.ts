@@ -210,7 +210,6 @@ export async function runCliProcess(
     let timedOut = false;
     let processError: Error | undefined;
     let artifactError: Error | undefined;
-    let naturalFinishStarted = false;
     let terminationStarted = false;
     let settled = false;
 
@@ -310,10 +309,6 @@ export async function runCliProcess(
       }
 
       if (reason === 'natural') {
-        if (naturalFinishStarted) {
-          return;
-        }
-        naturalFinishStarted = true;
         await settle(false);
         return;
       }
@@ -895,3 +890,30 @@ function toError(error: unknown, fallbackMessage: string): Error {
 function appendError(existing: Error | undefined, next: Error): Error {
   return existing ? new Error(`${existing.message}; ${next.message}`) : next;
 }
+
+/**
+ * Internal seams used by focused unit tests. These helpers are not re-exported
+ * from the package entry point.
+ */
+export const cliProcessTestHooks = {
+  BoundedArtifactWriter,
+  BoundedByteCapture,
+  StreamingSecretRedactor,
+  appendError,
+  buildInvocation,
+  executableKind,
+  getEnvironmentValue,
+  isExecutableRegularFile,
+  pipeToArtifact,
+  redactionVariants,
+  resolveWindowsPowerShell,
+  stripSurroundingQuotes,
+  terminateProcessTree,
+  toError,
+  validateRequest,
+  waitForArtifactClose,
+  waitForArtifactOpen,
+  waitForConditionOrDelay,
+  waitForReadableEnd,
+  windowsExecutableExtensions,
+};

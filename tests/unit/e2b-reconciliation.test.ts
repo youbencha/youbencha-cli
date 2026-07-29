@@ -203,6 +203,9 @@ describe('managed sandbox service', () => {
       service.reap('experiment', new Date('2026-07-28T00:00:00.000Z'))
     ).resolves.toMatchObject([{ sandboxId: 'expired' }]);
     expect(client.killed).toEqual(['expired']);
+
+    client.sandboxes = [];
+    await expect(service.reap()).resolves.toEqual([]);
   });
 
   test('refuses to kill a sandbox outside the configured owner scope', async () => {

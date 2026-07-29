@@ -1,6 +1,6 @@
 /**
  * Environment detector module
- * 
+ *
  * Detects OS/platform, Node.js version, youBencha version, and captures timestamps
  * for reproducible evaluation context.
  */
@@ -48,19 +48,19 @@ export interface UserInfo {
 export interface EnvironmentContext {
   /** Operating system (e.g., 'darwin', 'linux', 'win32') */
   os: string;
-  
+
   /** CPU architecture (e.g., 'x64', 'arm64') */
   arch: string;
-  
+
   /** OS release version */
   osVersion: string;
-  
+
   /** Node.js version (e.g., '20.10.0') */
   nodeVersion: string;
-  
+
   /** youBencha CLI version from package.json */
   youbenchaVersion: string;
-  
+
   /** Timestamp when environment was captured (ISO 8601) */
   capturedAt: string;
 }
@@ -88,7 +88,7 @@ export class EnvironmentDetector {
   getOperatingSystem(): string {
     const platform = os.platform();
     const release = os.release();
-    
+
     // Capitalize platform name
     let platformName: string;
     switch (platform) {
@@ -105,7 +105,7 @@ export class EnvironmentDetector {
         platformName = platform;
         break;
     }
-    
+
     return `${platformName} ${release}`;
   }
 
@@ -128,7 +128,7 @@ export class EnvironmentDetector {
    */
   getSystemInfo(): SystemInfo {
     const cpus = os.cpus();
-    
+
     return {
       platform: os.platform(),
       arch: os.arch(),
@@ -145,7 +145,7 @@ export class EnvironmentDetector {
    */
   getUserInfo(): UserInfo {
     const userInfo = os.userInfo();
-    
+
     return {
       username: userInfo.username,
       homedir: userInfo.homedir,
@@ -169,9 +169,11 @@ export class EnvironmentDetector {
 
     for (const [key, value] of Object.entries(process.env)) {
       if (value === undefined) continue;
-      
+
       // Skip sensitive variables
-      const isSensitive = sensitivePatterns.some(pattern => pattern.test(key));
+      const isSensitive = sensitivePatterns.some((pattern) =>
+        pattern.test(key)
+      );
       if (isSensitive) continue;
 
       filtered[key] = value;
@@ -207,7 +209,7 @@ export class EnvironmentDetector {
     working_directory: string;
   } {
     const info = this.getEnvironmentInfo(workingDirectory);
-    
+
     return {
       os: info.os,
       node_version: info.nodeVersion,
@@ -219,7 +221,7 @@ export class EnvironmentDetector {
 
 /**
  * Detect current environment context
- * 
+ *
  * @returns Environment context with OS, Node version, youBencha version, and timestamp
  */
 export function detectEnvironment(): EnvironmentContext {
@@ -235,41 +237,39 @@ export function detectEnvironment(): EnvironmentContext {
 
 /**
  * Get youBencha version from package.json
- * 
+ *
  * @returns Version string (e.g., '0.1.0')
  */
 function getYouBenchaVersion(): string {
-  try {
-    // Try multiple paths to find package.json
-    const possiblePaths = [
-      // From src/core/env.ts
-      join(process.cwd(), 'package.json'),
-      // From dist/core/env.js (when compiled)
-      join(process.cwd(), '..', '..', 'package.json'),
-    ];
-    
-    for (const packageJsonPath of possiblePaths) {
-      try {
-        const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8')) as { version?: string };
-        if (packageJson.version) {
-          return packageJson.version;
-        }
-      } catch {
-        // Try next path
-        continue;
+  // Try multiple paths to find package.json. Each filesystem/parse operation
+  // has its own fallback, so no additional outer exception boundary is needed.
+  const possiblePaths = [
+    // From src/core/env.ts
+    join(process.cwd(), 'package.json'),
+    // From dist/core/env.js (when compiled)
+    join(process.cwd(), '..', '..', 'package.json'),
+  ];
+
+  for (const packageJsonPath of possiblePaths) {
+    try {
+      const packageJson = JSON.parse(
+        readFileSync(packageJsonPath, 'utf-8')
+      ) as { version?: string };
+      if (packageJson.version) {
+        return packageJson.version;
       }
+    } catch {
+      // Try next path
+      continue;
     }
-    
-    return '0.0.0';
-  } catch (error) {
-    // Fallback if package.json cannot be read
-    return '0.0.0';
   }
+
+  return '0.0.0';
 }
 
 /**
  * Format environment context for display
- * 
+ *
  * @param env - Environment context
  * @returns Human-readable string representation
  */
@@ -284,7 +284,7 @@ export function formatEnvironment(env: EnvironmentContext): string {
 
 /**
  * Create environment object for youBencha Log schema
- * 
+ *
  * @param workingDirectory - Current working directory path
  * @returns Environment object conforming to youBencha Log schema
  */
@@ -295,7 +295,7 @@ export function createLogEnvironment(workingDirectory: string): {
   working_directory: string;
 } {
   const env = detectEnvironment();
-  
+
   return {
     os: `${env.os} ${env.osVersion}`,
     node_version: env.nodeVersion,

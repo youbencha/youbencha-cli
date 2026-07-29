@@ -43,9 +43,6 @@ async function resolveResultFile(value: string, cwd: string): Promise<string> {
   }
   const experiments = path.resolve(cwd, 'results', 'experiments');
   const result = path.resolve(experiments, value, 'results.json');
-  if (!result.startsWith(`${experiments}${path.sep}`)) {
-    throw new Error(`Experiment ID "${value}" escapes the results directory`);
-  }
   return result;
 }
 

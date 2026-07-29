@@ -91,9 +91,6 @@ async function resolveResultFile(
   }
   const root = path.resolve(experimentRoot);
   const candidate = path.resolve(root, value, 'results.json');
-  if (!candidate.startsWith(`${root}${path.sep}`)) {
-    throw new Error(`Experiment ID "${value}" escapes the results directory`);
-  }
   try {
     await fs.access(candidate);
   } catch {

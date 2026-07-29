@@ -1,6 +1,6 @@
 /**
  * Database Post-Evaluation
- * 
+ *
  * Exports evaluation results to a database or file.
  * MVP: Appends results to a JSON Lines (JSONL) file for time-series analysis.
  */
@@ -8,7 +8,10 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { PostEvaluation, PostEvaluationContext } from './base.js';
-import { PostEvaluationResult, DatabaseConfig } from '../schemas/post-evaluation.schema.js';
+import {
+  PostEvaluationResult,
+  DatabaseConfig,
+} from '../schemas/post-evaluation.schema.js';
 import { ResultsBundle } from '../schemas/result.schema.js';
 import * as logger from '../lib/logger.js';
 
@@ -24,14 +27,16 @@ export class DatabasePostEvaluation implements PostEvaluation {
    */
   async checkPreconditions(context: PostEvaluationContext): Promise<boolean> {
     const config = context.config as DatabaseConfig;
-    
+
     try {
       // Ensure output directory exists
       const outputDir = path.dirname(path.resolve(config.output_path));
       await fs.mkdir(outputDir, { recursive: true });
       return true;
     } catch (error) {
-      logger.warn(`Cannot create output directory: ${error instanceof Error ? error.message : String(error)}`);
+      logger.warn(
+        `Cannot create output directory: ${error instanceof Error ? error.message : String(error)}`
+      );
       return false;
     }
   }
@@ -99,7 +104,7 @@ export class DatabasePostEvaluation implements PostEvaluation {
     append: boolean
   ): Promise<void> {
     const jsonLine = JSON.stringify(data) + '\n';
-    
+
     if (append) {
       await fs.appendFile(filePath, jsonLine, 'utf-8');
     } else {

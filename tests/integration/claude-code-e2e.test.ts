@@ -31,7 +31,11 @@ describe('Claude Code End-to-End Integration', () => {
   };
 
   beforeAll(async () => {
-    adapter = new ClaudeCodeAdapter();
+    adapter = process.env.CLAUDE_CODE_INTEGRATION_TESTS
+      ? new ClaudeCodeAdapter()
+      : new ClaudeCodeAdapter({
+          resolveExecutable: async (): Promise<null> => null,
+        });
   });
 
   beforeEach(async () => {

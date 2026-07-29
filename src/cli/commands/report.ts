@@ -1,12 +1,15 @@
 /**
  * Report Command
- * 
+ *
  * Generates reports from evaluation results.
  */
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { resultsBundleSchema, ResultsBundle } from '../../schemas/result.schema.js';
+import {
+  resultsBundleSchema,
+  ResultsBundle,
+} from '../../schemas/result.schema.js';
 import { JsonReporter } from '../../reporters/json.js';
 import { MarkdownReporter } from '../../reporters/markdown.js';
 import { Reporter } from '../../reporters/base.js';
@@ -23,10 +26,12 @@ interface ReportCommandOptions {
 
 /**
  * Report command handler
- * 
+ *
  * Loads results bundle and generates report in specified format.
  */
-export async function reportCommand(options: ReportCommandOptions): Promise<void> {
+export async function reportCommand(
+  options: ReportCommandOptions
+): Promise<void> {
   try {
     // Load results bundle
     logger.info(`Loading results from ${options.from}`);
@@ -42,7 +47,8 @@ export async function reportCommand(options: ReportCommandOptions): Promise<void
       if (error instanceof Error) {
         logger.error(error.message);
       }
-      process.exit(1);
+      process.exitCode = 1;
+      return;
     }
 
     // Select reporter based on format
@@ -60,7 +66,8 @@ export async function reportCommand(options: ReportCommandOptions): Promise<void
       default:
         logger.error(`Unknown report format: ${format}`);
         logger.error('Supported formats: json, markdown');
-        process.exit(1);
+        process.exitCode = 1;
+        return;
     }
 
     // Determine output path
@@ -83,7 +90,7 @@ export async function reportCommand(options: ReportCommandOptions): Promise<void
     logger.info(`  Output: ${outputPath}`);
     logger.info('');
 
-    process.exit(0);
+    process.exitCode = 0;
   } catch (error) {
     if (error instanceof Error) {
       logger.error('Report generation failed:');
@@ -92,6 +99,6 @@ export async function reportCommand(options: ReportCommandOptions): Promise<void
         logger.debug(error.stack);
       }
     }
-    process.exit(1);
+    process.exitCode = 1;
   }
 }

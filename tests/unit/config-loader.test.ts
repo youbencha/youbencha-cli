@@ -1,6 +1,6 @@
 /**
  * Configuration Loader Tests
- * 
+ *
  * Unit tests for configuration loading, merging, and variable substitution.
  */
 

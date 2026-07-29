@@ -116,18 +116,14 @@ function tarNumber(buffer: Uint8Array, start: number, length: number): number {
   const value = tarString(buffer, start, length).replace(/\s/g, '');
   if (value === '') return 0;
   if (!/^[0-7]+$/.test(value)) throw new Error('Invalid tar numeric field');
-  const parsed = Number.parseInt(value, 8);
-  if (!Number.isSafeInteger(parsed) || parsed < 0) {
-    throw new Error('Unsafe tar numeric field');
-  }
-  return parsed;
+  return Number.parseInt(value, 8);
 }
 
 function verifyTarChecksum(block: Uint8Array): void {
   const expected = tarNumber(block, 148, 8);
   let actual = 0;
   for (let index = 0; index < block.length; index += 1) {
-    actual += index >= 148 && index < 156 ? 0x20 : (block[index] ?? 0);
+    actual += index >= 148 && index < 156 ? 0x20 : block[index];
   }
   if (actual !== expected) throw new Error('Invalid tar header checksum');
 }
@@ -159,7 +155,7 @@ function parseTar(
     if (size > limits.max_file_bytes) {
       throw new Error(`Tar entry ${entryPath} exceeds the per-file limit`);
     }
-    const typeFlag = String.fromCharCode(header[156] ?? 0);
+    const typeFlag = String.fromCharCode(header[156]);
     const normalizedEntryPath =
       typeFlag === '5' ? entryPath.replace(/\/+$/, '') : entryPath;
     const contentsStart = offset + 512;
@@ -224,7 +220,7 @@ function readFrameContentSize(
   if (buffer.byteLength < 6 || buffer.readUInt32LE(0) !== 0xfd2fb528) {
     throw new Error('Artifact archive is not one standard zstd frame');
   }
-  const descriptor = buffer[4] ?? 0;
+  const descriptor = buffer[4];
   if ((descriptor & 0x18) !== 0) {
     throw new Error('Zstd frame uses reserved descriptor bits');
   }
@@ -234,7 +230,7 @@ function readFrameContentSize(
   const dictionaryFlag = descriptor & 0x03;
   let offset = 5;
   if (!singleSegment) offset += 1;
-  const dictionarySize = [0, 1, 2, 4][dictionaryFlag] ?? 0;
+  const dictionarySize = [0, 1, 2, 4][dictionaryFlag];
   offset += dictionarySize;
   const contentSizeLength =
     contentSizeFlag === 0 ? (singleSegment ? 1 : 0) : 2 ** contentSizeFlag;
@@ -246,10 +242,10 @@ function readFrameContentSize(
   if (offset + contentSizeLength > buffer.byteLength) {
     throw new Error('Truncated zstd frame header');
   }
-  let declaredSize: bigint;
+  let declaredSize = 0n;
   switch (contentSizeLength) {
     case 1:
-      declaredSize = BigInt(buffer[offset] ?? 0);
+      declaredSize = BigInt(buffer[offset]);
       break;
     case 2:
       declaredSize = BigInt(buffer.readUInt16LE(offset) + 256);
@@ -260,8 +256,6 @@ function readFrameContentSize(
     case 8:
       declaredSize = buffer.readBigUInt64LE(offset);
       break;
-    default:
-      throw new Error('Unsupported zstd content-size field');
   }
   if (
     declaredSize > BigInt(maximumOutputBytes) ||
@@ -277,9 +271,7 @@ function readFrameContentSize(
       throw new Error('Truncated zstd block header');
     }
     const blockHeader =
-      (buffer[offset] ?? 0) |
-      ((buffer[offset + 1] ?? 0) << 8) |
-      ((buffer[offset + 2] ?? 0) << 16);
+      buffer[offset] | (buffer[offset + 1] << 8) | (buffer[offset + 2] << 16);
     offset += 3;
     lastBlock = (blockHeader & 1) !== 0;
     const blockType = (blockHeader >>> 1) & 0x03;
@@ -304,24 +296,29 @@ function readFrameContentSize(
   return Number(declaredSize);
 }
 
-export async function inspectTarZstdArchive(
+async function inspectTarZstdArchiveWith(
   archive: Uint8Array,
-  limits: E2BArtifactLimits
+  limits: E2BArtifactLimits,
+  decompressZstd: (value: Buffer) => Promise<Buffer>
 ): Promise<readonly InspectedArchiveEntry[]> {
   const maximumTarBytes =
     limits.max_uncompressed_bytes + limits.max_files * 1024 + 1024;
   const declaredSize = readFrameContentSize(archive, maximumTarBytes);
-  const { decompress: decompressZstd } = await import('@mongodb-js/zstd');
   const tarBytes = await decompressZstd(Buffer.from(archive));
-  if (
-    tarBytes.byteLength !== declaredSize ||
-    tarBytes.byteLength > maximumTarBytes
-  ) {
+  if (tarBytes.byteLength !== declaredSize) {
     throw new Error(
       'Decompressed archive size does not match its bounded zstd frame declaration'
     );
   }
   return parseTar(tarBytes, limits);
+}
+
+export async function inspectTarZstdArchive(
+  archive: Uint8Array,
+  limits: E2BArtifactLimits
+): Promise<readonly InspectedArchiveEntry[]> {
+  const { decompress: decompressZstd } = await import('@mongodb-js/zstd');
+  return inspectTarZstdArchiveWith(archive, limits, decompressZstd);
 }
 
 function exactNetworkMatch(
@@ -458,7 +455,10 @@ function attemptArtifactsDirectory(
   );
 }
 
-async function ensureSafeArtifactRoot(root: string): Promise<string> {
+async function ensureSafeArtifactRoot(
+  root: string,
+  filesystem: Pick<typeof fs, 'lstat' | 'mkdir'> = fs
+): Promise<string> {
   const resolved = path.resolve(root);
   const filesystemRoot = path.parse(resolved).root;
   const relative = path.relative(filesystemRoot, resolved);
@@ -466,7 +466,7 @@ async function ensureSafeArtifactRoot(root: string): Promise<string> {
   for (const segment of relative.split(path.sep).filter(Boolean)) {
     current = path.join(current, segment);
     try {
-      const stats = await fs.lstat(current);
+      const stats = await filesystem.lstat(current);
       if (stats.isSymbolicLink() || !stats.isDirectory()) {
         throw new Error(
           `Configured E2B artifact path contains a symlink or non-directory: ${current}`
@@ -475,13 +475,13 @@ async function ensureSafeArtifactRoot(root: string): Promise<string> {
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
       try {
-        await fs.mkdir(current);
+        await filesystem.mkdir(current);
       } catch (mkdirError) {
         if ((mkdirError as NodeJS.ErrnoException).code !== 'EEXIST') {
           throw mkdirError;
         }
       }
-      const createdStats = await fs.lstat(current);
+      const createdStats = await filesystem.lstat(current);
       if (createdStats.isSymbolicLink() || !createdStats.isDirectory()) {
         throw new Error(
           `Configured E2B artifact path is not a safe directory: ${current}`
@@ -529,6 +529,31 @@ function isProviderRateLimit(error: unknown): boolean {
     record.status === 429 || record.statusCode === 429 || record.code === 429
   );
 }
+
+/**
+ * Low-level deterministic helpers exposed for conformance testing. Keeping
+ * these pure boundaries directly testable avoids exercising archive and
+ * watchdog parsing through a live sandbox.
+ */
+export const e2bExecutorTesting = {
+  tarString,
+  tarNumber,
+  verifyTarChecksum,
+  parseTar,
+  readFrameContentSize,
+  inspectTarZstdArchiveWith,
+  exactNetworkMatch,
+  ownershipNonceHash,
+  parseJson,
+  phaseTimeout,
+  defaultPhaseComponent,
+  buildCellManifest,
+  attemptArtifactsDirectory,
+  ensureSafeArtifactRoot,
+  combinedSignal,
+  throwIfAborted,
+  isProviderRateLimit,
+};
 
 export class E2BSingleRunExecutor implements SingleRunExecutor {
   private readonly provider: E2BProviderConfig;

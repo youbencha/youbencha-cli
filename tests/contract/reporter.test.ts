@@ -1,9 +1,9 @@
 /**
  * Contract tests for Reporter interface
- * 
+ *
  * These tests define the contract that all reporters must follow.
  * Tests MUST be written first and MUST FAIL before implementation.
- * 
+ *
  * Purpose: Ensure reporters conform to standard interface
  */
 
@@ -124,7 +124,9 @@ describe('Reporter Contract', () => {
         format: 'verbose',
       };
 
-      await expect(reporter.generate(mockBundle, options)).resolves.toBeDefined();
+      await expect(
+        reporter.generate(mockBundle, options)
+      ).resolves.toBeDefined();
     });
 
     it('should handle bundle with multiple evaluators', async () => {
@@ -228,7 +230,7 @@ describe('Reporter Contract', () => {
   describe('Report Content Validation', () => {
     it('should include suite information in report', async () => {
       const result = await reporter.generate(mockBundle);
-      
+
       // Basic content checks - actual format depends on reporter implementation
       expect(result).toBeDefined();
       expect(result.length).toBeGreaterThan(0);

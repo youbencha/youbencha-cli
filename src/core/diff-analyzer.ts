@@ -1,6 +1,6 @@
 /**
  * DiffAnalyzer - Analyzes differences between source and output folders
- * 
+ *
  * Supports both git repositories and plain directories.
  * Detects file changes, line changes, patterns, and provides metrics for suite generation.
  */
@@ -17,7 +17,7 @@ export interface DiffAnalysis {
   source_path: string;
   output_path: string;
   is_git_repo: boolean;
-  
+
   files: {
     added: string[];
     modified: string[];
@@ -27,15 +27,15 @@ export interface DiffAnalysis {
       to: string;
     }>;
   };
-  
+
   lines: {
     added: number;
     removed: number;
     total_changed: number;
   };
-  
+
   file_types: Record<string, number>;
-  
+
   patterns: {
     tests_added: boolean;
     tests_modified: boolean;
@@ -46,7 +46,7 @@ export interface DiffAnalysis {
     auth_patterns: boolean;
     api_changes: boolean;
   };
-  
+
   density: {
     files_changed_ratio: number;
     lines_changed_ratio: number;
@@ -66,7 +66,7 @@ export class DiffAnalyzer {
     'coverage',
     '.youbencha-workspace',
     '.DS_Store',
-    'Thumbs.db'
+    'Thumbs.db',
   ];
 
   // Test file patterns
@@ -74,7 +74,7 @@ export class DiffAnalyzer {
     /\.test\./i,
     /\.spec\./i,
     /__tests__/i,
-    /\/tests?\//i
+    /\/tests?\//i,
   ];
 
   // Config file patterns
@@ -85,7 +85,7 @@ export class DiffAnalyzer {
     /\.toml$/i,
     /\.ini$/i,
     /\.config\./i,
-    /rc$/i
+    /rc$/i,
   ];
 
   // Documentation patterns
@@ -94,7 +94,7 @@ export class DiffAnalyzer {
     /\/docs?\//i,
     /README/i,
     /CHANGELOG/i,
-    /CONTRIBUTING/i
+    /CONTRIBUTING/i,
   ];
 
   // Auth/security patterns
@@ -105,7 +105,7 @@ export class DiffAnalyzer {
     /jwt/i,
     /password/i,
     /credential/i,
-    /oauth/i
+    /oauth/i,
   ];
 
   // API patterns
@@ -116,7 +116,7 @@ export class DiffAnalyzer {
     /handler/i,
     /controller/i,
     /\/routes?\//i,
-    /\/api\//i
+    /\/api\//i,
   ];
 
   /**
@@ -153,31 +153,46 @@ export class DiffAnalyzer {
     const allFiles = [
       ...analysis.files.added,
       ...analysis.files.modified,
-      ...analysis.files.deleted
+      ...analysis.files.deleted,
     ];
 
     return {
-      tests_added: this.matchesAnyPattern(analysis.files.added, this.TEST_PATTERNS),
-      tests_modified: this.matchesAnyPattern(analysis.files.modified, this.TEST_PATTERNS),
+      tests_added: this.matchesAnyPattern(
+        analysis.files.added,
+        this.TEST_PATTERNS
+      ),
+      tests_modified: this.matchesAnyPattern(
+        analysis.files.modified,
+        this.TEST_PATTERNS
+      ),
       config_changed: this.matchesAnyPattern(
         [...analysis.files.added, ...analysis.files.modified],
         this.CONFIG_PATTERNS
       ),
       dependencies_updated: this.hasDependencyChanges([
         ...analysis.files.added,
-        ...analysis.files.modified
+        ...analysis.files.modified,
       ]),
-      docs_added: this.matchesAnyPattern(analysis.files.added, this.DOC_PATTERNS),
-      docs_modified: this.matchesAnyPattern(analysis.files.modified, this.DOC_PATTERNS),
+      docs_added: this.matchesAnyPattern(
+        analysis.files.added,
+        this.DOC_PATTERNS
+      ),
+      docs_modified: this.matchesAnyPattern(
+        analysis.files.modified,
+        this.DOC_PATTERNS
+      ),
       auth_patterns: this.matchesAnyPattern(allFiles, this.AUTH_PATTERNS),
-      api_changes: this.matchesAnyPattern(allFiles, this.API_PATTERNS)
+      api_changes: this.matchesAnyPattern(allFiles, this.API_PATTERNS),
     };
   }
 
   /**
    * Analyze differences between source and output folders
    */
-  async analyzeFolders(sourcePath: string, outputPath: string): Promise<DiffAnalysis> {
+  async analyzeFolders(
+    sourcePath: string,
+    outputPath: string
+  ): Promise<DiffAnalysis> {
     // Validate directories exist
     await this.validateDirectory(sourcePath);
     await this.validateDirectory(outputPath);
@@ -202,7 +217,7 @@ export class DiffAnalyzer {
     // Detect file types
     const fileTypes = this.detectFileTypes([
       ...fileChanges.added,
-      ...fileChanges.modified
+      ...fileChanges.modified,
     ]);
 
     // Create initial analysis
@@ -214,12 +229,12 @@ export class DiffAnalyzer {
         added: fileChanges.added,
         modified: fileChanges.modified,
         deleted: fileChanges.deleted,
-        renamed: []  // TODO: Implement rename detection
+        renamed: [], // TODO: Implement rename detection
       },
       lines: {
         added: lineChanges.added,
         removed: lineChanges.removed,
-        total_changed: lineChanges.added + lineChanges.removed
+        total_changed: lineChanges.added + lineChanges.removed,
       },
       file_types: fileTypes,
       patterns: {
@@ -230,12 +245,12 @@ export class DiffAnalyzer {
         docs_added: false,
         docs_modified: false,
         auth_patterns: false,
-        api_changes: false
+        api_changes: false,
       },
       density: {
         files_changed_ratio: 0,
-        lines_changed_ratio: 0
-      }
+        lines_changed_ratio: 0,
+      },
     };
 
     // Detect patterns
@@ -303,7 +318,7 @@ export class DiffAnalyzer {
    * Check if a path should be excluded from analysis
    */
   private shouldExclude(relativePath: string): boolean {
-    return this.EXCLUDE_PATTERNS.some(pattern => 
+    return this.EXCLUDE_PATTERNS.some((pattern) =>
       relativePath.includes(pattern)
     );
   }
@@ -322,14 +337,14 @@ export class DiffAnalyzer {
     const sourceSet = new Set(sourceFiles);
     const outputSet = new Set(outputFiles);
 
-    const added = outputFiles.filter(f => !sourceSet.has(f));
-    const deleted = sourceFiles.filter(f => !outputSet.has(f));
-    const common = outputFiles.filter(f => sourceSet.has(f));
+    const added = outputFiles.filter((f) => !sourceSet.has(f));
+    const deleted = sourceFiles.filter((f) => !outputSet.has(f));
+    const common = outputFiles.filter((f) => sourceSet.has(f));
 
     return {
       added,
-      modified: common,  // Will be refined by content comparison
-      deleted
+      modified: common, // Will be refined by content comparison
+      deleted,
     };
   }
 
@@ -355,12 +370,12 @@ export class DiffAnalyzer {
 
         if (sourceContent !== outputContent) {
           const diff = diffLines(sourceContent, outputContent);
-          
+
           for (const part of diff) {
             if (part.added) {
-              totalAdded += part.count || 0;
+              totalAdded += Number([part.count].join(''));
             } else if (part.removed) {
-              totalRemoved += part.count || 0;
+              totalRemoved += Number([part.count].join(''));
             }
           }
         }
@@ -371,7 +386,7 @@ export class DiffAnalyzer {
     }
 
     // Also count added files
-    const outputFiles = potentiallyModified.filter(f => {
+    const outputFiles = potentiallyModified.filter((f) => {
       const sourceFile = path.join(sourcePath, f);
       try {
         accessSync(sourceFile);
@@ -393,7 +408,7 @@ export class DiffAnalyzer {
 
     return {
       added: totalAdded,
-      removed: totalRemoved
+      removed: totalRemoved,
     };
   }
 
@@ -410,7 +425,7 @@ export class DiffAnalyzer {
     const outputFiles = await this.getFileList(outputPath);
     const totalFiles = new Set([...sourceFiles, ...outputFiles]).size;
 
-    const changedFiles = 
+    const changedFiles =
       analysis.files.added.length +
       analysis.files.modified.length +
       analysis.files.deleted.length;
@@ -428,11 +443,12 @@ export class DiffAnalyzer {
       }
     }
 
-    const linesRatio = totalLines > 0 ? analysis.lines.total_changed / totalLines : 0;
+    const linesRatio =
+      totalLines > 0 ? analysis.lines.total_changed / totalLines : 0;
 
     return {
       files_changed_ratio: Math.min(filesRatio, 1.0),
-      lines_changed_ratio: Math.min(linesRatio, 1.0)
+      lines_changed_ratio: Math.min(linesRatio, 1.0),
     };
   }
 
@@ -440,9 +456,7 @@ export class DiffAnalyzer {
    * Check if any file matches any of the patterns
    */
   private matchesAnyPattern(files: string[], patterns: RegExp[]): boolean {
-    return files.some(file => 
-      patterns.some(pattern => pattern.test(file))
-    );
+    return files.some((file) => patterns.some((pattern) => pattern.test(file)));
   }
 
   /**
@@ -462,11 +476,11 @@ export class DiffAnalyzer {
       'go.mod',
       'go.sum',
       'Cargo.toml',
-      'Cargo.lock'
+      'Cargo.lock',
     ];
 
-    return files.some(file => 
-      depFiles.some(depFile => file.endsWith(depFile))
+    return files.some((file) =>
+      depFiles.some((depFile) => file.endsWith(depFile))
     );
   }
 }

@@ -100,15 +100,6 @@ timeout: 5000
     };
     commandEnvironment[pathKey] =
       `${fakeBinDir}${path.delimiter}${process.env[pathKey] ?? ''}`;
-
-    execFileSync(
-      process.execPath,
-      [path.join(projectDir, 'node_modules', 'typescript', 'bin', 'tsc')],
-      {
-        cwd: projectDir,
-        stdio: 'pipe',
-      }
-    );
   });
 
   afterAll(async () => {

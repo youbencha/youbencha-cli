@@ -117,9 +117,21 @@ export interface SandboxPhaseOperationsOptions {
   workspaceRoot?: string;
   now?: () => Date;
   maxConcurrentEvaluators?: number;
+  adapterFactory?: (type: string) => AgentAdapter;
+  evaluatorFactory?: (name: string) => Evaluator | undefined;
+  postEvaluatorFactory?: (name: string) => PostEvaluation | undefined;
+  workspaceManagerFactory?: (
+    workspaceRoot: string,
+    timeout: number
+  ) => Pick<WorkspaceManager, 'createWorkspace'>;
+  preExecutionFactory?: () => Pick<
+    ScriptPreExecution,
+    'checkPreconditions' | 'execute'
+  >;
+  artifactPackageBuilder?: typeof buildArtifactPackage;
 }
 
-function agentAdapter(type: string): AgentAdapter {
+export function createRunnerAgentAdapter(type: string): AgentAdapter {
   switch (type) {
     case 'copilot-cli':
       return new CopilotCLIAdapter();
@@ -132,7 +144,7 @@ function agentAdapter(type: string): AgentAdapter {
   }
 }
 
-function evaluator(name: string): Evaluator | undefined {
+export function createRunnerEvaluator(name: string): Evaluator | undefined {
   switch (name) {
     case 'git-diff':
       return new GitDiffEvaluator();
@@ -151,7 +163,9 @@ function evaluator(name: string): Evaluator | undefined {
   }
 }
 
-function postEvaluator(name: string): PostEvaluation | undefined {
+export function createRunnerPostEvaluator(
+  name: string
+): PostEvaluation | undefined {
   switch (name) {
     case 'webhook':
       return new WebhookPostEvaluation();
@@ -314,6 +328,20 @@ function redactBuffer(contents: Buffer, secrets: readonly string[]): Buffer {
   return output;
 }
 
+/** Pure runner helpers exposed for deterministic conformance tests. */
+export const runnerCliTesting = {
+  compileTestCase,
+  isWithin,
+  assertRuntimePaths,
+  runtimeStatePath,
+  loadRuntimeState,
+  partitionArtifacts,
+  definedEnvironment,
+  phaseSecretValues,
+  redactValue,
+  redactBuffer,
+};
+
 export async function redactRunnerArtifactFiles(
   directory: string,
   secrets: readonly string[]
@@ -346,16 +374,43 @@ export class SandboxPhaseOperations implements PhaseOperations {
   private readonly workspaceRoot: string;
   private readonly now: () => Date;
   private readonly maxConcurrentEvaluators: number;
+  private readonly adapterFactory: (type: string) => AgentAdapter;
+  private readonly evaluatorFactory: (name: string) => Evaluator | undefined;
+  private readonly postEvaluatorFactory: (
+    name: string
+  ) => PostEvaluation | undefined;
+  private readonly workspaceManagerFactory: (
+    workspaceRoot: string,
+    timeout: number
+  ) => Pick<WorkspaceManager, 'createWorkspace'>;
+  private readonly preExecutionFactory: () => Pick<
+    ScriptPreExecution,
+    'checkPreconditions' | 'execute'
+  >;
+  private readonly artifactPackageBuilder: typeof buildArtifactPackage;
 
   constructor(options: SandboxPhaseOperationsOptions = {}) {
     this.workspaceRoot = options.workspaceRoot ?? RUNNER_WORKSPACE_DIRECTORY;
     this.now = options.now ?? ((): Date => new Date());
     this.maxConcurrentEvaluators = options.maxConcurrentEvaluators ?? 4;
+    this.adapterFactory = options.adapterFactory ?? createRunnerAgentAdapter;
+    this.evaluatorFactory = options.evaluatorFactory ?? createRunnerEvaluator;
+    this.postEvaluatorFactory =
+      options.postEvaluatorFactory ?? createRunnerPostEvaluator;
+    this.workspaceManagerFactory =
+      options.workspaceManagerFactory ??
+      ((workspaceRoot, timeout): WorkspaceManager =>
+        new WorkspaceManager(workspaceRoot, timeout));
+    this.preExecutionFactory =
+      options.preExecutionFactory ??
+      ((): ScriptPreExecution => new ScriptPreExecution());
+    this.artifactPackageBuilder =
+      options.artifactPackageBuilder ?? buildArtifactPackage;
   }
 
   async prepare(context: PhaseExecutionContext): Promise<void> {
     const config = compileTestCase(context.manifest);
-    const manager = new WorkspaceManager(
+    const manager = this.workspaceManagerFactory(
       this.workspaceRoot,
       context.manifest.deadlines.phases_ms.prepare
     );
@@ -373,7 +428,7 @@ export class SandboxPhaseOperations implements PhaseOperations {
     });
 
     for (const item of config.pre_execution ?? []) {
-      const hook = new ScriptPreExecution();
+      const hook = this.preExecutionFactory();
       const hookContext = {
         workspaceDir: workspace.paths.modifiedDir,
         repoDir: workspace.paths.modifiedDir,
@@ -408,7 +463,7 @@ export class SandboxPhaseOperations implements PhaseOperations {
   async agent(context: PhaseExecutionContext): Promise<void> {
     const config = compileTestCase(context.manifest);
     const state = await loadRuntimeState(context, this.workspaceRoot);
-    const adapter = agentAdapter(config.agent.type);
+    const adapter = this.adapterFactory(config.agent.type);
     if (!(await adapter.checkAvailability())) {
       throw new Error(
         `Agent ${config.agent.type} is not available or authenticated`
@@ -429,7 +484,7 @@ export class SandboxPhaseOperations implements PhaseOperations {
       repoDir: state.workspace.paths.modifiedDir,
       artifactsDir: state.workspace.paths.artifactsDir,
       config: {
-        ...(config.agent.config ?? {}),
+        ...config.agent.config,
         prompt,
         prompt_file: undefined,
         agent_name: config.agent.agent_name,
@@ -485,7 +540,7 @@ export class SandboxPhaseOperations implements PhaseOperations {
       evaluators,
       this.maxConcurrentEvaluators,
       async (item): Promise<EvaluationResult> => {
-        const implementation = evaluator(item.name);
+        const implementation = this.evaluatorFactory(item.name);
         if (implementation === undefined) {
           return {
             evaluator: item.name,
@@ -572,7 +627,7 @@ export class SandboxPhaseOperations implements PhaseOperations {
     );
     const postResults = [];
     for (const item of config.post_evaluation ?? []) {
-      const implementation = postEvaluator(item.name);
+      const implementation = this.postEvaluatorFactory(item.name);
       if (implementation === undefined) continue;
       const postContext: PostEvaluationContext = {
         resultsBundle: results,
@@ -616,7 +671,7 @@ export class SandboxPhaseOperations implements PhaseOperations {
 
   async package(context: PhaseExecutionContext): Promise<void> {
     const state = await loadRuntimeState(context, this.workspaceRoot);
-    await buildArtifactPackage({
+    await this.artifactPackageBuilder({
       manifest: context.manifest,
       artifactsDirectory: state.workspace.paths.artifactsDir,
       outputDirectory: context.outputDirectory,
@@ -709,6 +764,22 @@ export interface RunCellPhaseOptions {
   processBoundary?: ProcessBoundary;
 }
 
+export function createRunnerPhaseOrchestrator(
+  options: RunCellPhaseOptions,
+  phaseEnvironment: Readonly<Record<string, string>>
+): PhaseOrchestrator {
+  return new PhaseOrchestrator(
+    options.operations ?? new SandboxPhaseOperations(),
+    {
+      stateDirectory: options.stateDirectory ?? RUNNER_STATE_DIRECTORY,
+      outputDirectory: options.outputDirectory ?? RUNNER_OUTPUT_DIRECTORY,
+      environment: phaseEnvironment,
+      processBoundary:
+        options.processBoundary ?? new LinuxSandboxProcessBoundary(),
+    }
+  );
+}
+
 export async function runCellPhase(
   argv: readonly string[],
   options: RunCellPhaseOptions = {}
@@ -730,37 +801,51 @@ export async function runCellPhase(
     for (const name of Object.keys(process.env)) delete process.env[name];
     Object.assign(process.env, phaseEnvironment);
   }
-  const stateDirectory = options.stateDirectory ?? RUNNER_STATE_DIRECTORY;
-  const outputDirectory = options.outputDirectory ?? RUNNER_OUTPUT_DIRECTORY;
-  const orchestrator = new PhaseOrchestrator(
-    options.operations ?? new SandboxPhaseOperations(),
-    {
-      stateDirectory,
-      outputDirectory,
-      environment: phaseEnvironment,
-      processBoundary:
-        options.processBoundary ?? new LinuxSandboxProcessBoundary(),
-    }
-  );
+  const orchestrator = createRunnerPhaseOrchestrator(options, phaseEnvironment);
   await orchestrator.run(phase, manifest, manifestPath);
 }
 
-function isMainModule(): boolean {
+export function isMainModule(): boolean {
   const entry = process.argv[1];
   if (entry === undefined) return false;
   return ['runner-cli.js', 'run-cell'].includes(path.basename(entry));
 }
 
-if (isMainModule()) {
-  runCellPhase(process.argv.slice(2)).catch((error: unknown) => {
-    process.stderr.write(
+export async function runCellPhaseMain(
+  argv: readonly string[],
+  run: (args: readonly string[]) => Promise<void>,
+  writeError: (message: string) => void,
+  markFailed: () => void,
+  enabled = true
+): Promise<void> {
+  if (!enabled) return;
+  try {
+    await run(argv);
+  } catch (error) {
+    writeError(
       `run-cell failed: ${
         error instanceof Error ? error.message : String(error)
       }\n`
     );
-    process.exitCode = 1;
-  });
+    markFailed();
+  }
 }
+
+export function writeRunnerError(message: string): void {
+  process.stderr.write(message);
+}
+
+export function markRunnerFailed(): void {
+  process.exitCode = 1;
+}
+
+void runCellPhaseMain(
+  process.argv.slice(2),
+  runCellPhase,
+  writeRunnerError,
+  markRunnerFailed,
+  isMainModule()
+);
 
 export const RUNNER_FIXED_PATHS = {
   manifest: E2B_CELL_MANIFEST_PATH,

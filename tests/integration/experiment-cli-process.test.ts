@@ -112,34 +112,7 @@ function storedResult(
 describe('experiment CLI process integration', () => {
   let temporaryDirectory: string;
 
-  beforeAll(async () => {
-    await execFileAsync(
-      process.execPath,
-      [path.join(repositoryRoot, 'node_modules', 'typescript', 'bin', 'tsc')],
-      {
-        cwd: repositoryRoot,
-        timeout: 120_000,
-        windowsHide: true,
-      }
-    );
-    const promptDirectory = path.join(
-      repositoryRoot,
-      'dist',
-      'evaluators',
-      'prompts'
-    );
-    await fs.mkdir(promptDirectory, { recursive: true });
-    await fs.copyFile(
-      path.join(
-        repositoryRoot,
-        'src',
-        'evaluators',
-        'prompts',
-        'agentic-judge.template.md'
-      ),
-      path.join(promptDirectory, 'agentic-judge.template.md')
-    );
-  }, 130_000);
+  jest.setTimeout(30_000);
 
   beforeEach(async () => {
     temporaryDirectory = await fs.mkdtemp(

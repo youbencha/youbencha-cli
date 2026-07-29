@@ -1,6 +1,6 @@
 /**
  * Progress Feedback Utility
- * 
+ *
  * Provides progress indicators using ora spinners.
  * Shows real-time feedback during long-running operations.
  */
@@ -13,25 +13,25 @@ import ora, { Ora } from 'ora';
 export interface ProgressSpinner {
   /** Start the spinner */
   start(text?: string): ProgressSpinner;
-  
+
   /** Update spinner text */
   text(text: string): ProgressSpinner;
-  
+
   /** Mark spinner as successful */
   succeed(text?: string): ProgressSpinner;
-  
+
   /** Mark spinner as failed */
   fail(text?: string): ProgressSpinner;
-  
+
   /** Mark spinner as warning */
   warn(text?: string): ProgressSpinner;
-  
+
   /** Mark spinner as info */
   info(text?: string): ProgressSpinner;
-  
+
   /** Stop spinner without marking success/failure */
   stop(): ProgressSpinner;
-  
+
   /** Check if spinner is currently spinning */
   isSpinning(): boolean;
 }
@@ -102,7 +102,11 @@ export function createSpinner(text?: string): ProgressSpinner {
 /**
  * Show a step in a multi-step process
  */
-export function showStep(step: number, total: number, text: string): ProgressSpinner {
+export function showStep(
+  step: number,
+  total: number,
+  text: string
+): ProgressSpinner {
   const spinner = createSpinner(`[${step}/${total}] ${text}`);
   spinner.start();
   return spinner;
@@ -146,14 +150,10 @@ export async function withMultiProgress<T>(
   const results: T[] = [];
 
   for (const op of operations) {
-    const result = await withProgress(
-      op.text,
-      op.operation,
-      {
-        successText: op.successText,
-        failText: op.failText,
-      }
-    );
+    const result = await withProgress(op.text, op.operation, {
+      successText: op.successText,
+      failText: op.failText,
+    });
     results.push(result);
   }
 

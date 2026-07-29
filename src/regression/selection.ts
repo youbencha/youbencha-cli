@@ -29,10 +29,9 @@ export interface EffectiveRegressionSelection {
 
 function orderedSelection(
   declared: readonly string[],
-  requested: readonly string[] | undefined,
+  requested: readonly string[],
   label: string
 ): string[] {
-  if (requested === undefined) return [...declared];
   const unique = new Set(requested);
   const unknown = [...unique].filter((id) => !declared.includes(id));
   if (unknown.length > 0) {
@@ -118,7 +117,7 @@ export function resolveRegressionSelection(
 
   assertNarrowing(options.caseIds, profileTasks, 'Case');
   if (profile) {
-    assertNarrowing(options.targetIds, profileTargets ?? [], 'Target');
+    assertNarrowing(options.targetIds, profileTargets!, 'Target');
   }
   const taskIds = orderedSelection(
     allTaskIds,
@@ -127,7 +126,7 @@ export function resolveRegressionSelection(
   );
   const targetIds = orderedSelection(
     allTargetIds,
-    options.targetIds ?? profileTargets,
+    options.targetIds ?? profileTargets!,
     'target'
   );
   if (taskIds.length === 0) throw new Error('Case selection is empty');

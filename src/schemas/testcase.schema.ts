@@ -72,7 +72,9 @@ export const testCaseConfigSchema = z
           try {
             const parsed = new URL(url);
             // Prevent localhost/internal network access
-            const hostname = parsed.hostname.toLowerCase();
+            const hostname = parsed.hostname
+              .toLowerCase()
+              .replace(/^\[|\]$/g, '');
             if (
               hostname === 'localhost' ||
               hostname === '127.0.0.1' ||

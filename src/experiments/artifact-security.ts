@@ -81,11 +81,10 @@ export async function ensureLinkSafeDirectory(
     .filter(Boolean)) {
     current = path.join(current, segment);
     if ((await assertUnlinked(current)) === 'missing') {
-      try {
-        await fs.mkdir(current);
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
-      }
+      // Only one already-validated component is created per iteration.
+      // Recursive mode makes a concurrent creator idempotent; the lstat below
+      // still rejects a link or non-directory swapped into this exact path.
+      await fs.mkdir(current, { recursive: true });
     }
     const stats = await fs.lstat(current);
     if (stats.isSymbolicLink()) {

@@ -1,6 +1,6 @@
 /**
  * Eval Configuration Schema
- * 
+ *
  * Schema for eval-only configurations that run evaluators on existing directories
  * without executing an agent.
  */
@@ -19,7 +19,7 @@ const evalEvaluatorConfigSchema = z.object({
 
 /**
  * Eval Configuration schema with validation rules
- * 
+ *
  * This is a simplified configuration for running evaluators only,
  * without agent execution. Used by the `yb eval` command.
  */
@@ -35,9 +35,7 @@ export const evalConfigSchema = z.object({
     .max(1000, 'Eval description exceeds maximum length of 1000 characters'),
 
   // Directory to evaluate (must exist)
-  directory: z
-    .string()
-    .min(1, 'Directory path is required'),
+  directory: z.string().min(1, 'Directory path is required'),
 
   // Expected reference directory (optional, for expected-diff evaluator)
   expected_directory: z.string().optional(),

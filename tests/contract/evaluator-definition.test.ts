@@ -1,14 +1,20 @@
 /**
  * Contract tests for Evaluator Definition schema and loader
- * 
+ *
  * These tests define the contract for standalone evaluator definitions
  * that can be referenced from multiple test case files.
- * 
+ *
  * Purpose: Ensure evaluator definitions are properly validated and loaded
  */
 
-import { evaluatorDefinitionSchema, type EvaluatorDefinition } from '../../src/schemas/evaluator-definition.schema';
-import { testCaseConfigSchema, type EvaluatorConfig } from '../../src/schemas/testcase.schema';
+import {
+  evaluatorDefinitionSchema,
+  type EvaluatorDefinition,
+} from '../../src/schemas/evaluator-definition.schema';
+import {
+  testCaseConfigSchema,
+  type EvaluatorConfig,
+} from '../../src/schemas/testcase.schema';
 
 describe('Evaluator Definition Schema Contract', () => {
   describe('Valid Evaluator Definition', () => {
@@ -21,8 +27,10 @@ describe('Evaluator Definition Schema Contract', () => {
           agent_name: 'agentic-judge',
           timeout: 300000,
           assertions: {
-            grammatically_correct: 'README.md content is grammatically correct. Score 1 if true, 0 if false.',
-            no_spelling_errors: 'README.md has no spelling errors. Score 1 if true, 0 if false.',
+            grammatically_correct:
+              'README.md content is grammatically correct. Score 1 if true, 0 if false.',
+            no_spelling_errors:
+              'README.md has no spelling errors. Score 1 if true, 0 if false.',
           },
         },
       };

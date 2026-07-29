@@ -48,7 +48,9 @@ export interface DoctorDependencies {
   loadConfig(): Promise<Config>;
 }
 
-async function getCommandVersion(command: string): Promise<string | null> {
+export async function getCommandVersion(
+  command: string
+): Promise<string | null> {
   const result = await getCommandOutput(command, ['--version']);
   if (!result || result.exitCode !== 0) {
     return null;
@@ -56,7 +58,7 @@ async function getCommandVersion(command: string): Promise<string | null> {
   return (result.stdout || result.stderr).trim() || 'installed';
 }
 
-async function getCommandOutput(
+export async function getCommandOutput(
   command: string,
   args: readonly string[]
 ): Promise<{ exitCode: number; stdout: string; stderr: string } | null> {
@@ -92,7 +94,7 @@ async function getCommandOutput(
   }
 }
 
-async function pathExists(targetPath: string): Promise<boolean> {
+export async function pathExists(targetPath: string): Promise<boolean> {
   try {
     await fs.access(targetPath);
     return true;
@@ -101,10 +103,24 @@ async function pathExists(targetPath: string): Promise<boolean> {
   }
 }
 
-async function isWritable(targetPath: string): Promise<boolean> {
+export interface WritablePathDependencies {
+  pathExists?: (targetPath: string) => Promise<boolean>;
+  stat?: (targetPath: string) => Promise<{ isDirectory(): boolean }>;
+  access?: (targetPath: string, mode: number) => Promise<void>;
+}
+
+export async function isWritable(
+  targetPath: string,
+  dependencies: WritablePathDependencies = {}
+): Promise<boolean> {
+  const exists = dependencies.pathExists ?? pathExists;
+  const stat = dependencies.stat ?? ((candidate: string) => fs.stat(candidate));
+  const access =
+    dependencies.access ??
+    ((candidate: string, mode: number) => fs.access(candidate, mode));
   let candidate = path.resolve(targetPath);
 
-  while (!(await pathExists(candidate))) {
+  while (!(await exists(candidate))) {
     const parent = path.dirname(candidate);
     if (parent === candidate) {
       return false;
@@ -113,18 +129,18 @@ async function isWritable(targetPath: string): Promise<boolean> {
   }
 
   try {
-    const stats = await fs.stat(candidate);
+    const stats = await stat(candidate);
     if (!stats.isDirectory()) {
       return false;
     }
-    await fs.access(candidate, fsConstants.W_OK);
+    await access(candidate, fsConstants.W_OK);
     return true;
   } catch {
     return false;
   }
 }
 
-const defaultDependencies: DoctorDependencies = {
+export const defaultDoctorDependencies: DoctorDependencies = {
   nodeVersion: process.versions.node,
   cwd: process.cwd(),
   commandVersion: getCommandVersion,
@@ -147,11 +163,11 @@ function summarizeConfig(config: Config): string {
 }
 
 export async function runDoctor(
-  dependencies: DoctorDependencies = defaultDependencies
+  dependencies: DoctorDependencies = defaultDoctorDependencies
 ): Promise<DoctorResult> {
   const checks: DoctorCheck[] = [];
   const majorVersion = Number.parseInt(
-    dependencies.nodeVersion.split('.')[0] ?? '',
+    dependencies.nodeVersion.split('.')[0],
     10
   );
 
@@ -409,8 +425,10 @@ export async function runDoctor(
   };
 }
 
-export async function doctorCommand(): Promise<void> {
-  const result = await runDoctor();
+export async function doctorCommand(
+  dependencies: DoctorDependencies = defaultDoctorDependencies
+): Promise<void> {
+  const result = await runDoctor(dependencies);
 
   logger.info('youBencha doctor');
   logger.info('');

@@ -11,6 +11,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc && node -e \"const fs = require('fs'); fs.mkdirSync('dist/evaluators/prompts', {recursive: true}); fs.copyFileSync('src/evaluators/prompts/agentic-judge.template.md', 'dist/evaluators/prompts/agentic-judge.template.md');\"",
+    "pretest": "npm run build",
     "test": "jest",
     "lint": "eslint src/**/*.ts tests/**/*.ts",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",

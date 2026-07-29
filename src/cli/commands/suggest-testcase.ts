@@ -46,7 +46,7 @@ export function registerSuggestTestCaseCommand(program: Command): void {
 /**
  * Options type for suggest-testcase command
  */
-interface SuggestTestCaseOptions {
+export interface SuggestTestCaseOptions {
   agent: string;
   outputDir: string;
   agentFile: string;
@@ -56,7 +56,7 @@ interface SuggestTestCaseOptions {
 /**
  * Handle suggest-testcase command execution
  */
-async function handleSuggestTestCase(
+export async function handleSuggestTestCase(
   options: SuggestTestCaseOptions
 ): Promise<void> {
   logger.info('Starting test case suggestion workflow...');
@@ -137,7 +137,7 @@ async function handleSuggestTestCase(
 /**
  * Validate that output directory exists and is readable
  */
-async function validateOutputDir(dirPath: string): Promise<void> {
+export async function validateOutputDir(dirPath: string): Promise<void> {
   try {
     const resolvedPath = path.resolve(dirPath);
     const stats = await fs.stat(resolvedPath);
@@ -161,7 +161,7 @@ async function validateOutputDir(dirPath: string): Promise<void> {
 /**
  * Validate that agent tool is installed and available
  */
-async function validateAgentTool(agentType: string): Promise<void> {
+export async function validateAgentTool(agentType: string): Promise<void> {
   const supportedAgents: Record<string, string> = {
     'copilot-cli': 'copilot',
     'codex-cli': 'codex',
@@ -208,7 +208,9 @@ async function validateAgentTool(agentType: string): Promise<void> {
 /**
  * Validate that agent file exists and is readable
  */
-async function validateAgentFile(agentFilePath: string): Promise<string> {
+export async function validateAgentFile(
+  agentFilePath: string
+): Promise<string> {
   const resolvedPath = path.resolve(agentFilePath);
 
   try {
@@ -234,7 +236,7 @@ async function validateAgentFile(agentFilePath: string): Promise<string> {
 /**
  * Launch agent tool with agent file
  */
-async function launchAgent(
+export async function launchAgent(
   agentType: string,
   agentFilePath: string,
   outputDir: string,
@@ -441,7 +443,9 @@ without Markdown fences or explanatory prose.
   });
 }
 
-function credentialEnvironmentValues(environment: NodeJS.ProcessEnv): string[] {
+export function credentialEnvironmentValues(
+  environment: NodeJS.ProcessEnv
+): string[] {
   return Object.entries(environment)
     .filter(
       ([key, value]) =>

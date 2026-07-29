@@ -312,30 +312,23 @@ export class WorkspaceManager {
   async cleanup(workspace: Workspace): Promise<void> {
     logger.debug(`Cleaning up workspace: ${workspace.runId}`);
 
+    // Each filesystem operation is guarded independently so cleanup remains
+    // best effort while still attempting both targets.
     try {
-      // Remove lockfile first
-      try {
-        await fs.unlink(workspace.paths.lockFile);
-      } catch (error) {
-        logger.warn(`Failed to remove lockfile: ${(error as Error).message}`);
-      }
-
-      // Remove workspace directory
-      try {
-        await fs.rm(workspace.paths.runDir, { recursive: true, force: true });
-      } catch (error) {
-        logger.warn(
-          `Failed to remove workspace directory: ${(error as Error).message}`
-        );
-      }
-
-      logger.info(`Workspace cleaned up: ${workspace.runId}`);
+      await fs.unlink(workspace.paths.lockFile);
     } catch (error) {
-      logger.error(
-        `Cleanup failed for workspace ${workspace.runId}: ${(error as Error).message}`
-      );
-      // Don't throw - cleanup should be best-effort
+      logger.warn(`Failed to remove lockfile: ${(error as Error).message}`);
     }
+
+    try {
+      await fs.rm(workspace.paths.runDir, { recursive: true, force: true });
+    } catch (error) {
+      logger.warn(
+        `Failed to remove workspace directory: ${(error as Error).message}`
+      );
+    }
+
+    logger.info(`Workspace cleaned up: ${workspace.runId}`);
   }
 
   /**

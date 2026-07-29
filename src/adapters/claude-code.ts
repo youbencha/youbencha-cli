@@ -239,9 +239,6 @@ function classifyClaudeError(stderr: string): string | undefined {
 
 function redactHome(executablePath: string): string {
   const home = os.homedir();
-  if (!home) {
-    return executablePath;
-  }
   const relative = path.relative(home, executablePath);
   if (
     relative === '' ||
@@ -268,6 +265,24 @@ function redactSecretValues(
   }
   return redacted;
 }
+
+/** Pure adapter helpers exposed for deterministic conformance tests. */
+export const claudeCodeTesting = {
+  quotedChoices,
+  parseClaudeCapabilities,
+  optionalStringList,
+  positiveNumber,
+  serializeClaudeValue,
+  parseClaudeEventArtifact,
+  detectClaudeVersion,
+  isVersionBefore,
+  parseClaudeAuthentication,
+  maxOutputBytes,
+  stderrPreview,
+  classifyClaudeError,
+  redactHome,
+  redactSecretValues,
+};
 
 /**
  * Claude Code adapter implementation

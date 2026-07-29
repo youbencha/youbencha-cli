@@ -55,7 +55,7 @@ function resolveEvaluatorPrompts(
   options: {
     requireAgentType?: boolean;
     inheritedAgentType?: string;
-  } = {}
+  }
 ): ResolvedEvaluatorConfig[] {
   return evaluators.map((evaluator) => {
     const resolvedConfig = { ...(evaluator.config ?? {}) };

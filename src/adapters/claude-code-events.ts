@@ -642,3 +642,17 @@ export function parseClaudeStream(rawOutput: string): ClaudeStreamParseResult {
 
   return parser.finish();
 }
+
+/** Pure event helpers and retention boundary for deterministic tests. */
+export const claudeEventTesting = {
+  isRecord,
+  optionalString,
+  optionalNumber,
+  optionalStringArray,
+  contentBlocks,
+  textFromContent,
+  usageFromRecord,
+  mergeUsage,
+  calculateTotalTokens,
+  truncateUtf8,
+};

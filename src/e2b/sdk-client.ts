@@ -54,6 +54,10 @@ export interface E2BSdkClientOptions {
   requestTimeoutMs?: number;
 }
 
+export interface E2BSdkClientDependencies {
+  loadSdk?: () => Promise<LoadedE2BSdk>;
+}
+
 function encodeMetadata(
   metadata: E2BSandboxMetadata,
   buildId?: string
@@ -212,13 +216,14 @@ class SdkSandboxHandle implements E2BSandboxHandle {
 
   public constructor(
     private readonly sandbox: Sandbox,
-    private readonly options: E2BSdkClientOptions
+    private readonly options: E2BSdkClientOptions,
+    private readonly loadSdk: () => Promise<LoadedE2BSdk>
   ) {
     this.sandboxId = sandbox.sandboxId;
   }
 
   public async getInfo(): Promise<E2BSandboxInfo> {
-    const { Sandbox: SandboxApi } = await loadE2BSdk();
+    const { Sandbox: SandboxApi } = await this.loadSdk();
     const info = await SandboxApi.getInfo(this.sandboxId, this.options);
     return mapSandboxInfo(info);
   }
@@ -339,12 +344,19 @@ export class E2BSdkClient implements E2BClient {
     snapshots: true,
   };
 
-  public constructor(private readonly options: E2BSdkClientOptions = {}) {}
+  private readonly loadSdk: () => Promise<LoadedE2BSdk>;
+
+  public constructor(
+    private readonly options: E2BSdkClientOptions = {},
+    dependencies: E2BSdkClientDependencies = {}
+  ) {
+    this.loadSdk = dependencies.loadSdk ?? loadE2BSdk;
+  }
 
   public async createSandbox(
     request: E2BCreateSandboxRequest
   ): Promise<E2BSandboxHandle> {
-    const { Sandbox: SandboxApi } = await loadE2BSdk();
+    const { Sandbox: SandboxApi } = await this.loadSdk();
     const network = sdkNetwork(request.network);
     // The SDK create surface accepts a template/snapshot selector, not a
     // template build ID. Immutable build identity is verified from the runner
@@ -360,19 +372,19 @@ export class E2BSdkClient implements E2BClient {
       envs: {},
       lifecycle: { onTimeout: 'kill' },
     });
-    return new SdkSandboxHandle(sandbox, this.options);
+    return new SdkSandboxHandle(sandbox, this.options, this.loadSdk);
   }
 
   public async connectSandbox(sandboxId: string): Promise<E2BSandboxHandle> {
-    const { Sandbox: SandboxApi } = await loadE2BSdk();
+    const { Sandbox: SandboxApi } = await this.loadSdk();
     const sandbox = await SandboxApi.connect(sandboxId, this.options);
-    return new SdkSandboxHandle(sandbox, this.options);
+    return new SdkSandboxHandle(sandbox, this.options, this.loadSdk);
   }
 
   public async listSandboxes(
     filter: E2BListSandboxFilter
   ): Promise<E2BSandboxInfo[]> {
-    const { Sandbox: SandboxApi } = await loadE2BSdk();
+    const { Sandbox: SandboxApi } = await this.loadSdk();
     const queryMetadata = {
       [METADATA_KEYS.owner]: filter.owner,
       [METADATA_KEYS.project]: filter.project,
@@ -406,12 +418,12 @@ export class E2BSdkClient implements E2BClient {
   }
 
   public async killSandbox(sandboxId: string): Promise<void> {
-    const { Sandbox: SandboxApi } = await loadE2BSdk();
+    const { Sandbox: SandboxApi } = await this.loadSdk();
     await SandboxApi.kill(sandboxId, this.options);
   }
 
   public async pauseSandbox(sandboxId: string): Promise<void> {
-    const { Sandbox: SandboxApi } = await loadE2BSdk();
+    const { Sandbox: SandboxApi } = await this.loadSdk();
     await SandboxApi.pause(sandboxId, {
       ...this.options,
       keepMemory: false,

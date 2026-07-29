@@ -178,10 +178,9 @@ export class ExperimentScheduler {
 
         await this.startReadyCells();
         if (this.active.size === 0) {
-          const wait = this.nextRetryDelay();
-          if (wait === undefined) {
-            break;
-          }
+          // Runnable work with no active attempt necessarily has at least one
+          // pending retry, so a delay is available here.
+          const wait = this.nextRetryDelay()!;
           try {
             await this.delay(wait, this.runtimeAbort.signal);
           } catch {

@@ -34,14 +34,16 @@ export interface LoadedExperiment {
   redactedEffectiveConfiguration: unknown;
 }
 
+function errorMessage(error: unknown): string {
+  return String(error).replace(/^(?:[A-Za-z]+)?Error:\s*/, '');
+}
+
 async function readParsedFile(file: string): Promise<unknown> {
   try {
     const content = await fs.readFile(file, 'utf8');
     return parseConfig(content, file);
   } catch (error) {
-    throw new Error(
-      `${file}: ${error instanceof Error ? error.message : String(error)}`
-    );
+    throw new Error(`${file}: ${errorMessage(error)}`);
   }
 }
 
@@ -80,9 +82,7 @@ export async function loadExperiment(
     definition = experimentDefinitionSchema.parse(parsed);
   } catch (error) {
     throw new Error(
-      `${sourceFile}: invalid experiment definition: ${
-        error instanceof Error ? error.message : String(error)
-      }`
+      `${sourceFile}: invalid experiment definition: ${errorMessage(error)}`
     );
   }
 
@@ -104,9 +104,7 @@ export async function loadExperiment(
         }
       } catch (error) {
         throw new Error(
-          `${sourceFile}: testcase "${entry.id}" declared at ${entry.file} (${resolvedFile}): ${
-            error instanceof Error ? error.message : String(error)
-          }`
+          `${sourceFile}: testcase "${entry.id}" declared at ${entry.file} (${resolvedFile}): ${errorMessage(error)}`
         );
       }
       const identityConfig = identitySafeValue({

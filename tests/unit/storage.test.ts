@@ -1,6 +1,6 @@
 /**
  * Unit tests for Storage Manager
- * 
+ *
  * Tests storage operations: save JSON, save artifacts, artifact manifest
  */
 
@@ -383,7 +383,9 @@ describe('Storage Manager', () => {
       mkdirSync(artifactsDir, { recursive: true });
       expect(existsSync(artifactsDir)).toBe(true);
 
-      await expect(ensureArtifactsDirectory(artifactsDir)).resolves.not.toThrow();
+      await expect(
+        ensureArtifactsDirectory(artifactsDir)
+      ).resolves.not.toThrow();
     });
 
     test('creates nested directories', async () => {

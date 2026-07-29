@@ -63,7 +63,7 @@ export class TargetCircuitBreakerExecutor implements SingleRunExecutor {
       return this.executor.execute(cell, context);
     }
 
-    let release = (): void => undefined;
+    let release!: () => void;
     const probe = new Promise<void>((resolve) => {
       release = resolve;
     });

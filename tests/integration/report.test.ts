@@ -5,7 +5,12 @@ import { execSync } from 'child_process';
 import { rimraf } from 'rimraf';
 
 describe('Integration: Report Generation', () => {
-  const testWorkspaceDir = path.join(__dirname, '..', '..', '.test-report-workspace');
+  const testWorkspaceDir = path.join(
+    __dirname,
+    '..',
+    '..',
+    '.test-report-workspace'
+  );
   const testResultsPath = path.join(testWorkspaceDir, 'test-results.json');
   const testReportPath = path.join(testWorkspaceDir, 'test-report.md');
 
@@ -33,14 +38,14 @@ describe('Integration: Report Generation', () => {
         environment: {
           os: 'linux',
           node_version: 'v20.0.0',
-          workspace_dir: '.youbencha-workspace'
-        }
+          workspace_dir: '.youbencha-workspace',
+        },
       },
       agent: {
         type: 'copilot-cli',
         youbencha_log_path: 'artifacts/youbencha-log.json',
         status: 'success' as const,
-        exit_code: 0
+        exit_code: 0,
       },
       evaluators: [
         {
@@ -51,7 +56,7 @@ describe('Integration: Report Generation', () => {
             insertions: 45,
             deletions: 12,
             total_changes: 57,
-            entropy: 0.75
+            entropy: 0.75,
           },
           message: '3 files changed, 45 insertions(+), 12 deletions(-)',
           duration_ms: 5000,
@@ -63,25 +68,25 @@ describe('Integration: Report Generation', () => {
           metrics: {
             score: 0.85,
             criteria_met: 4,
-            total_criteria: 5
+            total_criteria: 5,
           },
           message: 'Good implementation with minor improvements needed',
           duration_ms: 15000,
           timestamp: '2025-11-04T10:03:00Z',
-        }
+        },
       ],
       summary: {
         total_evaluators: 2,
         passed: 2,
         failed: 0,
         skipped: 0,
-        overall_status: 'passed' as const
+        overall_status: 'passed' as const,
       },
       artifacts: {
         agent_log: 'artifacts/youbencha-log.json',
         reports: ['artifacts/report.md'],
-        evaluator_artifacts: []
-      }
+        evaluator_artifacts: [],
+      },
     };
 
     await fs.writeFile(testResultsPath, JSON.stringify(mockResults, null, 2));
@@ -93,17 +98,14 @@ describe('Integration: Report Generation', () => {
   });
 
   it('should generate markdown report from results.json', async () => {
-    // Build the CLI
-    execSync('npm run build', { cwd: path.join(__dirname, '..', '..') });
-
     // Run the report command
     const cliPath = path.join(__dirname, '..', '..', 'dist', 'cli', 'index.js');
-    
+
     const output = execSync(
       `node "${cliPath}" report --from "${testResultsPath}" --output "${testReportPath}"`,
       {
         cwd: path.join(__dirname, '..', '..'),
-        encoding: 'utf-8'
+        encoding: 'utf-8',
       }
     );
 
@@ -111,10 +113,11 @@ describe('Integration: Report Generation', () => {
     expect(output).toContain('Report generated');
 
     // Verify report file was created
-    const reportExists = await fs.access(testReportPath)
+    const reportExists = await fs
+      .access(testReportPath)
       .then(() => true)
       .catch(() => false);
-    
+
     expect(reportExists).toBe(true);
   }, 30000);
 
@@ -130,12 +133,12 @@ describe('Integration: Report Generation', () => {
     expect(reportContent).toContain('## Agent Execution');
     expect(reportContent).toContain('## Evaluator Results');
     expect(reportContent).toContain('## Artifacts');
-    
+
     // Verify environment info is included in execution details
     expect(reportContent).toContain('Environment:');
     expect(reportContent).toContain('OS:');
     expect(reportContent).toContain('Node.js:');
-    
+
     // Verify specific content
     expect(reportContent).toContain('main');
     expect(reportContent).toContain('copilot-cli');
@@ -151,7 +154,7 @@ describe('Integration: Report Generation', () => {
     expect(reportContent).toContain('files_changed');
     expect(reportContent).toContain('insertions');
     expect(reportContent).toContain('deletions');
-    
+
     // Check for agentic-judge metrics
     expect(reportContent).toContain('score');
     expect(reportContent).toContain('criteria_met');
@@ -159,31 +162,29 @@ describe('Integration: Report Generation', () => {
 
   it('should generate JSON report when format is json', async () => {
     const jsonReportPath = path.join(testWorkspaceDir, 'test-report.json');
-    
-    // Build the CLI
-    execSync('npm run build', { cwd: path.join(__dirname, '..', '..') });
 
     const cliPath = path.join(__dirname, '..', '..', 'dist', 'cli', 'index.js');
-    
+
     execSync(
       `node "${cliPath}" report --from "${testResultsPath}" --output "${jsonReportPath}" --format json`,
       {
         cwd: path.join(__dirname, '..', '..'),
-        encoding: 'utf-8'
+        encoding: 'utf-8',
       }
     );
 
     // Verify JSON report file was created
-    const jsonReportExists = await fs.access(jsonReportPath)
+    const jsonReportExists = await fs
+      .access(jsonReportPath)
       .then(() => true)
       .catch(() => false);
-    
+
     expect(jsonReportExists).toBe(true);
 
     // Verify JSON is valid
     const jsonContent = await fs.readFile(jsonReportPath, 'utf-8');
     const jsonData = JSON.parse(jsonContent);
-    
+
     expect(jsonData).toHaveProperty('version');
     expect(jsonData).toHaveProperty('test_case');
     expect(jsonData).toHaveProperty('evaluators');
@@ -191,21 +192,15 @@ describe('Integration: Report Generation', () => {
 
   it('should handle missing results file gracefully', async () => {
     const missingResultsPath = path.join(testWorkspaceDir, 'nonexistent.json');
-    
-    // Build the CLI
-    execSync('npm run build', { cwd: path.join(__dirname, '..', '..') });
 
     const cliPath = path.join(__dirname, '..', '..', 'dist', 'cli', 'index.js');
-    
+
     let error: any;
     try {
-      execSync(
-        `node "${cliPath}" report --from "${missingResultsPath}"`,
-        {
-          cwd: path.join(__dirname, '..', '..'),
-          encoding: 'utf-8'
-        }
-      );
+      execSync(`node "${cliPath}" report --from "${missingResultsPath}"`, {
+        cwd: path.join(__dirname, '..', '..'),
+        encoding: 'utf-8',
+      });
     } catch (err) {
       error = err;
     }
@@ -216,23 +211,20 @@ describe('Integration: Report Generation', () => {
   });
 
   it('should handle invalid JSON in results file', async () => {
-    const invalidResultsPath = path.join(testWorkspaceDir, 'invalid-results.json');
+    const invalidResultsPath = path.join(
+      testWorkspaceDir,
+      'invalid-results.json'
+    );
     await fs.writeFile(invalidResultsPath, 'This is not valid JSON');
-    
-    // Build the CLI
-    execSync('npm run build', { cwd: path.join(__dirname, '..', '..') });
 
     const cliPath = path.join(__dirname, '..', '..', 'dist', 'cli', 'index.js');
-    
+
     let error: any;
     try {
-      execSync(
-        `node "${cliPath}" report --from "${invalidResultsPath}"`,
-        {
-          cwd: path.join(__dirname, '..', '..'),
-          encoding: 'utf-8'
-        }
-      );
+      execSync(`node "${cliPath}" report --from "${invalidResultsPath}"`, {
+        cwd: path.join(__dirname, '..', '..'),
+        encoding: 'utf-8',
+      });
     } catch (err) {
       error = err;
     }

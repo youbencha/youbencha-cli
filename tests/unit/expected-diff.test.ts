@@ -1,12 +1,12 @@
 /**
  * Unit tests for ExpectedDiffEvaluator
- * 
+ *
  * Tests the ExpectedDiffEvaluator implementation including:
  * - File comparison between modified and expected directories
  * - Similarity scoring for individual files
  * - Aggregate similarity calculation
  * - Threshold checking for pass/fail status
- * 
+ *
  * TDD: These tests MUST FAIL initially before implementation
  */
 
@@ -181,8 +181,14 @@ describe('ExpectedDiffEvaluator', () => {
 
     it('should detect differences in file content', async () => {
       // Create different files
-      await fs.writeFile(path.join(modifiedDir, 'test.ts'), 'console.log("modified");\n');
-      await fs.writeFile(path.join(expectedDir, 'test.ts'), 'console.log("expected");\n');
+      await fs.writeFile(
+        path.join(modifiedDir, 'test.ts'),
+        'console.log("modified");\n'
+      );
+      await fs.writeFile(
+        path.join(expectedDir, 'test.ts'),
+        'console.log("expected");\n'
+      );
 
       const context: EvaluationContext = {
         modifiedDir,
@@ -202,8 +208,14 @@ describe('ExpectedDiffEvaluator', () => {
 
     it('should handle added files in modified directory', async () => {
       // File only exists in modified
-      await fs.writeFile(path.join(modifiedDir, 'new-file.ts'), 'console.log("new");\n');
-      await fs.writeFile(path.join(expectedDir, 'existing.ts'), 'console.log("old");\n');
+      await fs.writeFile(
+        path.join(modifiedDir, 'new-file.ts'),
+        'console.log("new");\n'
+      );
+      await fs.writeFile(
+        path.join(expectedDir, 'existing.ts'),
+        'console.log("old");\n'
+      );
 
       const context: EvaluationContext = {
         modifiedDir,
@@ -222,9 +234,18 @@ describe('ExpectedDiffEvaluator', () => {
 
     it('should handle removed files from expected directory', async () => {
       // File only exists in expected
-      await fs.writeFile(path.join(modifiedDir, 'remaining.ts'), 'console.log("remains");\n');
-      await fs.writeFile(path.join(expectedDir, 'remaining.ts'), 'console.log("remains");\n');
-      await fs.writeFile(path.join(expectedDir, 'removed.ts'), 'console.log("gone");\n');
+      await fs.writeFile(
+        path.join(modifiedDir, 'remaining.ts'),
+        'console.log("remains");\n'
+      );
+      await fs.writeFile(
+        path.join(expectedDir, 'remaining.ts'),
+        'console.log("remains");\n'
+      );
+      await fs.writeFile(
+        path.join(expectedDir, 'removed.ts'),
+        'console.log("gone");\n'
+      );
 
       const context: EvaluationContext = {
         modifiedDir,
@@ -243,11 +264,23 @@ describe('ExpectedDiffEvaluator', () => {
 
     it('should compare multiple files', async () => {
       // Create multiple files with varying similarity
-      await fs.writeFile(path.join(modifiedDir, 'file1.ts'), 'identical content\n');
-      await fs.writeFile(path.join(expectedDir, 'file1.ts'), 'identical content\n');
-      
-      await fs.writeFile(path.join(modifiedDir, 'file2.ts'), 'modified content here\n');
-      await fs.writeFile(path.join(expectedDir, 'file2.ts'), 'expected content here\n');
+      await fs.writeFile(
+        path.join(modifiedDir, 'file1.ts'),
+        'identical content\n'
+      );
+      await fs.writeFile(
+        path.join(expectedDir, 'file1.ts'),
+        'identical content\n'
+      );
+
+      await fs.writeFile(
+        path.join(modifiedDir, 'file2.ts'),
+        'modified content here\n'
+      );
+      await fs.writeFile(
+        path.join(expectedDir, 'file2.ts'),
+        'expected content here\n'
+      );
 
       const context: EvaluationContext = {
         modifiedDir,
@@ -275,8 +308,14 @@ describe('ExpectedDiffEvaluator', () => {
     });
 
     it('should provide per-file similarity scores', async () => {
-      await fs.writeFile(path.join(modifiedDir, 'test.ts'), 'console.log("test");\n');
-      await fs.writeFile(path.join(expectedDir, 'test.ts'), 'console.log("test");\n');
+      await fs.writeFile(
+        path.join(modifiedDir, 'test.ts'),
+        'console.log("test");\n'
+      );
+      await fs.writeFile(
+        path.join(expectedDir, 'test.ts'),
+        'console.log("test");\n'
+      );
 
       const context: EvaluationContext = {
         modifiedDir,
@@ -291,8 +330,11 @@ describe('ExpectedDiffEvaluator', () => {
 
       expect(result.metrics).toHaveProperty('file_similarities');
       expect(Array.isArray(result.metrics.file_similarities)).toBe(true);
-      
-      if (result.metrics.file_similarities && result.metrics.file_similarities.length > 0) {
+
+      if (
+        result.metrics.file_similarities &&
+        result.metrics.file_similarities.length > 0
+      ) {
         const firstFile = result.metrics.file_similarities[0];
         expect(firstFile).toHaveProperty('path');
         expect(firstFile).toHaveProperty('similarity');
@@ -303,10 +345,19 @@ describe('ExpectedDiffEvaluator', () => {
 
     it('should calculate aggregate similarity as average', async () => {
       // Create files with known similarities
-      await fs.writeFile(path.join(modifiedDir, 'identical.ts'), 'same content\n');
-      await fs.writeFile(path.join(expectedDir, 'identical.ts'), 'same content\n');
-      
-      await fs.writeFile(path.join(modifiedDir, 'different.ts'), 'completely different\n');
+      await fs.writeFile(
+        path.join(modifiedDir, 'identical.ts'),
+        'same content\n'
+      );
+      await fs.writeFile(
+        path.join(expectedDir, 'identical.ts'),
+        'same content\n'
+      );
+
+      await fs.writeFile(
+        path.join(modifiedDir, 'different.ts'),
+        'completely different\n'
+      );
       await fs.writeFile(path.join(expectedDir, 'different.ts'), 'xyz\n');
 
       const context: EvaluationContext = {
@@ -358,7 +409,10 @@ describe('ExpectedDiffEvaluator', () => {
 
     it('should fail when similarity is below threshold', async () => {
       // Create very different files
-      await fs.writeFile(path.join(modifiedDir, 'test.ts'), 'completely different content\n');
+      await fs.writeFile(
+        path.join(modifiedDir, 'test.ts'),
+        'completely different content\n'
+      );
       await fs.writeFile(path.join(expectedDir, 'test.ts'), 'xyz\n');
 
       const context: EvaluationContext = {
@@ -366,15 +420,15 @@ describe('ExpectedDiffEvaluator', () => {
         expectedDir,
         artifactsDir,
         agentLog: mockAgentLog,
-        config: { threshold: 0.80 },
+        config: { threshold: 0.8 },
         suiteConfig: mockSuiteConfig,
       };
 
       const result = await evaluator.evaluate(context);
 
       expect(result.status).toBe('failed');
-      expect(result.assertions.threshold).toBe(0.80);
-      expect(result.metrics.aggregate_similarity).toBeLessThan(0.80);
+      expect(result.assertions.threshold).toBe(0.8);
+      expect(result.metrics.aggregate_similarity).toBeLessThan(0.8);
     });
 
     it('should use default threshold of 0.80 when not configured', async () => {
@@ -392,7 +446,7 @@ describe('ExpectedDiffEvaluator', () => {
 
       const result = await evaluator.evaluate(context);
 
-      expect(result.assertions.threshold).toBe(0.80);
+      expect(result.assertions.threshold).toBe(0.8);
     });
   });
 
@@ -427,8 +481,14 @@ describe('ExpectedDiffEvaluator', () => {
     });
 
     it('should create diff patch file in artifacts directory', async () => {
-      await fs.writeFile(path.join(modifiedDir, 'test.ts'), 'modified content\n');
-      await fs.writeFile(path.join(expectedDir, 'test.ts'), 'expected content\n');
+      await fs.writeFile(
+        path.join(modifiedDir, 'test.ts'),
+        'modified content\n'
+      );
+      await fs.writeFile(
+        path.join(expectedDir, 'test.ts'),
+        'expected content\n'
+      );
 
       const context: EvaluationContext = {
         modifiedDir,
@@ -441,12 +501,17 @@ describe('ExpectedDiffEvaluator', () => {
 
       const result = await evaluator.evaluate(context);
 
-      const diffArtifact = result.artifacts?.find(a => a.type === 'diff-report');
+      const diffArtifact = result.artifacts?.find(
+        (a) => a.type === 'diff-report'
+      );
       expect(diffArtifact).toBeDefined();
-      
+
       if (diffArtifact) {
         const artifactPath = path.join(artifactsDir, diffArtifact.path);
-        const exists = await fs.access(artifactPath).then(() => true).catch(() => false);
+        const exists = await fs
+          .access(artifactPath)
+          .then(() => true)
+          .catch(() => false);
         expect(exists).toBe(true);
       }
     });
@@ -455,7 +520,10 @@ describe('ExpectedDiffEvaluator', () => {
       await fs.writeFile(path.join(modifiedDir, 'file1.ts'), 'content1\n');
       await fs.writeFile(path.join(expectedDir, 'file1.ts'), 'content1\n');
       await fs.writeFile(path.join(modifiedDir, 'file2.ts'), 'different\n');
-      await fs.writeFile(path.join(expectedDir, 'file2.ts'), 'also different\n');
+      await fs.writeFile(
+        path.join(expectedDir, 'file2.ts'),
+        'also different\n'
+      );
 
       const context: EvaluationContext = {
         modifiedDir,
@@ -468,11 +536,13 @@ describe('ExpectedDiffEvaluator', () => {
 
       const result = await evaluator.evaluate(context);
 
-      const diffArtifact = result.artifacts?.find(a => a.type === 'diff-report');
+      const diffArtifact = result.artifacts?.find(
+        (a) => a.type === 'diff-report'
+      );
       if (diffArtifact) {
         const artifactPath = path.join(artifactsDir, diffArtifact.path);
         const artifactContent = await fs.readFile(artifactPath, 'utf-8');
-        
+
         // Artifact should contain file information
         expect(artifactContent).toContain('file1.ts');
         expect(artifactContent).toContain('file2.ts');
@@ -501,7 +571,11 @@ describe('ExpectedDiffEvaluator', () => {
 
     it('should handle file read errors gracefully', async () => {
       // Create a file that will cause read error (using path that doesn't exist on any platform)
-      const nonexistentPath = path.join(os.tmpdir(), 'youbencha-test-nonexistent-' + Date.now(), 'dir');
+      const nonexistentPath = path.join(
+        os.tmpdir(),
+        'youbencha-test-nonexistent-' + Date.now(),
+        'dir'
+      );
       const context: EvaluationContext = {
         modifiedDir: nonexistentPath,
         expectedDir: nonexistentPath,

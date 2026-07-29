@@ -74,12 +74,12 @@ export const evaluatorDefinitionSchema = z
     try {
       parseEvaluatorConfig(definition.name, definition.config);
     } catch (error) {
+      // parseEvaluatorConfig delegates to Zod's parse APIs, which throw Error
+      // instances for every invalid configuration.
+      const parseError = error as Error;
       context.addIssue({
         code: z.ZodIssueCode.custom,
-        message:
-          error instanceof Error
-            ? error.message
-            : 'Invalid evaluator configuration',
+        message: parseError.message,
         path: ['config'],
       });
     }

@@ -431,14 +431,16 @@ describe('CopilotCLIAdapter', () => {
       }
     );
 
-    it('should handle authentication errors', async () => {
-      // Test behavior when copilot is not authenticated
-      try {
-        await adapter.checkAvailability();
-      } catch (error) {
-        expect(error).toBeDefined();
-        // Error message should mention authentication
-      }
+    it('should surface availability probe errors', async () => {
+      adapter = new CopilotCLIAdapter({
+        resolveExecutable: async (): Promise<never> => {
+          throw new Error('availability probe failed');
+        },
+      });
+
+      await expect(adapter.checkAvailability()).rejects.toThrow(
+        'availability probe failed'
+      );
     });
 
     it('should handle invalid workspace directory', async () => {

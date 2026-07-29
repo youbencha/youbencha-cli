@@ -1,6 +1,6 @@
 /**
  * Integration tests for JSON configuration support
- * 
+ *
  * Tests that JSON configurations can be loaded and validated end-to-end
  */
 
@@ -35,9 +35,7 @@ describe('JSON Configuration Integration', () => {
             prompt: 'Test prompt',
           },
         },
-        evaluators: [
-          { name: 'git-diff' },
-        ],
+        evaluators: [{ name: 'git-diff' }],
       };
 
       await fs.writeFile(configPath, JSON.stringify(config, null, 2));
@@ -159,9 +157,7 @@ describe('JSON Configuration Integration', () => {
         agent: {
           type: 'copilot-cli',
         },
-        evaluators: [
-          { file: './custom-evaluator.json' },
-        ],
+        evaluators: [{ file: './custom-evaluator.json' }],
       };
 
       await fs.writeFile(configPath, JSON.stringify(config, null, 2));
@@ -191,10 +187,7 @@ describe('JSON Configuration Integration', () => {
         agent: {
           type: 'copilot-cli',
         },
-        evaluators: [
-          { name: 'git-diff' },
-          { file: './file-evaluator.json' },
-        ],
+        evaluators: [{ name: 'git-diff' }, { file: './file-evaluator.json' }],
       };
 
       await fs.writeFile(configPath, JSON.stringify(config, null, 2));
@@ -222,9 +215,7 @@ describe('JSON Configuration Integration', () => {
             prompt: 'Test prompt',
           },
         },
-        evaluators: [
-          { name: 'git-diff' },
-        ],
+        evaluators: [{ name: 'git-diff' }],
       };
 
       // Write JSON version
@@ -249,7 +240,7 @@ evaluators:
       // Parse both
       const jsonContent = await fs.readFile(jsonPath, 'utf-8');
       const yamlContentRead = await fs.readFile(yamlPath, 'utf-8');
-      
+
       const jsonParsed = parseConfig(jsonContent, jsonPath);
       const yamlParsed = parseConfig(yamlContentRead, yamlPath);
 

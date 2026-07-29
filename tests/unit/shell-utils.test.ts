@@ -1,6 +1,6 @@
 /**
  * Unit tests for Shell Utilities
- * 
+ *
  * Tests cross-platform shell escaping and path validation.
  */
 

@@ -42,7 +42,7 @@ const publicRepositorySchema = z
       ) {
         return false;
       }
-      const hostname = url.hostname.toLowerCase();
+      const hostname = url.hostname.toLowerCase().replace(/^\[|\]$/g, '');
       if (
         hostname === 'localhost' ||
         hostname.endsWith('.localhost') ||
@@ -65,8 +65,9 @@ const publicRepositorySchema = z
         );
       }
       const octets = hostname.split('.').map(Number);
-      const first = octets[0] ?? -1;
-      const second = octets[1] ?? -1;
+      // isIP(hostname) has already established the four-octet IPv4 shape.
+      const first = octets[0];
+      const second = octets[1];
       return !(
         first === 0 ||
         first === 10 ||

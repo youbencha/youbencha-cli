@@ -137,20 +137,19 @@ export class CodexEventParser {
       return;
     }
     const sanitized = redactJsonValue(value, this.redact);
-    if (!isObject(sanitized) || typeof sanitized.type !== 'string') {
-      return;
-    }
+    // redactJsonValue preserves object shape and string event types.
+    const sanitizedEvent = sanitized as JsonObject & { type: string };
     this.eventCount += 1;
-    if (!KNOWN_EVENTS.has(sanitized.type)) {
+    if (!KNOWN_EVENTS.has(sanitizedEvent.type)) {
       if (
-        !this.unknownEvents.has(sanitized.type) &&
-        this.retention.reserve(sanitized.type, ENTRY_OVERHEAD_BYTES)
+        !this.unknownEvents.has(sanitizedEvent.type) &&
+        this.retention.reserve(sanitizedEvent.type, ENTRY_OVERHEAD_BYTES)
       ) {
-        this.unknownEvents.add(sanitized.type);
+        this.unknownEvents.add(sanitizedEvent.type);
       }
       return;
     }
-    this.consume(sanitized.type, sanitized);
+    this.consume(sanitizedEvent.type, sanitizedEvent);
   }
 
   finish(): CodexEventParseResult {
@@ -205,7 +204,7 @@ export class CodexEventParser {
       // This fixed-size sentinel preserves failure semantics when the shared
       // retention budget was already exhausted by untrusted content.
       this.errors.push({
-        kind: this.failedTerminals > 0 ? 'turn.failed' : 'error',
+        kind: 'turn.failed',
         message:
           'Codex reported a terminal failure; details exceeded the retention limit.',
       });
@@ -541,3 +540,17 @@ class RetentionBudget {
     return source.subarray(0, available).toString('utf8');
   }
 }
+
+/** Pure event helpers and retention boundary for deterministic tests. */
+export const codexEventTesting = {
+  itemSummary,
+  errorMessage,
+  isObject,
+  redactJsonValue,
+  stringValue,
+  retainString,
+  nonNegativeNumber,
+  validTimestamp,
+  safeJson,
+  RetentionBudget,
+};

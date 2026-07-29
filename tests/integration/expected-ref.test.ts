@@ -1,6 +1,6 @@
 /**
  * Integration Test: Expected Reference Workflow
- * 
+ *
  * Tests the complete workflow for evaluating agent output against
  * an expected reference branch.
  */
@@ -15,9 +15,17 @@ describe('Integration: Expected Reference Workflow', () => {
   // Increase timeout for integration tests that involve git operations and builds
   jest.setTimeout(60000);
 
-  const testWorkspaceDir = path.join(__dirname, '..', '..', '.test-workspace-expected-ref');
+  const testWorkspaceDir = path.join(
+    __dirname,
+    '..',
+    '..',
+    '.test-workspace-expected-ref'
+  );
   const testRepoDir = path.join(testWorkspaceDir, 'test-repo');
-  const testSuiteConfig = path.join(testWorkspaceDir, 'expected-ref-suite.yaml');
+  const testSuiteConfig = path.join(
+    testWorkspaceDir,
+    'expected-ref-suite.yaml'
+  );
 
   beforeAll(async () => {
     // Create test workspace
@@ -25,18 +33,18 @@ describe('Integration: Expected Reference Workflow', () => {
 
     // Create a test repository with two branches
     await fs.mkdir(testRepoDir, { recursive: true });
-    
+
     // Initialize git repo
     execSync('git init -b main', { cwd: testRepoDir });
     execSync('git config user.email "test@example.com"', { cwd: testRepoDir });
     execSync('git config user.name "Test User"', { cwd: testRepoDir });
-    
+
     // Create initial files on main branch
     const file1 = path.join(testRepoDir, 'file1.txt');
     const file2 = path.join(testRepoDir, 'file2.txt');
     await fs.writeFile(file1, 'Initial content 1\n');
     await fs.writeFile(file2, 'Initial content 2\n');
-    
+
     execSync('git add .', { cwd: testRepoDir });
     execSync('git commit -m "Initial commit"', { cwd: testRepoDir });
 
@@ -80,13 +88,10 @@ timeout: 300
   });
 
   it('should clone both main and expected branches', async () => {
-    // Build the CLI
-    execSync('npm run build', { cwd: path.join(__dirname, '..', '..') });
-
     // For this test, we're validating the workspace setup
     // In a real scenario with copilot-cli, the run command would execute
     // For now, we test the configuration is valid and parseable
-    
+
     const suiteContent = await fs.readFile(testSuiteConfig, 'utf-8');
     expect(suiteContent).toContain('expected_source: branch');
     expect(suiteContent).toContain('expected: expected-completed');
@@ -95,7 +100,7 @@ timeout: 300
 
   it('should include expected-diff evaluator in configuration', async () => {
     const suiteContent = await fs.readFile(testSuiteConfig, 'utf-8');
-    
+
     // Verify expected-diff evaluator is configured
     expect(suiteContent).toContain('expected-diff');
     expect(suiteContent).toContain('threshold: 0.80');
@@ -103,11 +108,11 @@ timeout: 300
 
   it('should validate expected branch exists before running', async () => {
     // Verify expected branch exists in test repo
-    const branches = execSync('git branch -a', { 
+    const branches = execSync('git branch -a', {
       cwd: testRepoDir,
-      encoding: 'utf-8'
+      encoding: 'utf-8',
     });
-    
+
     expect(branches).toContain('expected-completed');
   });
 
@@ -118,18 +123,24 @@ timeout: 300
     // 2. Agent would execute and modify code
     // 3. expected-diff would compare modified vs expected
     // 4. results.json would include similarity metrics
-    
+
     // For now, we validate the test setup is correct
     expect(testRepoDir).toBeDefined();
     expect(testSuiteConfig).toBeDefined();
-    
+
     // Verify both branches have different content
-    const mainContent = await fs.readFile(path.join(testRepoDir, 'file1.txt'), 'utf-8');
-    
+    const mainContent = await fs.readFile(
+      path.join(testRepoDir, 'file1.txt'),
+      'utf-8'
+    );
+
     execSync('git checkout expected-completed', { cwd: testRepoDir });
-    const expectedContent = await fs.readFile(path.join(testRepoDir, 'file1.txt'), 'utf-8');
+    const expectedContent = await fs.readFile(
+      path.join(testRepoDir, 'file1.txt'),
+      'utf-8'
+    );
     execSync('git checkout main', { cwd: testRepoDir });
-    
+
     expect(mainContent).not.toBe(expectedContent);
     expect(expectedContent).toContain('Expected content');
   });
@@ -138,7 +149,7 @@ timeout: 300
     // This test describes expected behavior:
     // When agent produces output similar to expected branch (>80% similarity),
     // the expected-diff evaluator should mark status as 'passed'
-    
+
     // Test structure validation
     expect(testSuiteConfig).toBeTruthy();
   });
@@ -147,7 +158,7 @@ timeout: 300
     // This test describes expected behavior:
     // When agent produces output different from expected branch (<80% similarity),
     // the expected-diff evaluator should mark status as 'failed'
-    
+
     // Test structure validation
     expect(testSuiteConfig).toBeTruthy();
   });
@@ -158,7 +169,7 @@ timeout: 300
     // 1. expected-diff-report.json with file-by-file similarity
     // 2. File status for each: matched, changed, added, removed
     // 3. Per-file similarity scores (0.0 to 1.0)
-    
+
     // Test structure validation
     const workspaceDir = path.join(testWorkspaceDir, '.youbencha-workspace');
     expect(workspaceDir).toBeTruthy();

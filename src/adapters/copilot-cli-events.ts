@@ -1031,3 +1031,21 @@ function looksLikeTerminalEvent(value: string): boolean {
     value.includes('"session.shutdown"')
   );
 }
+
+/** Pure event helpers and retention boundaries for deterministic tests. */
+export const copilotEventTesting = {
+  truncateUtf8,
+  isObject,
+  stringValue,
+  isoTimestamp,
+  numberValue,
+  nonNegativeNumber,
+  hasAnyNumber,
+  firstNumber,
+  explicitUsdValue,
+  hashString,
+  stringifyValue,
+  looksLikeTerminalEvent,
+  TextRetentionBudget,
+  ReplaceableTextRetention,
+};

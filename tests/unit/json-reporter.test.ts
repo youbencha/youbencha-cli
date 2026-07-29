@@ -1,6 +1,6 @@
 /**
  * Unit tests for JSON Reporter
- * 
+ *
  * Tests JSON report generation and file writing.
  * These tests MUST FAIL until implementation is complete (TDD).
  */
@@ -62,7 +62,9 @@ describe('JsonReporter', () => {
 
       expect(parsed.version).toBe(bundle.version);
       expect(parsed.test_case.repo).toBe(bundle.test_case.repo);
-      expect(parsed.summary.total_evaluators).toBe(bundle.summary.total_evaluators);
+      expect(parsed.summary.total_evaluators).toBe(
+        bundle.summary.total_evaluators
+      );
       expect(parsed.evaluators).toHaveLength(bundle.evaluators.length);
     });
 
@@ -136,7 +138,10 @@ describe('JsonReporter', () => {
 
       await reporter.writeToFile(bundle, outputPath);
 
-      const fileExists = await fs.stat(outputPath).then(() => true).catch(() => false);
+      const fileExists = await fs
+        .stat(outputPath)
+        .then(() => true)
+        .catch(() => false);
       expect(fileExists).toBe(true);
     });
 
@@ -146,7 +151,10 @@ describe('JsonReporter', () => {
 
       await reporter.writeToFile(bundle, outputPath);
 
-      const fileExists = await fs.stat(outputPath).then(() => true).catch(() => false);
+      const fileExists = await fs
+        .stat(outputPath)
+        .then(() => true)
+        .catch(() => false);
       expect(fileExists).toBe(true);
     });
 
@@ -190,7 +198,10 @@ describe('JsonReporter', () => {
 
       await reporter.writeToFile(bundle, outputPath, options);
 
-      const fileExists = await fs.stat(outputPath).then(() => true).catch(() => false);
+      const fileExists = await fs
+        .stat(outputPath)
+        .then(() => true)
+        .catch(() => false);
       expect(fileExists).toBe(true);
     });
 

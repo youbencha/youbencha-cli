@@ -1,6 +1,6 @@
 /**
  * Unit tests for Model Selection Feature
- * 
+ *
  * Tests that model configuration is properly passed through the system:
  * 1. Schema validation accepts any model string
  * 2. CopilotCLIAdapter includes --model flag when model is specified
@@ -20,7 +20,7 @@ describe('Model Selection Feature', () => {
     ];
 
     describe('TestCase Schema', () => {
-      testModels.forEach(model => {
+      testModels.forEach((model) => {
         it(`should accept model string: ${model}`, () => {
           const config = {
             name: 'Test Case',
@@ -34,9 +34,7 @@ describe('Model Selection Feature', () => {
                 prompt: 'Fix the bug',
               },
             },
-            evaluators: [
-              { name: 'git-diff' },
-            ],
+            evaluators: [{ name: 'git-diff' }],
           };
 
           const result = testCaseConfigSchema.safeParse(config);
@@ -60,9 +58,7 @@ describe('Model Selection Feature', () => {
               prompt: 'Fix the bug',
             },
           },
-          evaluators: [
-            { name: 'git-diff' },
-          ],
+          evaluators: [{ name: 'git-diff' }],
         };
 
         const result = testCaseConfigSchema.safeParse(config);
@@ -81,9 +77,7 @@ describe('Model Selection Feature', () => {
               prompt: 'Fix the bug',
             },
           },
-          evaluators: [
-            { name: 'git-diff' },
-          ],
+          evaluators: [{ name: 'git-diff' }],
         };
 
         const result = testCaseConfigSchema.safeParse(config);
@@ -95,7 +89,7 @@ describe('Model Selection Feature', () => {
     });
 
     describe('Suite Schema', () => {
-      testModels.forEach(model => {
+      testModels.forEach((model) => {
         it(`should accept model string in suite config: ${model}`, () => {
           const config = {
             repo: 'https://github.com/test/repo.git',
@@ -107,9 +101,7 @@ describe('Model Selection Feature', () => {
                 prompt: 'Fix the bug',
               },
             },
-            evaluators: [
-              { name: 'git-diff' },
-            ],
+            evaluators: [{ name: 'git-diff' }],
           };
 
           const result = suiteConfigSchema.safeParse(config);

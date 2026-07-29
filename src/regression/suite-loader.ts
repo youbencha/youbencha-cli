@@ -35,14 +35,16 @@ export interface LoadedRegressionSuite {
   redactedEffectiveConfiguration: unknown;
 }
 
+function errorMessage(error: unknown): string {
+  return String(error).replace(/^(?:[A-Za-z]+)?Error:\s*/, '');
+}
+
 async function readParsedFile(file: string): Promise<unknown> {
   try {
     const content = await fs.readFile(file, 'utf8');
     return parseConfig(content, file);
   } catch (error) {
-    throw new Error(
-      `${file}: ${error instanceof Error ? error.message : String(error)}`
-    );
+    throw new Error(`${file}: ${errorMessage(error)}`);
   }
 }
 

@@ -1,9 +1,9 @@
 /**
  * Contract tests for Eval Configuration schema
- * 
+ *
  * These tests define the contract for eval-only configuration.
  * Tests MUST be written first and MUST FAIL before implementation.
- * 
+ *
  * Purpose: Ensure eval configurations are properly validated
  */
 
@@ -55,7 +55,9 @@ describe('Eval Configuration Schema Contract', () => {
         expect(result.data.name).toBe(validConfig.name);
         expect(result.data.description).toBe(validConfig.description);
         expect(result.data.directory).toBe(validConfig.directory);
-        expect(result.data.evaluators.length).toBe(validConfig.evaluators.length);
+        expect(result.data.evaluators.length).toBe(
+          validConfig.evaluators.length
+        );
       }
     });
 

@@ -103,10 +103,7 @@ export function compareExperimentAggregates(
       const candidateAggregate = candidate.get(key);
       const baselineAggregate = baseline.get(key);
       const scope = candidateAggregate?.scope ?? baselineAggregate?.scope;
-      if (
-        scope === undefined ||
-        (rule.scopes !== undefined && !rule.scopes.includes(scope))
-      ) {
+      if (rule.scopes !== undefined && !rule.scopes.includes(scope!)) {
         continue;
       }
       const candidateMetric = candidateAggregate?.metrics[rule.metric];

@@ -1,17 +1,30 @@
 /**
  * Storage Manager
- * 
+ *
  * Handles saving youBencha Logs, results bundles, and artifacts to the filesystem.
  * Manages artifact directory structure and manifest generation.
  */
 
-import { writeFileSync, mkdirSync, existsSync, readdirSync, statSync } from 'fs';
-import { join, dirname, relative } from 'path';
+import {
+  writeFileSync,
+  mkdirSync,
+  existsSync,
+  readdirSync,
+  statSync,
+} from 'fs';
+import {
+  join,
+  dirname,
+  relative,
+  resolve,
+  isAbsolute,
+  sep as pathSeparator,
+} from 'path';
 import type { YouBenchaLog, ResultsBundle } from '../schemas/index.js';
 
 /**
  * Save youBencha Log to artifacts directory
- * 
+ *
  * @param log - youBencha Log object to save
  * @param artifactsDir - Path to artifacts directory
  * @returns Path to saved file
@@ -32,7 +45,7 @@ export async function saveYouBenchaLog(
 
 /**
  * Save results bundle to artifacts directory
- * 
+ *
  * @param bundle - Results bundle object to save
  * @param artifactsDir - Path to artifacts directory
  * @returns Path to saved file
@@ -53,9 +66,9 @@ export async function saveResultsBundle(
 
 /**
  * Save an artifact file to artifacts directory
- * 
+ *
  * Supports nested paths (e.g., 'evaluators/git-diff.patch')
- * 
+ *
  * @param content - File content to save
  * @param filename - Filename or relative path within artifacts directory
  * @param artifactsDir - Path to artifacts directory
@@ -72,7 +85,7 @@ export async function saveArtifact(
   }
 
   // Prevent path traversal
-  if (filename.includes('..') || filename.startsWith('/') || filename.startsWith('\\')) {
+  if (filename.startsWith('/') || filename.startsWith('\\')) {
     throw new Error('Invalid artifact filename: path traversal detected');
   }
 
@@ -81,13 +94,19 @@ export async function saveArtifact(
     throw new Error('Invalid artifact filename: absolute paths not allowed');
   }
 
-  const filePath = join(artifactsDir, filename);
+  const resolvedArtifactsDir = resolve(artifactsDir);
+  const filePath = resolve(resolvedArtifactsDir, filename);
 
   // Double-check resolved path is within artifacts directory
-  const normalizedArtifactsDir = join(artifactsDir, '/');
-  const normalizedFilePath = join(filePath, '/');
-  if (!normalizedFilePath.startsWith(normalizedArtifactsDir)) {
-    throw new Error('Invalid artifact filename: path outside artifacts directory');
+  const relativePath = relative(resolvedArtifactsDir, filePath);
+  if (
+    relativePath === '..' ||
+    relativePath.startsWith(`..${pathSeparator}`) ||
+    isAbsolute(relativePath)
+  ) {
+    throw new Error(
+      'Invalid artifact filename: path outside artifacts directory'
+    );
   }
 
   // Ensure parent directory exists
@@ -103,14 +122,16 @@ export async function saveArtifact(
 
 /**
  * Get manifest of all artifacts in directory
- * 
+ *
  * Returns list of relative file paths within artifacts directory.
  * Excludes directories (only includes files).
- * 
+ *
  * @param artifactsDir - Path to artifacts directory
  * @returns Array of relative file paths
  */
-export async function getArtifactManifest(artifactsDir: string): Promise<string[]> {
+export async function getArtifactManifest(
+  artifactsDir: string
+): Promise<string[]> {
   if (!existsSync(artifactsDir)) {
     return [];
   }
@@ -143,12 +164,14 @@ export async function getArtifactManifest(artifactsDir: string): Promise<string[
 
 /**
  * Ensure artifacts directory exists
- * 
+ *
  * Creates directory if it doesn't exist, including parent directories.
- * 
+ *
  * @param artifactsDir - Path to artifacts directory
  */
-export async function ensureArtifactsDirectory(artifactsDir: string): Promise<void> {
+export async function ensureArtifactsDirectory(
+  artifactsDir: string
+): Promise<void> {
   if (!existsSync(artifactsDir)) {
     mkdirSync(artifactsDir, { recursive: true });
   }
@@ -156,10 +179,10 @@ export async function ensureArtifactsDirectory(artifactsDir: string): Promise<vo
 
 /**
  * Get relative path for artifact
- * 
+ *
  * Converts absolute artifact path to relative path within artifacts directory.
  * Useful for storing artifact references in results bundle.
- * 
+ *
  * @param artifactPath - Absolute path to artifact
  * @param artifactsDir - Path to artifacts directory
  * @returns Relative path from artifacts directory

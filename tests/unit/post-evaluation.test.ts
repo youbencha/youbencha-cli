@@ -1,6 +1,6 @@
 /**
  * Post-Evaluation Unit Tests
- * 
+ *
  * Tests for webhook, database, and script post-evaluations.
  */
 
@@ -67,7 +67,7 @@ describe('WebhookPostEvaluation', () => {
 
   beforeEach(() => {
     evaluator = new WebhookPostEvaluation();
-    
+
     const mockBundle = createMockResultsBundle();
 
     mockContext = {
@@ -110,7 +110,7 @@ describe('WebhookPostEvaluation', () => {
   describe('execute', () => {
     it('should return result with correct structure', async () => {
       const result = await evaluator.execute(mockContext);
-      
+
       expect(result).toHaveProperty('post_evaluator', 'webhook');
       expect(result).toHaveProperty('status');
       expect(result).toHaveProperty('message');
@@ -131,7 +131,7 @@ describe('DatabasePostEvaluation', () => {
     evaluator = new DatabasePostEvaluation();
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'youbencha-test-'));
     outputPath = path.join(tempDir, 'results.jsonl');
-    
+
     const mockBundle = createMockResultsBundle();
 
     mockContext = {
@@ -172,19 +172,22 @@ describe('DatabasePostEvaluation', () => {
   describe('execute', () => {
     it('should create JSONL file with results', async () => {
       const result = await evaluator.execute(mockContext);
-      
+
       expect(result.status).toBe('success');
       expect(result.post_evaluator).toBe('database');
-      
+
       // Check file was created
-      const fileExists = await fs.access(outputPath).then(() => true).catch(() => false);
+      const fileExists = await fs
+        .access(outputPath)
+        .then(() => true)
+        .catch(() => false);
       expect(fileExists).toBe(true);
-      
+
       // Check file content
       const content = await fs.readFile(outputPath, 'utf-8');
       const lines = content.trim().split('\n');
       expect(lines.length).toBe(1);
-      
+
       const data = JSON.parse(lines[0]);
       expect(data).toHaveProperty('version', '1.0.0');
       expect(data).toHaveProperty('exported_at');
@@ -193,10 +196,10 @@ describe('DatabasePostEvaluation', () => {
     it('should append to existing file', async () => {
       // First write
       await evaluator.execute(mockContext);
-      
+
       // Second write
       await evaluator.execute(mockContext);
-      
+
       const content = await fs.readFile(outputPath, 'utf-8');
       const lines = content.trim().split('\n');
       expect(lines.length).toBe(2);
@@ -210,7 +213,7 @@ describe('ScriptPostEvaluation', () => {
 
   beforeEach(() => {
     evaluator = new ScriptPostEvaluation();
-    
+
     const mockBundle = createMockResultsBundle();
 
     mockContext = {
@@ -252,7 +255,7 @@ describe('ScriptPostEvaluation', () => {
   describe('execute', () => {
     it('should execute simple command successfully', async () => {
       const result = await evaluator.execute(mockContext);
-      
+
       expect(result.status).toBe('success');
       expect(result.post_evaluator).toBe('script');
       expect(result.metadata).toHaveProperty('exit_code', 0);
@@ -264,7 +267,7 @@ describe('ScriptPostEvaluation', () => {
         args: ['${TEST_CASE_NAME}'],
         timeout_ms: 5000,
       };
-      
+
       const result = await evaluator.execute(mockContext);
       expect(result.status).toBe('success');
       expect(result.metadata?.stdout).toContain('test');

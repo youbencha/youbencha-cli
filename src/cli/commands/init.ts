@@ -9,7 +9,10 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as logger from '../../lib/logger.js';
 import { createSpinner } from '../../lib/progress.js';
-import { installAgentFiles } from '../../lib/agent-files.js';
+import {
+  installAgentFiles,
+  type InstallAgentsResult,
+} from '../../lib/agent-files.js';
 import { MINIMAL_EVAL, STARTER_TESTCASE } from '../init-templates.js';
 
 /**
@@ -20,14 +23,41 @@ interface InitCommandOptions {
   minimal?: boolean;
 }
 
+export interface InitCommandDependencies {
+  cwd?: string;
+  access?: (file: string) => Promise<void>;
+  writeFile?: (
+    file: string,
+    content: string,
+    encoding: BufferEncoding
+  ) => Promise<void>;
+  installAgentFiles?: (options: {
+    force?: boolean;
+  }) => Promise<InstallAgentsResult>;
+  exit?: (code: number) => void;
+}
+
 /**
  * Init command handler
  *
  * Creates a testcase.yaml file in the current directory.
  */
-export async function initCommand(options: InitCommandOptions): Promise<void> {
+export async function initCommand(
+  options: InitCommandOptions,
+  dependencies: InitCommandDependencies = {}
+): Promise<void> {
   const outputFilename = options.minimal ? 'eval.yaml' : 'testcase.yaml';
-  const outputPath = path.join(process.cwd(), outputFilename);
+  const outputPath = path.join(
+    dependencies.cwd ?? process.cwd(),
+    outputFilename
+  );
+  const access = dependencies.access ?? ((file: string) => fs.access(file));
+  const writeFile =
+    dependencies.writeFile ??
+    ((file: string, content: string, encoding: BufferEncoding) =>
+      fs.writeFile(file, content, encoding));
+  const install = dependencies.installAgentFiles ?? installAgentFiles;
+  const exit = dependencies.exit ?? ((code: number) => process.exit(code));
 
   try {
     // Check if file already exists
@@ -35,7 +65,7 @@ export async function initCommand(options: InitCommandOptions): Promise<void> {
     spinner.start();
 
     try {
-      await fs.access(outputPath);
+      await access(outputPath);
       // File exists
       spinner.stop();
 
@@ -48,7 +78,8 @@ export async function initCommand(options: InitCommandOptions): Promise<void> {
         logger.info('   - Rename the existing file');
         logger.info('   - Run with --force to overwrite (destructive!)');
         logger.info('');
-        process.exit(1);
+        exit(1);
+        return;
       }
 
       logger.warn(
@@ -63,7 +94,7 @@ export async function initCommand(options: InitCommandOptions): Promise<void> {
     const writeSpinner = createSpinner(`Creating ${outputFilename}...`);
     writeSpinner.start();
 
-    await fs.writeFile(
+    await writeFile(
       outputPath,
       options.minimal ? MINIMAL_EVAL : STARTER_TESTCASE,
       'utf-8'
@@ -76,7 +107,7 @@ export async function initCommand(options: InitCommandOptions): Promise<void> {
       const agentSpinner = createSpinner('Installing agent files...');
       agentSpinner.start();
 
-      const agentResult = await installAgentFiles({ force: options.force });
+      const agentResult = await install({ force: options.force });
       agentSpinner.stop();
 
       // Display status for each agent file
@@ -147,12 +178,12 @@ export async function initCommand(options: InitCommandOptions): Promise<void> {
     logger.info('   - Check docs/GETTING-STARTED.md for the detailed guide');
     logger.info('');
 
-    process.exit(0);
+    exit(0);
   } catch (error) {
     logger.error(`Failed to create ${outputFilename}:`);
     if (error instanceof Error) {
       logger.error(error.message);
     }
-    process.exit(1);
+    exit(1);
   }
 }

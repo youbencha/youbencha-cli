@@ -303,7 +303,7 @@ export class CopilotCLIAdapter implements AgentAdapter {
           timeout_ms: context.timeout,
         },
         diagnostics: [
-          ...(parsed.telemetry.diagnostics ?? []),
+          ...parsed.telemetry.diagnostics!,
           ...(processResult.stdoutTruncated
             ? [
                 processResult.stdoutArtifactTruncated
@@ -439,15 +439,14 @@ export class CopilotCLIAdapter implements AgentAdapter {
   }
 
   normalizeLog(rawOutput: string, result: AgentExecutionResult): YouBenchaLog {
-    const fallback = result.telemetry
-      ? undefined
-      : parseCopilotEventStream(rawOutput, {
-          defaultTimestamp: result.completedAt,
-        });
-    const telemetry = result.telemetry ?? fallback?.telemetry;
-    const usage = telemetry?.usage ?? { source: 'unavailable' as const };
+    const telemetry =
+      result.telemetry ??
+      parseCopilotEventStream(rawOutput, {
+        defaultTimestamp: result.completedAt,
+      }).telemetry;
+    const usage = telemetry.usage ?? { source: 'unavailable' as const };
     const messages =
-      telemetry?.messages && telemetry.messages.length > 0
+      telemetry.messages && telemetry.messages.length > 0
         ? telemetry.messages
         : [
             {
@@ -462,13 +461,13 @@ export class CopilotCLIAdapter implements AgentAdapter {
       agent: {
         name: this.name,
         version:
-          telemetry?.cliVersion ?? detectCopilotVersion(rawOutput) ?? 'unknown',
+          telemetry.cliVersion ?? detectCopilotVersion(rawOutput) ?? 'unknown',
         adapter_version: this.version,
       },
       model: {
-        name: telemetry?.model ?? 'unknown',
+        name: telemetry.model ?? 'unknown',
         provider: 'GitHub',
-        parameters: telemetry?.effectiveConfig ?? {},
+        parameters: telemetry.effectiveConfig ?? {},
       },
       execution: {
         started_at: result.startedAt,
@@ -625,9 +624,6 @@ function stderrPreview(result: CliProcessResult): string {
 
 function redactHome(filePath: string): string {
   const home = os.homedir();
-  if (!home) {
-    return filePath;
-  }
   const normalizedPath = path.resolve(filePath);
   const normalizedHome = path.resolve(home);
   return normalizedPath.toLowerCase().startsWith(normalizedHome.toLowerCase())
@@ -651,3 +647,17 @@ function redactSecretValues(
   }
   return redacted;
 }
+
+/** Pure adapter helpers exposed for deterministic conformance tests. */
+export const copilotCliTesting = {
+  parseCopilotEventArtifact,
+  detectCopilotVersion,
+  requiredString,
+  optionalString,
+  optionalNonNegativeInteger,
+  optionalBoolean,
+  maxOutputBytes,
+  stderrPreview,
+  redactHome,
+  redactSecretValues,
+};

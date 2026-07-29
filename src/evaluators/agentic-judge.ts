@@ -390,58 +390,28 @@ export class AgenticJudgeEvaluator implements Evaluator {
    * Parse agent output as JSON evaluation result
    */
   private parseAgentOutput(output: string): AgentEvaluationOutput | null {
-    try {
-      // Strategy 1: Try to extract JSON from markdown code block
-      const markdownMatch = output.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
-      if (markdownMatch) {
-        const jsonText = markdownMatch[1].trim();
-        const parsed = this.validateAndParse(jsonText);
-        if (parsed) return parsed;
-      }
-
-      // Strategy 2: Try to find JSON object with required fields
-      const jsonObjectMatch = output.match(
-        /\{[\s\S]*?"status"[\s\S]*?"metrics"[\s\S]*?"message"[\s\S]*?\}/
-      );
-      if (jsonObjectMatch) {
-        const parsed = this.validateAndParse(jsonObjectMatch[0]);
-        if (parsed) return parsed;
-      }
-
-      // Strategy 3: Try to parse entire output as JSON
-      const parsed = this.validateAndParse(output.trim());
+    // Strategy 1: Try to extract JSON from markdown code block
+    const markdownMatch = output.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+    if (markdownMatch) {
+      const jsonText = markdownMatch[1].trim();
+      const parsed = this.validateAndParse(jsonText);
       if (parsed) return parsed;
-
-      // Strategy 4: Try to find last complete JSON object in output
-      const lastBraceIndex = output.lastIndexOf('}');
-      if (lastBraceIndex > 0) {
-        const firstBraceIndex = output.lastIndexOf('{', lastBraceIndex);
-        if (firstBraceIndex >= 0) {
-          const jsonCandidate = output.substring(
-            firstBraceIndex,
-            lastBraceIndex + 1
-          );
-          const parsed = this.validateAndParse(jsonCandidate);
-          if (parsed) return parsed;
-        }
-      }
-
-      // Strategy 5: Find all JSON objects with required fields and use the last valid one
-      // This handles cases where agent outputs multiple JSON blocks (e.g., thought process + final result)
-      const jsonMatches = output.match(
-        /\{[^{}]*"status"[^{}]*"metrics"[^{}]*"message"[^{}]*\}/g
-      );
-      if (jsonMatches && jsonMatches.length > 0) {
-        for (let i = jsonMatches.length - 1; i >= 0; i--) {
-          const parsed = this.validateAndParse(jsonMatches[i]);
-          if (parsed) return parsed;
-        }
-      }
-
-      return null;
-    } catch (error) {
-      return null;
     }
+
+    // Strategy 2: Try to find JSON object with required fields
+    const jsonObjectMatch = output.match(
+      /\{[\s\S]*?"status"[\s\S]*?"metrics"[\s\S]*?"message"[\s\S]*?\}/
+    );
+    if (jsonObjectMatch) {
+      const parsed = this.validateAndParse(jsonObjectMatch[0]);
+      if (parsed) return parsed;
+    }
+
+    // Strategy 3: Try to parse entire output as JSON
+    const parsed = this.validateAndParse(output.trim());
+    if (parsed) return parsed;
+
+    return null;
   }
 
   /**

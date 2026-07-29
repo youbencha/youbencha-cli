@@ -545,7 +545,8 @@ async function inspectArtifactTree(
   root: string,
   maximumFiles: number,
   maximumFileBytes: number,
-  maximumTotalBytes: number
+  maximumTotalBytes: number,
+  lstat: typeof fs.lstat = fs.lstat
 ): Promise<PackageEntry[]> {
   const entries: PackageEntry[] = [];
   let total = 0;
@@ -554,7 +555,7 @@ async function inspectArtifactTree(
     for (const entry of await fs.readdir(directory, { withFileTypes: true })) {
       const absolute = path.join(directory, entry.name);
       const relative = path.relative(root, absolute).split(path.sep).join('/');
-      const stat = await fs.lstat(absolute);
+      const stat = await lstat(absolute);
       if (stat.isSymbolicLink()) {
         throw new Error(`Artifact link is forbidden: ${relative}`);
       }
@@ -590,6 +591,19 @@ async function inspectArtifactTree(
     left.path.localeCompare(right.path, 'en')
   );
 }
+
+/** Deterministic process and artifact boundaries used by conformance tests. */
+export const phaseOrchestratorTesting = {
+  secretValues,
+  redactMessage,
+  allowedSecretPhases,
+  writeAtomic,
+  readState,
+  assertStateOwnership,
+  expectedNextPhase,
+  listLinuxProcesses,
+  inspectArtifactTree,
+};
 
 export interface BuildArtifactPackageInput {
   manifest: E2BCellManifest;

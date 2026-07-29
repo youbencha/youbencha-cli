@@ -20,21 +20,14 @@ export default {
     ],
   },
   testMatch: ['**/tests/**/*.test.ts'],
-  testPathIgnorePatterns: [
-    '/node_modules/',
-    '/examples/',
-  ],
-  collectCoverageFrom: [
-    'src/**/*.ts',
-    '!src/**/*.d.ts',
-    '!src/cli/index.ts',
-  ],
+  testPathIgnorePatterns: ['/node_modules/', '/examples/'],
+  collectCoverageFrom: ['src/**/*.ts', '!src/**/*.d.ts', '!src/cli/index.ts'],
   coverageThreshold: {
     global: {
-      branches: 80,
-      functions: 80,
-      lines: 80,
-      statements: 80,
+      branches: 100,
+      functions: 100,
+      lines: 100,
+      statements: 100,
     },
   },
   coverageDirectory: 'coverage',

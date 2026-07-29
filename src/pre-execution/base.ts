@@ -1,6 +1,6 @@
 /**
  * Base Pre-Execution Interface
- * 
+ *
  * Defines the contract that all pre-executions must implement.
  * Pre-executions run after workspace setup but before agent execution.
  */
@@ -35,8 +35,8 @@ export interface PreExecutionContext {
 
 /**
  * Pre-Executor interface for running hooks before agent execution
- * 
- * Each pre-execution (script, etc.) implements this interface 
+ *
+ * Each pre-execution (script, etc.) implements this interface
  * to enable pluggable pre-execution actions.
  */
 export interface PreExecution {
@@ -54,14 +54,14 @@ export interface PreExecution {
   /**
    * Check if pre-execution can run in current environment
    * Example: checking for required tools, permissions, etc.
-   * 
+   *
    * @returns Promise resolving to true if pre-execution can run
    */
   checkPreconditions(context: PreExecutionContext): Promise<boolean>;
 
   /**
    * Execute the pre-execution action
-   * 
+   *
    * @param context - Pre-execution context with workspace info and config
    * @returns Promise resolving to pre-execution result
    * @throws Error only for fatal errors; use PreExecutionResult.status='failed' for recoverable issues

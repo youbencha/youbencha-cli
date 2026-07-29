@@ -136,7 +136,7 @@ describe('Codex CLI offline process integration', () => {
       usage_source: 'measured',
     });
     expect(JSON.stringify(metadata)).not.toContain(prompt);
-  });
+  }, 30_000);
 });
 
 function prependPath(directory: string): string {

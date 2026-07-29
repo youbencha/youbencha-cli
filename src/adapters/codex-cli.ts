@@ -421,12 +421,20 @@ export class CodexCLIAdapter implements AgentAdapter {
         sanitizeArtifact(eventsArtifactPath, artifactLimit, secrets),
         sanitizeArtifact(stderrArtifactPath, artifactLimit, secrets),
       ]);
+      if (eventsSanitization === undefined) {
+        throw new Error(
+          'Codex CLI did not produce its structured event artifact'
+        );
+      }
       const parsed = await parseCodexArtifact(
         eventsArtifactPath,
         startedAt,
         outputLimit,
         (value) => redactSecrets(value, environment)
       );
+      // CodexEventParser always initializes diagnostics, although the shared
+      // telemetry interface permits adapters that omit them.
+      const parsedDiagnostics = parsed.telemetry.diagnostics!;
       output = redactSecrets(parsed.telemetry.finalResponse ?? '', environment);
       const finalSanitization = await writeSanitizedArtifact(
         finalArtifactPath,
@@ -448,7 +456,7 @@ export class CodexCLIAdapter implements AgentAdapter {
           output_limit_bytes: outputLimit,
         },
         diagnostics: [
-          ...(parsed.telemetry.diagnostics ?? []),
+          ...parsedDiagnostics,
           ...(parsed.contentTruncated
             ? ['Retained structured message content reached its byte limit.']
             : []),
@@ -461,7 +469,7 @@ export class CodexCLIAdapter implements AgentAdapter {
             ? ['The in-memory stderr preview was truncated.']
             : []),
           ...(processResult.stdoutArtifactTruncated ||
-          eventsSanitization?.truncated
+          eventsSanitization.truncated
             ? [
                 'The durable Codex JSONL artifact reached its byte quota; structured telemetry may be incomplete.',
               ]
@@ -470,12 +478,7 @@ export class CodexCLIAdapter implements AgentAdapter {
           stderrSanitization?.truncated
             ? ['The durable Codex stderr artifact reached its byte quota.']
             : []),
-          ...(finalSanitization?.truncated
-            ? [
-                'The durable Codex final-message artifact reached its byte quota.',
-              ]
-            : []),
-          ...(eventsSanitization?.redactionCount ||
+          ...(eventsSanitization.redactionCount ||
           stderrSanitization?.redactionCount ||
           finalSanitization.redactionCount ||
           processResult.stdoutArtifactRedactionCount ||
@@ -541,16 +544,14 @@ export class CodexCLIAdapter implements AgentAdapter {
             stdout_truncated: processResult.stdoutTruncated,
             stderr_truncated: processResult.stderrTruncated,
             artifact_output_limit_bytes: artifactLimit,
-            stdout_artifact_bytes:
-              eventsSanitization?.outputBytes ??
-              processResult.stdoutArtifactBytes,
+            stdout_artifact_bytes: eventsSanitization.outputBytes,
             stderr_artifact_bytes:
               stderrSanitization?.outputBytes ??
               processResult.stderrArtifactBytes,
             final_message_artifact_bytes: finalSanitization.outputBytes,
             stdout_artifact_truncated:
               processResult.stdoutArtifactTruncated ||
-              eventsSanitization?.truncated ||
+              eventsSanitization.truncated ||
               false,
             stderr_artifact_truncated:
               processResult.stderrArtifactTruncated ||
@@ -560,7 +561,7 @@ export class CodexCLIAdapter implements AgentAdapter {
             credential_redactions:
               (processResult.stdoutArtifactRedactionCount ?? 0) +
               (processResult.stderrArtifactRedactionCount ?? 0) +
-              (eventsSanitization?.redactionCount ?? 0) +
+              eventsSanitization.redactionCount +
               (stderrSanitization?.redactionCount ?? 0) +
               finalSanitization.redactionCount,
             usage_source: telemetry.usage?.source,
@@ -848,8 +849,8 @@ function credentialValues(environment: NodeJS.ProcessEnv): string[] {
       Object.entries(environment)
         .filter(
           ([key, value]) =>
-            Boolean(value) &&
-            (value?.length ?? 0) >= 4 &&
+            typeof value === 'string' &&
+            value.length >= 4 &&
             /(token|secret|password|api[_-]?key|authorization)/i.test(key)
         )
         .map(([, value]) => value as string)
@@ -861,6 +862,21 @@ interface ArtifactSanitization {
   outputBytes: number;
   redactionCount: number;
   truncated: boolean;
+}
+
+function waitForDrain(output: NodeJS.WritableStream): Promise<void> {
+  return new Promise<void>((resolveDrain, rejectDrain) => {
+    const onDrain = (): void => {
+      output.off('error', onError);
+      resolveDrain();
+    };
+    const onError = (error: Error): void => {
+      output.off('drain', onDrain);
+      rejectDrain(error);
+    };
+    output.once('drain', onDrain);
+    output.once('error', onError);
+  });
 }
 
 async function writeSanitizedArtifact(
@@ -918,10 +934,7 @@ async function sanitizeArtifact(
       truncated = true;
     }
     if (!output.write(bounded)) {
-      await new Promise<void>((resolveDrain, rejectDrain) => {
-        output.once('drain', resolveDrain);
-        output.once('error', rejectDrain);
-      });
+      await waitForDrain(output);
     }
   };
 
@@ -988,13 +1001,13 @@ class StreamingSecretRedactor {
           nextSecret = secret;
         }
       }
-      if (nextIndex < 0 || nextIndex >= safeEnd || !nextSecret) {
+      if (nextIndex < 0 || nextIndex >= safeEnd) {
         result += this.buffered.slice(cursor, safeEnd);
         cursor = safeEnd;
         break;
       }
       result += `${this.buffered.slice(cursor, nextIndex)}[REDACTED]`;
-      cursor = nextIndex + nextSecret.length;
+      cursor = nextIndex + nextSecret!.length;
       this.redactionCount += 1;
     }
     this.buffered = this.buffered.slice(cursor);
@@ -1031,3 +1044,28 @@ function packageVersion(): string {
     return 'unknown';
   }
 }
+
+/** Pure adapter helpers exposed for deterministic conformance tests. */
+export const codexCliTesting = {
+  parseCodexArtifact,
+  loadPrompt,
+  validatedDirectory,
+  validatedSubdirectory,
+  validatedChild,
+  isWithin,
+  optionalString,
+  optionalBoolean,
+  maxOutputBytes,
+  codexArtifactLimit,
+  detectCodexVersion,
+  stderrPreview,
+  redactSecrets,
+  credentialValues,
+  writeSanitizedArtifact,
+  sanitizeArtifact,
+  waitForDrain,
+  redactionVariants,
+  redactHome,
+  packageVersion,
+  StreamingSecretRedactor,
+};

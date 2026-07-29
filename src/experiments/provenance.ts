@@ -47,8 +47,7 @@ function safeOptional(value: string | undefined): string | undefined {
   if (value === undefined || value.trim() === '') {
     return undefined;
   }
-  const normalized = identitySafeValue(value);
-  return typeof normalized === 'string' ? normalized : undefined;
+  return identitySafeValue(value) as string;
 }
 
 function redactUrlCredentials(value: unknown): unknown {
