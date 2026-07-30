@@ -77,7 +77,11 @@ describe('doctor default helpers and output', () => {
     expect(await isWritable(path.join(directory, 'nested', 'future'))).toBe(
       true
     );
-    expect(await isWritable('Z:\\definitely-missing\\child')).toBe(false);
+    expect(
+      await isWritable(path.join(directory, 'missing'), {
+        pathExists: async () => false,
+      })
+    ).toBe(false);
     expect(
       await isWritable(directory, {
         pathExists: async () => true,
