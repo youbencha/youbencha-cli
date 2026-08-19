@@ -1,15 +1,16 @@
 /**
  * Integration tests for Claude Code Adapter end-to-end execution
- * 
+ *
  * These tests verify the complete workflow of Claude Code execution
  * through youBencha, including workspace setup, execution, and output capture.
- * 
+ *
  * Note: These tests require Claude Code CLI to be installed and authenticated.
  * In CI environments without Claude Code, tests will be skipped.
  */
 
 import * as path from 'path';
 import * as fs from 'fs/promises';
+import * as os from 'os';
 import { ClaudeCodeAdapter } from '../../src/adapters/claude-code.js';
 import { AgentExecutionContext } from '../../src/adapters/base.js';
 
@@ -21,20 +22,27 @@ describe('Claude Code End-to-End Integration', () => {
   // These tests call the real Claude CLI and will timeout in CI/development environments
   const skipIfNoClaude = (): boolean => {
     if (!process.env.CLAUDE_CODE_INTEGRATION_TESTS) {
-      console.log('Skipping: Set CLAUDE_CODE_INTEGRATION_TESTS=1 to run real Claude CLI tests');
+      console.log(
+        'Skipping: Set CLAUDE_CODE_INTEGRATION_TESTS=1 to run real Claude CLI tests'
+      );
       return true;
     }
     return false;
   };
 
   beforeAll(async () => {
-    adapter = new ClaudeCodeAdapter();
+    adapter = process.env.CLAUDE_CODE_INTEGRATION_TESTS
+      ? new ClaudeCodeAdapter()
+      : new ClaudeCodeAdapter({
+          resolveExecutable: async (): Promise<null> => null,
+        });
   });
 
   beforeEach(async () => {
     // Create a temporary workspace for each test
-    tempWorkspace = path.join('/tmp', `youbencha-claude-test-${Date.now()}`);
-    await fs.mkdir(tempWorkspace, { recursive: true });
+    tempWorkspace = await fs.mkdtemp(
+      path.join(os.tmpdir(), 'youbencha-claude-e2e-')
+    );
     await fs.mkdir(path.join(tempWorkspace, 'artifacts'), { recursive: true });
   });
 

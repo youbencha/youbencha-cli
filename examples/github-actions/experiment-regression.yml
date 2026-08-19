@@ -1,0 +1,49 @@
+name: youBencha experiment regression
+
+on:
+  workflow_dispatch:
+  pull_request:
+
+jobs:
+  experiment:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+
+      # Install and authenticate the agent CLIs used by your variants here.
+      # Keep credentials in GitHub Actions secrets.
+
+      - name: Validate experiment
+        run: node dist/cli/index.js experiment validate examples/experiment-basic.yaml
+
+      - name: Show execution plan
+        run: node dist/cli/index.js experiment plan examples/experiment-basic.yaml
+
+      - name: Run regression experiment
+        run: node dist/cli/index.js experiment run examples/experiment-basic.yaml
+
+      - name: Upload experiment artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: youbencha-experiment-results
+          path: results/experiments/
+          if-no-files-found: warn
+
+      - name: Publish JUnit summary
+        if: always()
+        uses: mikepenz/action-junit-report@v5
+        with:
+          report_paths: results/experiments/*/junit.xml
+          fail_on_failure: false

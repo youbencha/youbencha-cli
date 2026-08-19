@@ -1,9 +1,9 @@
 /**
  * Contract tests for Results Bundle and Evaluation Result schemas
- * 
+ *
  * These tests define the contract for evaluation results.
  * Tests MUST be written first and MUST FAIL before implementation.
- * 
+ *
  * Purpose: Ensure evaluation results conform to standard schema
  */
 

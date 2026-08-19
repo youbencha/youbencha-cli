@@ -1,16 +1,35 @@
 # Getting Started with youBencha
 
-youBencha helps you evaluate AI coding agents objectively. This guide will get you running your first evaluation in under 5 minutes.
+youBencha helps you evaluate AI coding agents objectively. Start with the
+offline smoke workflow below, then configure an agent-backed run when you are
+ready.
 
 ## What You'll Need
 
 - **Node.js 20+** - Check with `node --version`
 - **Git** - Check with `git --version`
-- **An AI coding agent** - Currently GitHub Copilot CLI is supported
-  - Install: `npm install -g @githubnext/github-copilot-cli`
-  - Verify: `copilot --version`
+- **An AI coding agent** (only for `yb run`) - At least one of:
+  - GitHub Copilot CLI (`copilot`), used by the `copilot-cli` agent type
+  - Claude Code CLI (`claude`), used by the `claude-code` agent type
+  - Codex CLI (`codex`), used by the `codex-cli` agent type
 
-## Quick Start (3 steps)
+Run `yb doctor` to check these prerequisites and see actionable fixes.
+
+## Minimal offline smoke workflow
+
+From an existing Git repository:
+
+```bash
+yb init --minimal
+# Make or keep an uncommitted change, then:
+yb eval -c eval.yaml
+```
+
+This creates an objective `git-diff` evaluation for the current working tree.
+It does not clone a repository, invoke an agent, use an AI judge, or require a
+paid model. Results are written under `.youbencha-eval/`.
+
+## Agent-backed quick start
 
 ### 1. Install youBencha
 
@@ -27,20 +46,24 @@ yb init
 ```
 
 This creates:
+
 - `testcase.yaml` - A starter test case configuration
 - `.github/agents/agentic-judge.md` - Agent file for GitHub Copilot CLI
 - `.claude/agents/agentic-judge.md` - Agent file for Claude Code
 
 The agent files enable the `agentic-judge` evaluator to work with your preferred coding agent.
+If you do not need an AI judge, `yb init --minimal` skips these files and
+creates an eval-only workflow instead.
 
 ### 3. Customize and run
 
 Edit `testcase.yaml` for your use case, or create a new file like `my-first-testcase.yaml`:
 
 **YAML format:**
+
 ```yaml
-name: "First Test Case"
-description: "A simple test case to verify the agent can add helpful comments"
+name: 'First Test Case'
+description: 'A simple test case to verify the agent can add helpful comments'
 
 repo: https://github.com/youbencha/hello-world.git
 branch: main
@@ -48,20 +71,21 @@ branch: main
 agent:
   type: copilot-cli
   config:
-    prompt: "Add a comment explaining what this repo is about"
+    prompt: 'Add a comment explaining what this repo is about'
 
 evaluators:
-  - name: git-diff           # Measures what changed
-  - name: agentic-judge      # Evaluates quality
+  - name: git-diff # Measures what changed
+  - name: agentic-judge # Evaluates quality
     config:
       type: copilot-cli
       agent_name: agentic-judge
       assertions:
-        file_was_modified: "README.md was modified"
-        comment_is_helpful: "A helpful comment was added"
+        file_was_modified: 'README.md was modified'
+        comment_is_helpful: 'A helpful comment was added'
 ```
 
 **JSON format (alternative):**
+
 ```json
 {
   "name": "First Test Case",
@@ -102,10 +126,15 @@ yb run -c my-first-testcase.yaml
 ```
 
 You'll see:
+
 1. youBencha clones the repository
 2. The agent makes changes based on your prompt
 3. Evaluators analyze the output
 4. Results are saved to `.youbencha-workspace/`
+
+The command exits with `0` only when every evaluator passes. Runtime errors use
+`1`, evaluator failures use `2`, and skipped/incomplete evaluation uses `3`.
+This makes the same command suitable for a CI quality gate.
 
 ### 5. View the report
 
@@ -130,15 +159,16 @@ youBencha creates a workspace with:
 
 ### Custom Workspace Names
 
-When running multiple tests, the default `run-{timestamp}` folders can be hard to distinguish. 
+When running multiple tests, the default `run-{timestamp}` folders can be hard to distinguish.
 Use `workspace_name` in your test case config to create more meaningful folder names:
 
 ```yaml
-name: "Add README comment"
-workspace_name: add-readme-comment  # Creates: add-readme-comment-2025-01-15-1705308400000/
+name: 'Add README comment'
+workspace_name: add-readme-comment # Creates: add-readme-comment-2025-01-15-1705308400000/
 ```
 
 This produces clearer workspace organization:
+
 ```
 .youbencha-workspace/
 ├── add-readme-comment-2025-01-15-...     # Easy to identify!
@@ -147,8 +177,9 @@ This produces clearer workspace organization:
 ```
 
 **Rules for `workspace_name`:**
+
 - Must start with a letter or number
-- Can contain: letters, numbers, dots (.), underscores (_), hyphens (-)
+- Can contain: letters, numbers, dots (.), underscores (\_), hyphens (-)
 - Maximum length: 100 characters
 
 ## What Each Part Does
@@ -156,34 +187,36 @@ This produces clearer workspace organization:
 ### Test Case Configuration (`testcase.yaml`)
 
 ```yaml
-name: "Test Case Name"        # Short descriptive name
-description: "What this tests" # Detailed description
+name: 'Test Case Name' # Short descriptive name
+description: 'What this tests' # Detailed description
 
-repo: <git-url>               # Where to get the code
-branch: <branch-name>         # Which branch to test
-workspace_name: my-test       # (Optional) Human-readable folder name
+repo: <git-url> # Where to get the code
+branch: <branch-name> # Which branch to test
+workspace_name: my-test # (Optional) Human-readable folder name
 
-agent:                        # What agent to use
+agent: # What agent to use
   type: copilot-cli
   config:
-    prompt: "Your task..."    # What to ask the agent
+    prompt: 'Your task...' # What to ask the agent
 
-evaluators:                   # How to measure success
-  - name: git-diff            # Built-in: measures scope
-  - name: agentic-judge       # Built-in: evaluates quality
+evaluators: # How to measure success
+  - name: git-diff # Built-in: measures scope
+  - name: agentic-judge # Built-in: evaluates quality
     config:
       assertions:
-        metric_name: "What to check..."
+        metric_name: 'What to check...'
 ```
 
 ### Evaluators Explained
 
 **git-diff** - Objective measurements:
+
 - How many files changed?
 - How many lines added/removed?
 - Change distribution across files
 
 **agentic-judge** - Subjective quality assessment:
+
 - Uses AI to evaluate based on your assertions
 - Each assertion becomes a metric in the report
 - Useful for checking: code quality, test coverage, documentation
@@ -193,18 +226,18 @@ evaluators:                   # How to measure success
 Want to compare the agent's output to a known-good version?
 
 ```yaml
-name: "Feature Implementation Comparison"
-description: "Compares agent implementation against reference"
+name: 'Feature Implementation Comparison'
+description: 'Compares agent implementation against reference'
 
 repo: https://github.com/your/repo.git
-branch: main                  # Start from main
-expected_source: branch       # Compare to another branch
-expected: feature/completed   # The "ideal" implementation
+branch: main # Start from main
+expected_source: branch # Compare to another branch
+expected: feature/completed # The "ideal" implementation
 
 evaluators:
-  - name: expected-diff       # Measures similarity
+  - name: expected-diff # Measures similarity
     config:
-      threshold: 0.85         # Must be 85% similar to pass
+      threshold: 0.85 # Must be 85% similar to pass
 ```
 
 ## Common Tasks
@@ -231,12 +264,15 @@ To clean up the workspace after completion:
 yb run -c testcase.yaml --delete-workspace
 ```
 
-### Testing locally
+### Evaluating local changes
 
-Use a local directory instead of a GitHub repo:
+`yb run` currently accepts public HTTP(S) repository URLs; it does not accept
+`file://` repositories. To evaluate an existing local Git working tree without
+running an agent, use:
 
-```yaml
-repo: file:///path/to/local/repo
+```bash
+yb init --minimal
+yb eval -c eval.yaml
 ```
 
 ### Multiple evaluators
@@ -252,55 +288,93 @@ evaluators:
   - name: agentic-judge
     config:
       assertions:
-        has_tests: "Unit tests were added"
-        has_docs: "Documentation was updated"
+        has_tests: 'Unit tests were added'
+        has_docs: 'Documentation was updated'
 ```
 
 ## Tips for Success
 
 ### 1. Start Simple
-Begin with just `git-diff` and `agentic-judge`. Add more evaluators as you learn.
+
+Begin with `git-diff`. Add `agentic-judge` when you need qualitative assessment.
 
 ### 2. Make Assertions Specific
+
 ❌ Bad: `"Code is good"`
 ✅ Good: `"All functions have error handling. Score 1 if complete, 0.5 if partial, 0 if missing"`
 
 ### 3. Use Descriptive Metric Names
+
 Keys in `assertions:` become metric names in reports. Use `snake_case` for consistency:
+
 - ✅ `readme_modified`
 - ✅ `error_handling_complete`
 - ❌ `test1`
 
 ### 4. Test Your Prompts
+
 The agent's output quality depends heavily on your prompt. Test and iterate!
 
 ### 5. Check Examples
+
 Look at `examples/` directory for working configurations:
-- `testcase-simple.yaml` - Minimal configuration
+
+- `eval-minimal.yaml` - Offline evaluation of the current working tree
 - `testcase-basic.yaml` - Standard setup
 - `testcase-expected-ref.yaml` - With reference comparison
 
 ## Troubleshooting
 
 ### "Agent not found"
-Install the agent first:
+
+Install one of the supported agent CLIs, then authenticate it:
+
 ```bash
-npm install -g @githubnext/github-copilot-cli
+npm install -g @github/copilot
+# or
+npm install -g @anthropic-ai/claude-code
+
+yb doctor
 ```
 
+Anthropic's native Claude Code installer is preferred for new installations;
+the npm command remains available. Update with `claude update` or
+`copilot update`. Verify Claude authentication with:
+
+```text
+claude auth status --json
+```
+
+In headless jobs, Claude supports `ANTHROPIC_API_KEY` or
+`CLAUDE_CODE_OAUTH_TOKEN`. Copilot checks `COPILOT_GITHUB_TOKEN`, `GH_TOKEN`,
+then `GITHUB_TOKEN` before stored OAuth and GitHub CLI credentials. Copilot
+supports appropriately scoped fine-grained personal access tokens, not classic
+personal access tokens. See the
+[Claude Code](claude-code-adapter.md) and
+[Copilot CLI](copilot-cli-adapter.md) guides for CI examples and limits.
+
+For Codex, verify `codex --version` and `codex login status`. In trusted
+automation, scope `CODEX_API_KEY` to the single `yb run` process; do not expose
+it to repository-controlled setup, build, or test steps. See the
+[Codex CLI adapter](codex-cli-adapter.md) guide for sandbox defaults,
+configuration, artifacts, and opt-in live testing.
+
 ### "Configuration validation failed"
+
 Common YAML issues:
+
 - Use spaces, not tabs for indentation
 - Check quote matching
 - Validate at https://yaml-online-parser.appspot.com
 
 ### "Permission denied"
-Run from a directory where you have write permissions, or use:
-```bash
-sudo npm install -g youbencha
-```
+
+Run from a directory where you have write permissions. For npm installation
+permission errors, configure a user-owned npm global directory or use a Node
+version manager; do not install the CLI with `sudo`.
 
 ### Need Help?
+
 - Check the [README](../README.md) for full documentation
 - Review [examples/](../examples/) for working configurations
 - File an issue at https://github.com/youbencha/youbencha-cli/issues

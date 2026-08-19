@@ -1,6 +1,6 @@
 /**
  * Script Post-Evaluation
- * 
+ *
  * Executes a custom script with access to evaluation results.
  * Useful for custom analysis, integrations, or post-processing.
  */
@@ -8,7 +8,10 @@
 import { spawn } from 'child_process';
 import * as path from 'path';
 import { PostEvaluation, PostEvaluationContext } from './base.js';
-import { PostEvaluationResult, ScriptConfig } from '../schemas/post-evaluation.schema.js';
+import {
+  PostEvaluationResult,
+  ScriptConfig,
+} from '../schemas/post-evaluation.schema.js';
 import * as logger from '../lib/logger.js';
 
 /**
@@ -16,14 +19,15 @@ import * as logger from '../lib/logger.js';
  */
 export class ScriptPostEvaluation implements PostEvaluation {
   readonly name = 'script';
-  readonly description = 'Executes a custom script with access to evaluation results';
+  readonly description =
+    'Executes a custom script with access to evaluation results';
 
   /**
    * Check if script exists and is executable
    */
   async checkPreconditions(context: PostEvaluationContext): Promise<boolean> {
     const config = context.config as ScriptConfig;
-    
+
     try {
       // Basic validation - command must be non-empty
       if (!config.command || config.command.trim().length === 0) {
@@ -32,7 +36,9 @@ export class ScriptPostEvaluation implements PostEvaluation {
       }
       return true;
     } catch (error) {
-      logger.warn(`Script validation failed: ${error instanceof Error ? error.message : String(error)}`);
+      logger.warn(
+        `Script validation failed: ${error instanceof Error ? error.message : String(error)}`
+      );
       return false;
     }
   }
@@ -122,7 +128,10 @@ export class ScriptPostEvaluation implements PostEvaluation {
   /**
    * Replace variable placeholders in args
    */
-  private replaceVariables(args: string[], context: PostEvaluationContext): string[] {
+  private replaceVariables(
+    args: string[],
+    context: PostEvaluationContext
+  ): string[] {
     const variables: Record<string, string> = {
       '${RESULTS_PATH}': context.resultsBundlePath,
       '${ARTIFACTS_DIR}': context.artifactsDir,
@@ -142,7 +151,7 @@ export class ScriptPostEvaluation implements PostEvaluation {
 
   /**
    * Run script with timeout
-   * 
+   *
    * Note: Uses shell: true to support shell features like pipes and redirects.
    * Only use with trusted commands from configuration files.
    */
@@ -169,7 +178,7 @@ export class ScriptPostEvaluation implements PostEvaluation {
       const timeout = setTimeout(() => {
         timedOut = true;
         child.kill('SIGTERM');
-        
+
         // Force kill after 2 seconds
         setTimeout(() => {
           child.kill('SIGKILL');
@@ -191,7 +200,7 @@ export class ScriptPostEvaluation implements PostEvaluation {
 
       child.on('close', (code) => {
         clearTimeout(timeout);
-        
+
         if (timedOut) {
           reject(new Error(`Script timed out after ${timeoutMs}ms`));
         } else {

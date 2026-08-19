@@ -1,6 +1,6 @@
 /**
  * Agent Content Module
- * 
+ *
  * Exports bundled agent file content for installation.
  */
 

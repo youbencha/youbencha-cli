@@ -1,6 +1,6 @@
 /**
  * Agent File Parser Tests
- * 
+ *
  * Tests for parsing Claude Code agent definition files (.md with YAML frontmatter)
  * into the JSON format expected by the --agents CLI flag.
  */
@@ -93,7 +93,12 @@ System prompt content.`;
 
       const result = parseAgentFile(filePath);
 
-      expect(result['array-tools-agent'].tools).toEqual(['Read', 'Edit', 'Bash', 'Grep']);
+      expect(result['array-tools-agent'].tools).toEqual([
+        'Read',
+        'Edit',
+        'Bash',
+        'Grep',
+      ]);
     });
 
     it('should handle inline comments in YAML', () => {
@@ -128,7 +133,9 @@ Just regular markdown content.`;
       writeFileSync(filePath, content, 'utf-8');
 
       expect(() => parseAgentFile(filePath)).toThrow(AgentFileParseError);
-      expect(() => parseAgentFile(filePath)).toThrow(/does not contain valid YAML frontmatter/);
+      expect(() => parseAgentFile(filePath)).toThrow(
+        /does not contain valid YAML frontmatter/
+      );
     });
 
     it('should throw error for missing description', () => {
@@ -143,7 +150,9 @@ System prompt.`;
       writeFileSync(filePath, content, 'utf-8');
 
       expect(() => parseAgentFile(filePath)).toThrow(AgentFileParseError);
-      expect(() => parseAgentFile(filePath)).toThrow(/must contain "description"/);
+      expect(() => parseAgentFile(filePath)).toThrow(
+        /must contain "description"/
+      );
     });
 
     it('should throw error for missing system prompt', () => {
@@ -157,7 +166,9 @@ description: Agent with no system prompt
       writeFileSync(filePath, content, 'utf-8');
 
       expect(() => parseAgentFile(filePath)).toThrow(AgentFileParseError);
-      expect(() => parseAgentFile(filePath)).toThrow(/must contain a system prompt/);
+      expect(() => parseAgentFile(filePath)).toThrow(
+        /must contain a system prompt/
+      );
     });
 
     it('should throw error for non-existent file', () => {
@@ -214,7 +225,9 @@ End of prompt.`;
 
       expect(result['multiline-agent'].prompt).toContain('# System Prompt');
       expect(result['multiline-agent'].prompt).toContain('## Guidelines');
-      expect(result['multiline-agent'].prompt).toContain('"example": "code block"');
+      expect(result['multiline-agent'].prompt).toContain(
+        '"example": "code block"'
+      );
       expect(result['multiline-agent'].prompt).toContain('End of prompt.');
     });
 
@@ -257,12 +270,18 @@ Lookup test prompt.`;
       const result = loadAgentByName('test-lookup-agent', testDir);
 
       expect(result).toHaveProperty('test-lookup-agent');
-      expect(result['test-lookup-agent'].description).toBe('Agent for testing loadAgentByName');
+      expect(result['test-lookup-agent'].description).toBe(
+        'Agent for testing loadAgentByName'
+      );
     });
 
     it('should throw error for non-existent agent', () => {
-      expect(() => loadAgentByName('non-existent-agent', testDir)).toThrow(AgentFileParseError);
-      expect(() => loadAgentByName('non-existent-agent', testDir)).toThrow(/not found/);
+      expect(() => loadAgentByName('non-existent-agent', testDir)).toThrow(
+        AgentFileParseError
+      );
+      expect(() => loadAgentByName('non-existent-agent', testDir)).toThrow(
+        /not found/
+      );
     });
 
     it('should also try .agent.md extension', () => {
@@ -274,7 +293,11 @@ description: Testing .agent.md extension
 
 Extension test prompt.`;
 
-      writeFileSync(join(agentsDir, 'extension-test.agent.md'), content, 'utf-8');
+      writeFileSync(
+        join(agentsDir, 'extension-test.agent.md'),
+        content,
+        'utf-8'
+      );
 
       const result = loadAgentByName('extension-test', testDir);
 
@@ -302,8 +325,10 @@ Extension test prompt.`;
     it('should produce valid JSON for Claude CLI', () => {
       const definition = {
         'code-reviewer': {
-          description: 'Expert code reviewer. Use proactively after code changes.',
-          prompt: 'You are a senior code reviewer. Focus on code quality, security, and best practices.',
+          description:
+            'Expert code reviewer. Use proactively after code changes.',
+          prompt:
+            'You are a senior code reviewer. Focus on code quality, security, and best practices.',
           tools: ['Read', 'Grep', 'Glob', 'Bash'],
           model: 'sonnet',
         },
@@ -355,9 +380,17 @@ The user's message contains evaluation criteria.
       const result = parseAgentFile(filePath);
 
       expect(result['agentic-judge']).toBeDefined();
-      expect(result['agentic-judge'].description).toContain('evaluates code changes');
-      expect(result['agentic-judge'].tools).toEqual(['edit', 'runNotebooks', 'search']);
-      expect(result['agentic-judge'].prompt).toContain('CRITICAL: DO NOT ASK QUESTIONS');
+      expect(result['agentic-judge'].description).toContain(
+        'evaluates code changes'
+      );
+      expect(result['agentic-judge'].tools).toEqual([
+        'edit',
+        'runNotebooks',
+        'search',
+      ]);
+      expect(result['agentic-judge'].prompt).toContain(
+        'CRITICAL: DO NOT ASK QUESTIONS'
+      );
     });
   });
 });

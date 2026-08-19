@@ -1,6 +1,6 @@
 /**
  * Agent Files Module
- * 
+ *
  * Provides shared logic for installing agent files to user projects.
  * Used by both `yb init` and `yb install-agents` commands.
  */
@@ -15,16 +15,16 @@ import {
 /**
  * Definition of an agent file that can be installed.
  * Contains the file path, content, and metadata for installation.
- * 
+ *
  * @interface AgentFileDefinition
  */
 export interface AgentFileDefinition {
   /** Relative path from target directory (e.g., ".github/agents/agentic-judge.md") */
   relativePath: string;
-  
+
   /** Agent file content as string */
   content: string;
-  
+
   /** Human-readable description for CLI output */
   description: string;
 }
@@ -32,16 +32,16 @@ export interface AgentFileDefinition {
 /**
  * Result of attempting to install a single agent file.
  * Reports the outcome of the installation operation.
- * 
+ *
  * @interface InstallResult
  */
 export interface InstallResult {
   /** The file path that was processed */
   file: string;
-  
+
   /** What happened to the file */
   status: 'created' | 'skipped' | 'overwritten' | 'error';
-  
+
   /** Error message if status is 'error' */
   error?: string;
 }
@@ -49,13 +49,13 @@ export interface InstallResult {
 /**
  * Options for agent file installation.
  * Controls installation behavior such as force overwrite and target directory.
- * 
+ *
  * @interface InstallAgentsOptions
  */
 export interface InstallAgentsOptions {
   /** Overwrite existing files if true */
   force?: boolean;
-  
+
   /** Target directory (defaults to process.cwd()) */
   targetDir?: string;
 }
@@ -63,13 +63,13 @@ export interface InstallAgentsOptions {
 /**
  * Complete result of the install-agents operation.
  * Contains individual file results, summary counts, and overall success status.
- * 
+ *
  * @interface InstallAgentsResult
  */
 export interface InstallAgentsResult {
   /** Results for each agent file */
   files: InstallResult[];
-  
+
   /** Summary counts */
   summary: {
     created: number;
@@ -77,7 +77,7 @@ export interface InstallAgentsResult {
     overwritten: number;
     errors: number;
   };
-  
+
   /** Overall success (true if no errors) */
   success: boolean;
 }
@@ -109,9 +109,9 @@ const ERROR_MESSAGES: Record<string, string> = {
 
 /**
  * Get the list of agent files available for installation
- * 
+ *
  * @returns Array of agent file definitions
- * 
+ *
  * @example
  * const files = getAgentFiles();
  * console.log(files.length); // 2
@@ -123,7 +123,7 @@ export function getAgentFiles(): readonly AgentFileDefinition[] {
 
 /**
  * Check if a file exists at the given path
- * 
+ *
  * @param filePath - Absolute path to check
  * @returns true if file exists, false otherwise
  */
@@ -138,7 +138,7 @@ async function fileExists(filePath: string): Promise<boolean> {
 
 /**
  * Get a user-friendly error message for a filesystem error
- * 
+ *
  * @param error - The error object
  * @returns User-friendly error message
  */
@@ -155,7 +155,7 @@ function getErrorMessage(error: unknown): string {
 
 /**
  * Install a single agent file
- * 
+ *
  * @param targetDir - Base directory to install to
  * @param definition - Agent file definition
  * @param force - Whether to overwrite existing files
@@ -167,24 +167,24 @@ async function installSingleFile(
   force: boolean
 ): Promise<InstallResult> {
   const absolutePath = path.join(targetDir, definition.relativePath);
-  
+
   try {
     const exists = await fileExists(absolutePath);
-    
+
     if (exists && !force) {
       return {
         file: definition.relativePath,
         status: 'skipped',
       };
     }
-    
+
     // Create parent directory if needed
     const parentDir = path.dirname(absolutePath);
     await fs.mkdir(parentDir, { recursive: true });
-    
+
     // Write the file
     await fs.writeFile(absolutePath, definition.content, 'utf-8');
-    
+
     return {
       file: definition.relativePath,
       status: exists ? 'overwritten' : 'created',
@@ -200,18 +200,18 @@ async function installSingleFile(
 
 /**
  * Install agent files to the specified target directory
- * 
+ *
  * @param options - Installation options
  * @returns Promise resolving to installation results
- * 
+ *
  * @example
  * // Install with defaults (cwd, no force)
  * const result = await installAgentFiles();
- * 
+ *
  * @example
  * // Install with force overwrite
  * const result = await installAgentFiles({ force: true });
- * 
+ *
  * @example
  * // Install to specific directory
  * const result = await installAgentFiles({ targetDir: '/path/to/project' });
@@ -221,22 +221,22 @@ export async function installAgentFiles(
 ): Promise<InstallAgentsResult> {
   const targetDir = options?.targetDir ?? process.cwd();
   const force = options?.force ?? false;
-  
+
   const results: InstallResult[] = [];
-  
+
   for (const definition of AGENT_FILES) {
     const result = await installSingleFile(targetDir, definition, force);
     results.push(result);
   }
-  
+
   // Calculate summary
   const summary = {
-    created: results.filter(r => r.status === 'created').length,
-    skipped: results.filter(r => r.status === 'skipped').length,
-    overwritten: results.filter(r => r.status === 'overwritten').length,
-    errors: results.filter(r => r.status === 'error').length,
+    created: results.filter((r) => r.status === 'created').length,
+    skipped: results.filter((r) => r.status === 'skipped').length,
+    overwritten: results.filter((r) => r.status === 'overwritten').length,
+    errors: results.filter((r) => r.status === 'error').length,
   };
-  
+
   return {
     files: results,
     summary,

@@ -96,35 +96,14 @@ $versionType = switch ($versionChoice) {
     }
 }
 
-# Run tests and build
-# Write-Host ""
-# Write-ColorOutput "Running tests..." "Yellow"
-# npm test
-# if ($LASTEXITCODE -ne 0) {
-#     Write-ColorOutput "Tests failed" "Red"
-#     exit 1
-# }
-
-# Write-Host ""
-# Write-ColorOutput "Running linter..." "Yellow"
-# npm run lint
-# if ($LASTEXITCODE -ne 0) {
-#     Write-ColorOutput "Linter failed" "Red"
-#     exit 1
-# }
-
+# Run the same release gates used by GitHub Actions
 Write-Host ""
-Write-ColorOutput "Building project..." "Yellow"
-npm run build
+Write-ColorOutput "Running release gates..." "Yellow"
+npm run verify:release
 if ($LASTEXITCODE -ne 0) {
-    Write-ColorOutput "Build failed" "Red"
+    Write-ColorOutput "Release gates failed" "Red"
     exit 1
 }
-
-# Verify package contents
-Write-Host ""
-Write-ColorOutput "Verifying package contents..." "Yellow"
-npm pack --dry-run
 
 # Bump version
 Write-Host ""
@@ -144,12 +123,31 @@ $packageJson = Get-Content -Path "package.json" -Raw | ConvertFrom-Json
 $newVersion = $packageJson.version
 Write-ColorOutput "New version: $newVersion" "Green"
 
-# Commit version bump
-Write-Host ""
-Write-ColorOutput "Committing version bump..." "Yellow"
-git add package.json
-git commit -m "chore: bump version to $newVersion"
-git tag "v$newVersion"
+$distTag = "latest"
+if ($newVersion -match "-([0-9A-Za-z]+)") {
+    $prerelease = $Matches[1].ToLowerInvariant()
+    if ($prerelease -in @("alpha", "beta", "rc", "next")) {
+        $distTag = $prerelease
+    } else {
+        $distTag = "next"
+    }
+}
+Write-Host "NPM distribution tag: $distTag"
+
+# Refuse to reuse a local or remote tag.
+$tagName = "v$newVersion"
+git rev-parse --verify --quiet "refs/tags/$tagName" *> $null
+if ($LASTEXITCODE -eq 0) {
+    Write-ColorOutput "Error: Tag $tagName already exists locally" "Red"
+    git restore -- package.json package-lock.json
+    exit 1
+}
+$remoteTag = git ls-remote --tags origin "refs/tags/$tagName"
+if ($remoteTag) {
+    Write-ColorOutput "Error: Tag $tagName already exists on origin" "Red"
+    git restore -- package.json package-lock.json
+    exit 1
+}
 
 # Final confirmation
 Write-Host ""
@@ -157,16 +155,21 @@ Write-ColorOutput "Ready to publish version $newVersion" "Yellow"
 $confirmation = Read-Host "Continue? [y/N]"
 if ($confirmation -notmatch "^[Yy]$") {
     Write-ColorOutput "Publishing cancelled" "Red"
-    Write-Host "To undo version bump:"
-    Write-Host "  git reset --hard HEAD~1"
-    Write-Host "  git tag -d v$newVersion"
+    git restore -- package.json package-lock.json
     exit 1
 }
+
+# Commit version bump only after confirmation.
+Write-Host ""
+Write-ColorOutput "Committing version bump..." "Yellow"
+git add package.json package-lock.json
+git commit -m "chore: bump version to $newVersion"
+git tag $tagName
 
 # Publish to NPM
 Write-Host ""
 Write-ColorOutput "Publishing to NPM..." "Yellow"
-npm publish --access public
+npm publish --access public --tag $distTag
 if ($LASTEXITCODE -ne 0) {
     Write-ColorOutput "Publishing failed" "Red"
     exit 1
@@ -176,7 +179,7 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host ""
 Write-ColorOutput "Pushing to GitHub..." "Yellow"
 git push origin main
-git push origin "v$newVersion"
+git push origin $tagName
 
 Write-Host ""
 Write-ColorOutput "✓ Successfully published version $newVersion" "Green"

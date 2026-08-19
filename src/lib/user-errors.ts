@@ -1,6 +1,6 @@
 /**
  * User-Friendly Error Messages
- * 
+ *
  * Provides clear, actionable error messages for common user-facing issues.
  * Each error includes context and suggests specific solutions.
  */
@@ -20,13 +20,13 @@ export interface UserError {
  */
 export function formatUserError(error: UserError): string {
   const lines: string[] = [];
-  
+
   lines.push('');
   lines.push(`❌ ${error.title}`);
   lines.push('');
   lines.push(error.description);
   lines.push('');
-  
+
   if (error.actions.length > 0) {
     lines.push('💡 What to do:');
     error.actions.forEach((action, i) => {
@@ -34,13 +34,13 @@ export function formatUserError(error: UserError): string {
     });
     lines.push('');
   }
-  
+
   if (error.technicalDetails) {
     lines.push('Technical details:');
     lines.push(`   ${error.technicalDetails}`);
     lines.push('');
   }
-  
+
   return lines.join('\n');
 }
 
@@ -67,7 +67,8 @@ export const UserErrors = {
    */
   invalidConfig: (errors: string[]): UserError => ({
     title: 'Invalid test case configuration',
-    description: 'Your testcase.yaml file has validation errors that need to be fixed.',
+    description:
+      'Your testcase.yaml file has validation errors that need to be fixed.',
     actions: [
       'Review the errors below and update your testcase.yaml',
       'Check example configurations in the examples/ directory',
@@ -85,7 +86,7 @@ export const UserErrors = {
     actions: [
       'Verify the repository URL is correct and accessible',
       'Check your internet connection',
-      'If it\'s a private repository, ensure you have proper authentication (SSH keys or Git credentials)',
+      "If it's a private repository, ensure you have proper authentication (SSH keys or Git credentials)",
       'Try cloning the repository manually first: git clone ' + repoUrl,
     ],
     technicalDetails: reason,
@@ -100,7 +101,7 @@ export const UserErrors = {
     actions: [
       `Verify the branch name is correct (check with: git branch -r)`,
       `If the branch was recently deleted, update your testcase.yaml to use a different reference`,
-      'Remove the expected_source and expected fields if you don\'t need comparison',
+      "Remove the expected_source and expected fields if you don't need comparison",
     ],
     technicalDetails: `Repository: ${repo}`,
   }),
@@ -110,7 +111,8 @@ export const UserErrors = {
    */
   noEvaluators: (): UserError => ({
     title: 'No evaluators configured',
-    description: 'Your testcase.yaml must include at least one evaluator to run an evaluation.',
+    description:
+      'Your testcase.yaml must include at least one evaluator to run an evaluation.',
     actions: [
       'Add at least one evaluator to the "evaluators" section',
       'Common choices: git-diff (measures changes), agentic-judge (quality assessment)',
@@ -149,13 +151,16 @@ export const UserErrors = {
   /**
    * Evaluator dependency missing
    */
-  evaluatorDependencyMissing: (evaluator: string, dependency: string): UserError => ({
+  evaluatorDependencyMissing: (
+    evaluator: string,
+    dependency: string
+  ): UserError => ({
     title: `Evaluator '${evaluator}' cannot run`,
     description: `The ${evaluator} evaluator requires ${dependency} which is not available.`,
     actions: [
       `Install ${dependency} if needed`,
       `Check the evaluator's documentation for setup requirements`,
-      'Remove this evaluator from testcase.yaml if you don\'t need it',
+      "Remove this evaluator from testcase.yaml if you don't need it",
     ],
   }),
 
@@ -190,7 +195,10 @@ export const UserErrors = {
   /**
    * Invalid evaluator configuration
    */
-  invalidEvaluatorConfig: (evaluatorName: string, reason: string): UserError => ({
+  invalidEvaluatorConfig: (
+    evaluatorName: string,
+    reason: string
+  ): UserError => ({
     title: `Invalid configuration for '${evaluatorName}' evaluator`,
     description: `The ${evaluatorName} evaluator has a configuration problem.`,
     actions: [
@@ -206,7 +214,8 @@ export const UserErrors = {
    */
   gitNotInstalled: (): UserError => ({
     title: 'Git not found',
-    description: 'youBencha requires Git to clone repositories and track changes, but Git is not installed or not in your PATH.',
+    description:
+      'youBencha requires Git to clone repositories and track changes, but Git is not installed or not in your PATH.',
     actions: [
       'Install Git from https://git-scm.com/downloads',
       'Add Git to your system PATH',

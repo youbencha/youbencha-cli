@@ -1,6 +1,6 @@
 /**
  * Results Schema
- * 
+ *
  * Zod schemas for evaluation results and results bundles.
  * Defines output format for evaluators and complete evaluation runs.
  */
@@ -94,6 +94,7 @@ const summarySchema = z.object({
  */
 const artifactsManifestSchema = z.object({
   agent_log: z.string(),
+  agent_artifacts: z.array(z.string()).optional(),
   reports: z.array(z.string()),
   evaluator_artifacts: z.array(z.string()),
 });

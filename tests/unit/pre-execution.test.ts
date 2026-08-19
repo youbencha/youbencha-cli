@@ -1,6 +1,6 @@
 /**
  * Pre-Execution Unit Tests
- * 
+ *
  * Tests for script pre-executions.
  */
 
@@ -14,14 +14,15 @@ import * as os from 'os';
 const isWindows = process.platform === 'win32';
 
 // Commands that work on both platforms
-const getEnvVarCommand = (): string => isWindows ? 'cmd' : 'printenv';
-const getEnvVarArgs = (varName: string): string[] => isWindows ? ['/c', `echo %${varName}%`] : [varName];
-const getPrintAllEnvCommand = (): string => isWindows ? 'cmd' : 'printenv';
-const getPrintAllEnvArgs = (): string[] => isWindows ? ['/c', 'set'] : [];
-const getPwdCommand = (): string => isWindows ? 'cmd' : 'pwd';
-const getPwdArgs = (): string[] => isWindows ? ['/c', 'cd'] : [];
-const getFalseCommand = (): string => isWindows ? 'cmd' : 'false';
-const getFalseArgs = (): string[] => isWindows ? ['/c', 'exit 1'] : [];
+const getEnvVarCommand = (): string => (isWindows ? 'cmd' : 'printenv');
+const getEnvVarArgs = (varName: string): string[] =>
+  isWindows ? ['/c', `echo %${varName}%`] : [varName];
+const getPrintAllEnvCommand = (): string => (isWindows ? 'cmd' : 'printenv');
+const getPrintAllEnvArgs = (): string[] => (isWindows ? ['/c', 'set'] : []);
+const getPwdCommand = (): string => (isWindows ? 'cmd' : 'pwd');
+const getPwdArgs = (): string[] => (isWindows ? ['/c', 'cd'] : []);
+const getFalseCommand = (): string => (isWindows ? 'cmd' : 'false');
+const getFalseArgs = (): string[] => (isWindows ? ['/c', 'exit 1'] : []);
 
 describe('ScriptPreExecution', () => {
   let executor: ScriptPreExecution;
@@ -261,7 +262,7 @@ describe('ScriptPreExecution', () => {
     it('should not expose all process.env variables', async () => {
       // Set a sensitive environment variable that should NOT be passed to script
       process.env.SENSITIVE_SECRET = 'should-not-be-exposed';
-      
+
       mockContext.config = {
         command: getPrintAllEnvCommand(),
         args: getPrintAllEnvArgs(),
@@ -270,11 +271,11 @@ describe('ScriptPreExecution', () => {
 
       const result = await executor.execute(mockContext);
       expect(result.status).toBe('success');
-      
+
       // Verify sensitive variable is NOT in output
       expect(result.metadata?.stdout).not.toContain('SENSITIVE_SECRET');
       expect(result.metadata?.stdout).not.toContain('should-not-be-exposed');
-      
+
       // Clean up
       delete process.env.SENSITIVE_SECRET;
     });
@@ -288,7 +289,7 @@ describe('ScriptPreExecution', () => {
 
       const result = await executor.execute(mockContext);
       expect(result.status).toBe('success');
-      
+
       // Verify safe variables ARE present (use variables that appear early alphabetically to avoid truncation issues)
       // Output is truncated to 1000 chars, so only check for variables that appear early
       expect(result.metadata?.stdout).toContain('BRANCH');

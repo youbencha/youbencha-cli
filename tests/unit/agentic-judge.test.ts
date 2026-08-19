@@ -1,6 +1,6 @@
 /**
  * Unit tests for AgenticJudgeEvaluator
- * 
+ *
  * TDD: These tests MUST FAIL before implementation
  */
 
@@ -18,16 +18,20 @@ describe('AgenticJudgeEvaluator', () => {
 
   beforeEach(async () => {
     evaluator = new AgenticJudgeEvaluator();
-    
+
     // Create temporary test directory
     tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'agentic-judge-test-'));
-    
+
     mockContext = {
       modifiedDir: path.join(tempDir, 'src-modified'),
       artifactsDir: path.join(tempDir, 'artifacts'),
       agentLog: {
         version: '1.0.0',
-        agent: { name: 'copilot-cli', version: '1.0.0', adapter_version: '1.0.0' },
+        agent: {
+          name: 'copilot-cli',
+          version: '1.0.0',
+          adapter_version: '1.0.0',
+        },
         model: { name: 'gpt-4', provider: 'GitHub', parameters: {} },
         execution: {
           started_at: new Date().toISOString(),
@@ -97,8 +101,13 @@ describe('AgenticJudgeEvaluator', () => {
 
   describe('checkPreconditions', () => {
     test('returns true when agent is configured', async () => {
+      const mockAdapter = {
+        checkAvailability: jest.fn().mockResolvedValue(true),
+      };
+      (evaluator as any).getAdapter = jest.fn().mockResolvedValue(mockAdapter);
+
       const result = await evaluator.checkPreconditions(mockContext);
-      expect(typeof result).toBe('boolean');
+      expect(result).toBe(true);
     });
 
     test('returns false when agent config is missing', async () => {
@@ -114,7 +123,7 @@ describe('AgenticJudgeEvaluator', () => {
         },
         testCaseConfig: undefined,
       };
-      
+
       const result = await evaluator.checkPreconditions(contextWithoutAgent);
       expect(result).toBe(false);
     });
@@ -134,9 +143,38 @@ describe('AgenticJudgeEvaluator', () => {
           },
         },
       };
-      
-      const result = await evaluator.checkPreconditions(contextWithInvalidAgent);
+
+      const result = await evaluator.checkPreconditions(
+        contextWithInvalidAgent
+      );
       expect(result).toBe(false);
+    });
+
+    test('prefers the evaluator adapter type over the main agent type', async () => {
+      const mockAdapter = {
+        checkAvailability: jest.fn().mockResolvedValue(true),
+      };
+      (evaluator as any).getAdapter = jest.fn().mockResolvedValue(mockAdapter);
+
+      const context = {
+        ...mockContext,
+        config: {
+          ...mockContext.config,
+          type: 'codex-cli',
+        },
+        testCaseConfig: {
+          name: 'Mixed adapters',
+          description: 'Uses a different adapter for evaluation',
+          repo: 'https://github.com/test/repo',
+          agent: {
+            type: 'copilot-cli',
+          },
+          evaluators: [{ name: 'agentic-judge' }],
+        },
+      } as EvaluationContext;
+
+      await expect(evaluator.checkPreconditions(context)).resolves.toBe(true);
+      expect((evaluator as any).getAdapter).toHaveBeenCalledWith('codex-cli');
     });
   });
 
@@ -218,7 +256,11 @@ describe('AgenticJudgeEvaluator', () => {
         execute: jest.fn().mockResolvedValue({
           exitCode: 0,
           status: 'success',
-          output: JSON.stringify({ status: 'passed', metrics: {}, message: 'OK' }),
+          output: JSON.stringify({
+            status: 'passed',
+            metrics: {},
+            message: 'OK',
+          }),
           startedAt: new Date().toISOString(),
           completedAt: new Date().toISOString(),
           durationMs: 2000,
@@ -240,8 +282,9 @@ describe('AgenticJudgeEvaluator', () => {
     });
 
     test('includes prompt in evaluation prompt', async () => {
-      const promptText = 'Do not ask for clarification or additional information. Use only the files in the repository to evaluate the assertions.';
-      
+      const promptText =
+        'Do not ask for clarification or additional information. Use only the files in the repository to evaluate the assertions.';
+
       const contextWithPrompt = {
         ...mockContext,
         config: {
@@ -258,7 +301,11 @@ describe('AgenticJudgeEvaluator', () => {
         execute: jest.fn().mockResolvedValue({
           exitCode: 0,
           status: 'success',
-          output: JSON.stringify({ status: 'passed', metrics: {}, message: 'OK' }),
+          output: JSON.stringify({
+            status: 'passed',
+            metrics: {},
+            message: 'OK',
+          }),
           startedAt: new Date().toISOString(),
           completedAt: new Date().toISOString(),
           durationMs: 2000,
@@ -282,7 +329,9 @@ describe('AgenticJudgeEvaluator', () => {
       expect(evaluationPrompt).toContain('Documentation quality');
       // Prompt should appear before assertions
       const promptIndex = evaluationPrompt.indexOf(promptText);
-      const assertionsIndex = evaluationPrompt.indexOf('Error handling completeness');
+      const assertionsIndex = evaluationPrompt.indexOf(
+        'Error handling completeness'
+      );
       expect(promptIndex).toBeLessThan(assertionsIndex);
     });
 
@@ -303,7 +352,11 @@ describe('AgenticJudgeEvaluator', () => {
         execute: jest.fn().mockResolvedValue({
           exitCode: 0,
           status: 'success',
-          output: JSON.stringify({ status: 'passed', metrics: {}, message: 'OK' }),
+          output: JSON.stringify({
+            status: 'passed',
+            metrics: {},
+            message: 'OK',
+          }),
           startedAt: new Date().toISOString(),
           completedAt: new Date().toISOString(),
           durationMs: 2000,
@@ -324,6 +377,56 @@ describe('AgenticJudgeEvaluator', () => {
       expect(evaluationPrompt).toContain('Test coverage adequacy');
       expect(evaluationPrompt).toContain('Documentation quality');
     });
+
+    test('uses the test case agent type and model when evaluator overrides are omitted', async () => {
+      const contextWithTestCaseAgent: EvaluationContext = {
+        ...mockContext,
+        config: {
+          assertions: {
+            code_quality: 'The implementation is correct.',
+          },
+        },
+        testCaseConfig: {
+          name: 'Test case',
+          description: 'Test agent defaults',
+          repo: 'https://github.com/test/repo',
+          agent: {
+            type: 'claude-code',
+            model: 'test-model',
+            config: { prompt: 'Implement the change' },
+          },
+          evaluators: [{ name: 'agentic-judge' }],
+        },
+      };
+      const mockAdapter: AgentAdapter = {
+        name: 'claude-code',
+        version: '1.0.0',
+        checkAvailability: jest.fn().mockResolvedValue(true),
+        execute: jest.fn().mockResolvedValue({
+          exitCode: 0,
+          status: 'success',
+          output: JSON.stringify({
+            status: 'passed',
+            metrics: {},
+            message: 'OK',
+          }),
+          startedAt: new Date().toISOString(),
+          completedAt: new Date().toISOString(),
+          durationMs: 100,
+          errors: [],
+        }),
+        normalizeLog: jest.fn(),
+      };
+      (evaluator as any).getAdapter = jest.fn().mockResolvedValue(mockAdapter);
+
+      const result = await evaluator.evaluate(contextWithTestCaseAgent);
+
+      expect(result.status).toBe('passed');
+      expect((evaluator as any).getAdapter).toHaveBeenCalledWith('claude-code');
+      expect(
+        (mockAdapter.execute as jest.Mock).mock.calls[0][0].config.model
+      ).toBe('test-model');
+    });
   });
 
   describe('evaluate - Error Handling', () => {
@@ -339,7 +442,9 @@ describe('AgenticJudgeEvaluator', () => {
           startedAt: new Date().toISOString(),
           completedAt: new Date().toISOString(),
           durationMs: 100,
-          errors: [{ message: 'Execution error', timestamp: new Date().toISOString() }],
+          errors: [
+            { message: 'Execution error', timestamp: new Date().toISOString() },
+          ],
         }),
         normalizeLog: jest.fn(),
       };
@@ -391,7 +496,12 @@ describe('AgenticJudgeEvaluator', () => {
           startedAt: new Date().toISOString(),
           completedAt: new Date().toISOString(),
           durationMs: 60000,
-          errors: [{ message: 'Timeout after 60000ms', timestamp: new Date().toISOString() }],
+          errors: [
+            {
+              message: 'Timeout after 60000ms',
+              timestamp: new Date().toISOString(),
+            },
+          ],
         }),
         normalizeLog: jest.fn(),
       };
@@ -470,7 +580,11 @@ describe('AgenticJudgeEvaluator', () => {
         execute: jest.fn().mockResolvedValue({
           exitCode: 0,
           status: 'success',
-          output: JSON.stringify({ status: 'passed', metrics: {}, message: 'OK' }),
+          output: JSON.stringify({
+            status: 'passed',
+            metrics: {},
+            message: 'OK',
+          }),
           startedAt: new Date().toISOString(),
           completedAt: new Date().toISOString(),
           durationMs: 2000,
@@ -513,7 +627,7 @@ describe('AgenticJudgeEvaluator', () => {
       (evaluator as any).getAdapter = jest.fn().mockResolvedValue(mockAdapter);
 
       const result = await evaluator.evaluate(mockContext);
-      
+
       // Should complete without throwing
       expect(result).toBeDefined();
       expect(result.evaluator).toBe('agentic-judge');
@@ -546,7 +660,9 @@ describe('AgenticJudgeEvaluator', () => {
 
   describe('Custom Named Instances', () => {
     test('accepts custom name in constructor', () => {
-      const customEvaluator = new AgenticJudgeEvaluator('agentic-judge-error-handling');
+      const customEvaluator = new AgenticJudgeEvaluator(
+        'agentic-judge-error-handling'
+      );
       expect(customEvaluator.name).toBe('agentic-judge-error-handling');
     });
 
@@ -566,9 +682,15 @@ describe('AgenticJudgeEvaluator', () => {
     });
 
     test('multiple instances can have different names', () => {
-      const errorHandling = new AgenticJudgeEvaluator('agentic-judge-error-handling');
-      const documentation = new AgenticJudgeEvaluator('agentic-judge-documentation');
-      const bestPractices = new AgenticJudgeEvaluator('agentic-judge-best-practices');
+      const errorHandling = new AgenticJudgeEvaluator(
+        'agentic-judge-error-handling'
+      );
+      const documentation = new AgenticJudgeEvaluator(
+        'agentic-judge-documentation'
+      );
+      const bestPractices = new AgenticJudgeEvaluator(
+        'agentic-judge-best-practices'
+      );
 
       expect(errorHandling.name).toBe('agentic-judge-error-handling');
       expect(documentation.name).toBe('agentic-judge-documentation');

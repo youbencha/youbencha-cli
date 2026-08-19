@@ -11,6 +11,9 @@ youBencha is a testing and benchmarking framework designed to help developers ev
 - **Agent-agnostic architecture** - Test any agent through pluggable adapters
 - **Flexible evaluation** - Use built-in evaluators or create custom ones
 - **Reproducible results** - Standardized logging and comprehensive result bundles
+- **Model-retirement regression suites** - Reuse target-neutral tasks while swapping models or coding harnesses
+- **Secure remote execution** - Run each attempt in a fresh, policy-validated E2B sandbox
+- **Audited promotion workflow** - Keep immutable baseline snapshots behind compare-and-swap channels
 - **Developer-friendly CLI** - Simple commands for running evaluations and generating reports
 
 ## Requirements
@@ -18,8 +21,20 @@ youBencha is a testing and benchmarking framework designed to help developers ev
 - **Node.js 20+** - youBencha requires Node.js version 20 or higher
 - **Git** - For cloning repositories during evaluation
 - **Agent CLI** - At least one of:
-  - **GitHub Copilot CLI** - For copilot-cli agent type
-  - **Claude Code CLI** - For claude-code agent type (install via `npm install -g @anthropic-ai/claude-code`)
+  - **GitHub Copilot CLI** - For the `copilot-cli` agent type
+  - **Claude Code CLI** - For the `claude-code` agent type; Anthropic's native installer is recommended, with npm also supported
+  - **Codex CLI** - For the `codex-cli` agent type and non-interactive `codex exec` runs
+
+All adapters run headlessly with structured output, close stdin, enforce
+timeouts, and byte-bound both output previews and durable process artifacts.
+Codex artifacts are complete when under quota and redact credential-like
+environment values before retention. See the focused adapter guides for
+installation, authentication, and CI configuration.
+
+Codex runs with JSONL events, ephemeral sessions, a workspace-write sandbox,
+and no interactive approvals. See the
+[Codex CLI adapter guide](docs/codex-cli-adapter.md) for its reproducibility and
+credential boundaries.
 
 ## Installation
 
@@ -46,13 +61,14 @@ npm link
 This creates a global symlink to your local package, making the `yb` command available system-wide. Any changes you make require rebuilding (`npm run build`) to take effect.
 
 To unlink later:
+
 ```bash
 npm unlink -g youbencha
 ```
 
 ## Quick Start
 
-**New to youBencha?** Check out the [Getting Started Guide](GETTING-STARTED.md) for a detailed walkthrough.
+**New to youBencha?** Check out the [Getting Started Guide](docs/GETTING-STARTED.md) for a detailed walkthrough.
 
 ### 1. Install
 
@@ -60,14 +76,30 @@ npm unlink -g youbencha
 npm install -g youbencha
 ```
 
-### 2. Create a test case configuration
+Check the installation and local prerequisites:
+
+```bash
+yb doctor
+```
+
+For an offline, no-agent smoke workflow in an existing Git repository:
+
+```bash
+yb init --minimal
+yb eval -c eval.yaml
+```
+
+This evaluates the current working tree with `git-diff`; it does not clone a
+repository, invoke an agent, or use a paid model.
+
+### 2. Create an agent test case configuration
 
 youBencha supports both **YAML** and **JSON** formats for configuration files.
 
 **Option A: YAML format (`testcase.yaml`)**
 
 ```yaml
-name: "README Comment Addition"
+name: 'README Comment Addition'
 description: "Tests the agent's ability to add a helpful comment explaining the repository purpose"
 
 repo: https://github.com/youbencha/hello-world.git
@@ -76,7 +108,7 @@ branch: main
 agent:
   type: copilot-cli
   config:
-    prompt: "Add a comment to README explaining what this repository is about"
+    prompt: 'Add a comment to README explaining what this repository is about'
 
 evaluators:
   - name: git-diff
@@ -85,8 +117,8 @@ evaluators:
       type: copilot-cli
       agent_name: agentic-judge
       assertions:
-        readme_modified: "README.md was modified. Score 1 if true, 0 if false."
-        helpful_comment_added: "A helpful comment was added to README.md. Score 1 if true, 0 if false."
+        readme_modified: 'README.md was modified. Score 1 if true, 0 if false.'
+        helpful_comment_added: 'A helpful comment was added to README.md. Score 1 if true, 0 if false.'
 ```
 
 **Option B: JSON format (`testcase.json`)**
@@ -95,8 +127,7 @@ evaluators:
 {
   "name": "README Comment Addition",
   "description": "Tests the agent's ability to add a helpful comment explaining the repository purpose",
-  "repo": "https://github.com/youbencha/hello-world.git
-",
+  "repo": "https://github.com/youbencha/hello-world.git",
   "branch": "main",
   "agent": {
     "type": "copilot-cli",
@@ -135,8 +166,8 @@ yb run -c testcase.yaml
 yb run -c testcase.json
 
 # See examples directory for more configurations
-yb run -c examples/testcase-simple.yaml
-yb run -c examples/testcase-simple.json
+yb run -c examples/testcase-basic.yaml
+yb run -c examples/testcase-basic.json
 ```
 
 The workspace is kept by default for inspection. Add `--delete-workspace` to clean up after completion.
@@ -207,6 +238,7 @@ yb eval -c <eval-config-file>
 ```
 
 **Use cases:**
+
 - Re-evaluate agent outputs with different evaluator configurations
 - Evaluate manual code changes using youBencha's evaluators
 - Test custom evaluators during development
@@ -214,6 +246,63 @@ yb eval -c <eval-config-file>
 - Comparative analysis of multiple outputs
 
 See the [Eval Command Guide](docs/eval-command.md) for detailed documentation.
+
+### `yb experiment`
+
+Run a repeatable matrix of test cases and agent variants, aggregate the results,
+and enforce regression policies in CI.
+
+```bash
+# Check and inspect the matrix without invoking an agent
+yb experiment validate examples/experiment-basic.yaml
+yb experiment plan examples/experiment-basic.yaml
+
+# Run it, then render or compare the durable result
+yb experiment run examples/experiment-basic.yaml
+yb experiment report <experiment-id> --format markdown
+yb experiment compare <experiment-id> --baseline last-approved
+```
+
+Experiment state is stored under `results/experiments/<experiment-id>/`.
+Interrupted and budget-limited runs can be continued with
+`yb experiment run <file> --resume <experiment-id>`; validated completed cells
+are reused. See the [Experiments Guide](docs/experiments.md) for the full schema,
+baseline workflow, reports, and CI example.
+
+### `yb regress` and baseline channels
+
+Version 2 regression suites separate reusable tasks from model/harness targets:
+
+```bash
+yb regress examples/regression/suite.yaml --profile smoke --plan
+yb regress examples/regression/suite.yaml --profile overlap
+yb baseline promote <experiment-id> --channel production --target candidate
+yb baseline show production
+```
+
+Profiles make the same suite useful for one-case smoke checks and repeated
+overlap/nightly runs. Target mappings compare a replacement with a differently
+named incumbent. See the [Regression Suites Guide](docs/regression-suites.md)
+and [Secure E2B Execution](docs/e2b-execution.md).
+
+### CI exit codes
+
+`yb run` and `yb eval` return a stable quality-gate result:
+
+| Code | Meaning                                                              |
+| ---- | -------------------------------------------------------------------- |
+| `0`  | Agent execution and all evaluators passed                            |
+| `1`  | Configuration, tool, agent execution, or other runtime error         |
+| `2`  | At least one evaluator failed                                        |
+| `3`  | Evaluation was incomplete because at least one evaluator was skipped |
+
+Both commands generate `report.md` beside `results.json` when artifacts are
+retained. Treat codes `2` and `3` as failed CI checks unless the workflow has an
+explicit policy for incomplete evaluation.
+
+Experiment commands use the same meanings: `0` is a completed passing
+experiment, `1` is configuration or infrastructure failure, `2` is a required
+cell or regression-policy failure, and `3` is an incomplete experiment.
 
 ### `yb report`
 
@@ -267,19 +356,25 @@ yb suggest-testcase --agent <type> --output-dir <path> [--agent-file <path>]
 Options:
   --agent <type>           Agent tool to use (e.g., copilot-cli) (required)
   --output-dir <path>      Path to successful agent output folder (required)
-  --agent-file <path>      Custom agent file (default: agents/suggest-testcase.agent.md)
+  --agent-file <path>      Custom agent file (default: agents/suggest-suite.agent.md)
   --save <path>            Path to save generated test case (optional)
 ```
 
-**Interactive Workflow:**
+**Workflow:**
 
-The `suggest-testcase` command launches an interactive AI agent session that:
+The `suggest-testcase` command launches an AI agent session that:
+
 1. Analyzes your agent's output folder
 2. Asks about your baseline/source for comparison
 3. Requests your original instructions/intent
 4. Detects patterns in the changes (auth, tests, API, docs, etc.)
 5. Recommends appropriate evaluators with reasoning
 6. Generates a complete test case configuration
+
+Copilot CLI, Aider, and Cursor use their interactive workflows. Codex CLI runs
+headlessly, inspects the output directory without asking questions, and prints
+the generated YAML. Pass `--save <path>` to also write the Codex result to a
+file.
 
 **Example Session:**
 
@@ -325,24 +420,24 @@ youBencha supports comparing agent outputs against an expected reference branch.
 Add an expected reference to your test case configuration:
 
 ```yaml
-name: "Feature Implementation"
+name: 'Feature Implementation'
 description: "Tests the agent's ability to implement a feature matching the reference implementation"
 
 repo: https://github.com/youbencha/hello-world.git
 
 branch: main
 expected_source: branch
-expected: feature/completed  # The reference branch
+expected: feature/completed # The reference branch
 
 agent:
   type: copilot-cli
   config:
-    prompt: "Implement the feature"
+    prompt: 'Implement the feature'
 
 evaluators:
   - name: expected-diff
     config:
-      threshold: 0.80  # Require 80% similarity to pass
+      threshold: 0.80 # Require 80% similarity to pass
 ```
 
 ### Threshold Guidelines
@@ -355,6 +450,7 @@ The `threshold` determines how similar the agent output must be to the expected 
 - **<0.7** - Significantly different (lenient)
 
 **Recommended thresholds:**
+
 - **0.95+** for generated files (e.g., migrations, configs)
 - **0.80-0.90** for implementation code
 - **0.70-0.80** for creative tasks with multiple valid solutions
@@ -362,18 +458,21 @@ The `threshold` determines how similar the agent output must be to the expected 
 ### Use Cases
 
 **1. Test-Driven Development**
+
 ```yaml
 expected: tests-implemented
 # Compare agent implementation against expected test-driven approach
 ```
 
 **2. Refactoring Verification**
+
 ```yaml
 expected: refactored-solution
 # Ensure agent refactoring matches expected improvements
 ```
 
 **3. Bug Fix Validation**
+
 ```yaml
 expected: bug-fixed
 # Compare agent's bug fix with known correct fix
@@ -418,6 +517,7 @@ Analyzes Git changes made by the agent with assertion-based pass/fail thresholds
 **Metrics:** files_changed, lines_added, lines_removed, total_changes, change_entropy
 
 **Supported Assertions:**
+
 - `max_files_changed` - Maximum number of files that can be changed
 - `max_lines_added` - Maximum number of lines that can be added
 - `max_lines_removed` - Maximum number of lines that can be removed
@@ -426,6 +526,7 @@ Analyzes Git changes made by the agent with assertion-based pass/fail thresholds
 - `max_change_entropy` - Maximum entropy (enforces focused changes)
 
 **Example:**
+
 ```yaml
 evaluators:
   - name: git-diff
@@ -433,7 +534,7 @@ evaluators:
       assertions:
         max_files_changed: 5
         max_lines_added: 100
-        max_change_entropy: 2.0  # Keep changes focused
+        max_change_entropy: 2.0 # Keep changes focused
 ```
 
 ### expected-diff
@@ -449,6 +550,7 @@ Compares agent output against expected reference branch.
 Uses an AI agent to evaluate code quality based on custom assertions. The agent reads files, searches for patterns, and makes judgments like a human reviewer.
 
 **Features:**
+
 - Evaluable assertions as pass/fail
 - Supports multiple independent judges for different areas
 - Each judge maintains focused context (1-3 assertions recommended)
@@ -465,16 +567,16 @@ evaluators:
       type: copilot-cli
       agent_name: agentic-judge
       assertions:
-        has_try_catch: "Code includes try-catch blocks. Score 1 if present, 0 if absent."
-        errors_logged: "Errors are properly logged. Score 1 if logged, 0 if not."
-  
+        has_try_catch: 'Code includes try-catch blocks. Score 1 if present, 0 if absent.'
+        errors_logged: 'Errors are properly logged. Score 1 if logged, 0 if not.'
+
   # Judge 2: Documentation
   - name: agentic-judge-documentation
     config:
       type: copilot-cli
       agent_name: agentic-judge
       assertions:
-        functions_documented: "Functions have JSDoc. Score 1 if documented, 0 if not."
+        functions_documented: 'Functions have JSDoc. Score 1 if documented, 0 if not.'
 ```
 
 **Naming Convention:** Use `agentic-judge-<focus-area>` or `agentic-judge:<focus-area>` to create specialized judges.
@@ -530,7 +632,7 @@ post_evaluation:
       url: ${SLACK_WEBHOOK_URL}
       method: POST
       headers:
-        Content-Type: "application/json"
+        Content-Type: 'application/json'
       retry_on_failure: true
       timeout_ms: 5000
 ```
@@ -543,25 +645,28 @@ post_evaluation:
     config:
       command: ./scripts/notify-slack.sh
       args:
-        - "${RESULTS_PATH}"
+        - '${RESULTS_PATH}'
       env:
-        SLACK_WEBHOOK_URL: "${SLACK_WEBHOOK_URL}"
+        SLACK_WEBHOOK_URL: '${SLACK_WEBHOOK_URL}'
       timeout_ms: 30000
 ```
 
 ### Value Propositions
 
 **Single Result**: Immediate feedback on one evaluation
+
 - Quick validation during prompt engineering
 - Debugging agent failures
 - Understanding scope of changes
 
 **Suite of Results**: Cross-test comparison
+
 - Identify difficult tasks
 - Compare agent configurations
 - Aggregate metrics and pass rates
 
 **Results Over Time**: Regression detection and trends
+
 - Track performance changes across model/prompt updates
 - Cost optimization and ROI tracking
 - Long-term quality trends
@@ -569,19 +674,24 @@ post_evaluation:
 ### Example Scripts
 
 See `examples/scripts/` for ready-to-use scripts:
+
 - `notify-slack.sh` - Post results to Slack
 - `analyze-trends.sh` - Analyze time-series data
 - `detect-regression.sh` - Compare last two runs
 
 ### Documentation
 
-- [Getting Started Guide](GETTING-STARTED.md) - Comprehensive walkthrough for new users
+- [Getting Started Guide](docs/GETTING-STARTED.md) - Comprehensive walkthrough for new users
 - [Post-Evaluation Guide](docs/post-evaluation.md) - Complete reference for post-evaluation hooks
 - [Analyzing Results Guide](docs/analyzing-results.md) - Analysis patterns and best practices
+- [Experiments Guide](docs/experiments.md) - Agent matrices, baselines, regression policies, reports, and CI
+- [Regression Suites Guide](docs/regression-suites.md) - Target-neutral tasks, profiles, target swaps, and audited baseline channels
+- [Secure E2B Execution](docs/e2b-execution.md) - Remote isolation, credentials, lifecycle, templates, and artifacts
 - [Prompt Files Guide](docs/prompt-files.md) - Loading prompts from external files
 - [Reusable Evaluators Guide](docs/reusable-evaluators.md) - Sharing evaluator configurations
 - [Multiple Agentic Judges Guide](docs/multiple-agentic-judges.md) - Using multiple focused evaluators
 - [Claude Code Adapter](docs/claude-code-adapter.md) - Using Claude Code as an agent
+- [GitHub Copilot CLI Adapter](docs/copilot-cli-adapter.md) - Headless Copilot configuration and authentication
 
 ### Project Structure
 

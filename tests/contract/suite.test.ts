@@ -1,9 +1,9 @@
 /**
  * Contract tests for Suite Configuration schema
- * 
+ *
  * These tests define the contract for evaluation suite configuration.
  * Tests MUST be written first and MUST FAIL before implementation.
- * 
+ *
  * Purpose: Ensure suite configurations are properly validated
  */
 

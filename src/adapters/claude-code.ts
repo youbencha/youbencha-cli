@@ -1,67 +1,392 @@
 /**
  * Claude Code Adapter
- * 
+ *
  * Integrates Claude Code CLI as an agent for youBencha evaluations.
  * Handles execution, output capture, and log normalization.
  */
 
-import { spawn } from 'child_process';
-import { promisify } from 'util';
-import { exec } from 'child_process';
+import { createReadStream, readFileSync, existsSync } from 'node:fs';
 import * as os from 'os';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { createWriteStream, readFileSync, existsSync } from 'fs';
+import { createInterface } from 'node:readline';
 import {
   AgentAdapter,
   AgentExecutionContext,
   AgentExecutionResult,
+  AgentExecutionTelemetry,
+  normalizeExecutionProvenance,
 } from './base.js';
 import { YouBenchaLog } from '../schemas/youbenchalog.schema.js';
 import { stripAnsiCodes, isPathSafe } from '../lib/shell-utils.js';
-
-const execAsync = promisify(exec);
+import * as logger from '../lib/logger.js';
+import {
+  ClaudeStreamParser,
+  ClaudeStreamParseResult,
+  parseClaudeStream,
+} from './claude-code-events.js';
+import {
+  CliProcessResult,
+  ResolvedExecutable,
+  resolveCliExecutable,
+  runCliProcess,
+} from '../lib/cli-process.js';
 
 // Maximum output size in bytes (10MB)
 const MAX_OUTPUT_SIZE = 10 * 1024 * 1024;
+const VERSION_PROBE_TIMEOUT_MS = 10_000;
+const MAX_NODE_TIMEOUT_MS = 2_147_483_647;
+const MAX_ARTIFACT_OUTPUT_BYTES = 64 * 1024 * 1024;
+const CLAUDE_AGENT_NAME_PATTERN = /^[a-z][a-z0-9-]{0,63}$/;
+const CLAUDE_PERMISSION_MODES = new Set([
+  'acceptEdits',
+  'auto',
+  'bypassPermissions',
+  'manual',
+  'dontAsk',
+  'plan',
+]);
+const CLAUDE_EFFORT_LEVELS = new Set([
+  'low',
+  'medium',
+  'high',
+  'xhigh',
+  'max',
+  'ultracode',
+]);
+const CLAUDE_SETTING_SOURCES = new Set(['user', 'project', 'local']);
+
+type ResolveExecutable = typeof resolveCliExecutable;
+type RunProcess = typeof runCliProcess;
+
+export interface ClaudeCodeAdapterDependencies {
+  resolveExecutable?: ResolveExecutable;
+  runProcess?: RunProcess;
+}
+
+interface ClaudeCliCapabilities {
+  permissionModes: Set<string>;
+  effortLevels: Set<string>;
+}
+
+function quotedChoices(value: string): Set<string> {
+  return new Set([...value.matchAll(/"([^"]+)"/g)].map((match) => match[1]));
+}
+
+function parseClaudeCapabilities(helpOutput: string): ClaudeCliCapabilities {
+  const permissionSection = helpOutput.match(
+    /--permission-mode[\s\S]{0,400}?\(choices:\s*([^)]+)\)/
+  )?.[1];
+  const effortSection = helpOutput.match(
+    /--effort[\s\S]{0,250}?\((low,\s*medium[^)]+)\)/
+  )?.[1];
+
+  return {
+    permissionModes: permissionSection
+      ? quotedChoices(permissionSection)
+      : new Set(),
+    effortLevels: new Set(
+      effortSection ? effortSection.split(',').map((value) => value.trim()) : []
+    ),
+  };
+}
+
+function optionalStringList(
+  config: Record<string, unknown>,
+  key: string
+): string[] | undefined {
+  const value = config[key];
+  if (value === undefined) {
+    return undefined;
+  }
+  if (
+    !Array.isArray(value) ||
+    value.some((item) => typeof item !== 'string' || item.length === 0)
+  ) {
+    throw new Error(
+      `Claude Code "${key}" must be an array of non-empty strings`
+    );
+  }
+  return value as string[];
+}
+
+function positiveNumber(
+  config: Record<string, unknown>,
+  key: string,
+  integer: boolean
+): number | undefined {
+  const value = config[key];
+  if (value === undefined) {
+    return undefined;
+  }
+  if (
+    typeof value !== 'number' ||
+    !Number.isFinite(value) ||
+    value <= 0 ||
+    (integer && !Number.isInteger(value))
+  ) {
+    throw new Error(
+      `Claude Code "${key}" must be a positive${integer ? ' integer' : ''}`
+    );
+  }
+  return value;
+}
+
+function serializeClaudeValue(value: unknown): string {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (value === undefined) {
+    return '';
+  }
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+async function parseClaudeEventArtifact(
+  artifactPath: string,
+  maxRetainedBytes: number
+): Promise<ClaudeStreamParseResult> {
+  const parser = new ClaudeStreamParser({
+    retainEvents: false,
+    maxRetainedBytes,
+  });
+  const lines = createInterface({
+    input: createReadStream(artifactPath, { encoding: 'utf8' }),
+    crlfDelay: Infinity,
+  });
+  for await (const line of lines) {
+    parser.acceptLine(line);
+  }
+  return parser.finish();
+}
+
+function detectClaudeVersion(output: string): string | undefined {
+  return output.match(/\b(\d+\.\d+\.\d+(?:[-+][\w.-]+)?)\b/)?.[1];
+}
+
+function isVersionBefore(version: string, requiredVersion: string): boolean {
+  const parse = (value: string): number[] =>
+    value
+      .split('-', 1)[0]
+      .split('.')
+      .map((part) => Number.parseInt(part, 10));
+  const current = parse(version);
+  const required = parse(requiredVersion);
+  for (let index = 0; index < 3; index += 1) {
+    if ((current[index] ?? 0) !== (required[index] ?? 0)) {
+      return (current[index] ?? 0) < (required[index] ?? 0);
+    }
+  }
+  return false;
+}
+
+function parseClaudeAuthentication(output: string): boolean {
+  for (const line of output.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('{')) {
+      continue;
+    }
+    try {
+      const value = JSON.parse(trimmed) as Record<string, unknown>;
+      if (
+        value.loggedIn === true ||
+        value.authenticated === true ||
+        value.status === 'authenticated'
+      ) {
+        return true;
+      }
+    } catch {
+      // A non-JSON diagnostic line does not override a valid later result.
+    }
+  }
+  return false;
+}
+
+function maxOutputBytes(config: Record<string, unknown>): number {
+  const value = config.max_output_bytes;
+  if (value === undefined) {
+    return MAX_OUTPUT_SIZE;
+  }
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value <= 0) {
+    throw new Error(
+      'Claude Code "max_output_bytes" must be a positive integer'
+    );
+  }
+  return value;
+}
+
+function stderrPreview(result: CliProcessResult): string {
+  const error = classifyClaudeError(result.stderr);
+  return error ? `: ${error}` : '';
+}
+
+function classifyClaudeError(stderr: string): string | undefined {
+  if (/auth|log[ -]?in|api key|oauth/i.test(stderr)) {
+    return 'authentication failed; run "claude auth status --json" and configure ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN for headless use';
+  }
+  if (/permission|denied|not allowed/i.test(stderr)) {
+    return 'a required action was denied by the configured permission policy';
+  }
+  if (/budget|max[_ -]?budget|spend/i.test(stderr)) {
+    return 'the configured Claude budget was exhausted';
+  }
+  return undefined;
+}
+
+function redactHome(executablePath: string): string {
+  const home = os.homedir();
+  const relative = path.relative(home, executablePath);
+  if (
+    relative === '' ||
+    (!relative.startsWith('..') && !path.isAbsolute(relative))
+  ) {
+    return path.join('<home>', relative);
+  }
+  return executablePath;
+}
+
+function redactSecretValues(
+  value: string,
+  environment: NodeJS.ProcessEnv
+): string {
+  let redacted = value;
+  for (const [key, secret] of Object.entries(environment)) {
+    if (
+      secret &&
+      secret.length >= 4 &&
+      /(token|secret|password|api[_-]?key|authorization)/i.test(key)
+    ) {
+      redacted = redacted.split(secret).join('[REDACTED]');
+    }
+  }
+  return redacted;
+}
+
+/** Pure adapter helpers exposed for deterministic conformance tests. */
+export const claudeCodeTesting = {
+  quotedChoices,
+  parseClaudeCapabilities,
+  optionalStringList,
+  positiveNumber,
+  serializeClaudeValue,
+  parseClaudeEventArtifact,
+  detectClaudeVersion,
+  isVersionBefore,
+  parseClaudeAuthentication,
+  maxOutputBytes,
+  stderrPreview,
+  classifyClaudeError,
+  redactHome,
+  redactSecretValues,
+};
 
 /**
  * Claude Code adapter implementation
  */
 export class ClaudeCodeAdapter implements AgentAdapter {
   readonly name = 'claude-code';
-  readonly version = '1.0.0';
+  readonly version = '2.0.0';
+
+  private readonly resolveExecutable: ResolveExecutable;
+  private readonly runProcess: RunProcess;
+  private executable: ResolvedExecutable | undefined;
+  private cliVersion: string | undefined;
+  private cliCapabilities: ClaudeCliCapabilities | undefined;
+
+  constructor(dependencies: ClaudeCodeAdapterDependencies = {}) {
+    this.resolveExecutable =
+      dependencies.resolveExecutable ?? resolveCliExecutable;
+    this.runProcess = dependencies.runProcess ?? runCliProcess;
+  }
 
   /**
    * Check if Claude Code CLI is available and authenticated
    */
   async checkAvailability(): Promise<boolean> {
+    const executable = await this.resolveExecutable('claude', {
+      env: process.env,
+    });
+    if (!executable) {
+      return false;
+    }
+
+    const probeDir = await fs.mkdtemp(
+      path.join(os.tmpdir(), 'youbencha-claude-probe-')
+    );
     try {
-      // Check if claude is in PATH
-      const command = process.platform === 'win32'
-        ? 'where claude'
-        : 'which claude';
+      const versionResult = await this.runProcess({
+        executable,
+        args: ['--version'],
+        cwd: process.cwd(),
+        env: { ...process.env },
+        timeoutMs: VERSION_PROBE_TIMEOUT_MS,
+        maxCapturedOutputBytes: 16 * 1024,
+        stdoutArtifactPath: path.join(probeDir, 'version-stdout.log'),
+        stderrArtifactPath: path.join(probeDir, 'version-stderr.log'),
+      });
+      if (
+        versionResult.error ||
+        versionResult.timedOut ||
+        versionResult.exitCode !== 0
+      ) {
+        return false;
+      }
 
-      await execAsync(command);
+      this.executable = executable;
+      this.cliVersion = detectClaudeVersion(
+        `${versionResult.stdout}\n${versionResult.stderr}`
+      );
 
-      // Verify Claude Code works by checking version
-      const { stderr } = await execAsync('claude --version');
-
-      // Check for authentication errors in stderr
-      if (stderr && (stderr.includes('auth') || stderr.includes('API key'))) {
-        throw new Error(
-          'Claude Code requires authentication. Run "claude /login" or set ANTHROPIC_API_KEY environment variable.'
+      const helpResult = await this.runProcess({
+        executable,
+        args: ['--help'],
+        cwd: process.cwd(),
+        env: { ...process.env },
+        timeoutMs: VERSION_PROBE_TIMEOUT_MS,
+        maxCapturedOutputBytes: 64 * 1024,
+        stdoutArtifactPath: path.join(probeDir, 'help-stdout.log'),
+        stderrArtifactPath: path.join(probeDir, 'help-stderr.log'),
+      });
+      if (
+        !helpResult.error &&
+        !helpResult.timedOut &&
+        helpResult.exitCode === 0
+      ) {
+        this.cliCapabilities = parseClaudeCapabilities(
+          `${helpResult.stdout}\n${helpResult.stderr}`
         );
       }
 
-      return true;
-    } catch (error) {
-      // If the error is about authentication, rethrow it
-      if (error instanceof Error && error.message.includes('Claude Code requires authentication')) {
-        throw error;
+      const authResult = await this.runProcess({
+        executable,
+        args: ['auth', 'status', '--json'],
+        cwd: process.cwd(),
+        env: { ...process.env },
+        timeoutMs: VERSION_PROBE_TIMEOUT_MS,
+        maxCapturedOutputBytes: 16 * 1024,
+        stdoutArtifactPath: path.join(probeDir, 'auth-stdout.log'),
+        stderrArtifactPath: path.join(probeDir, 'auth-stderr.log'),
+      });
+      if (
+        !authResult.error &&
+        !authResult.timedOut &&
+        authResult.exitCode === 0 &&
+        parseClaudeAuthentication(`${authResult.stdout}\n${authResult.stderr}`)
+      ) {
+        return true;
       }
-      // Otherwise, Claude CLI is not available
+
+      return Boolean(
+        process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_CODE_OAUTH_TOKEN
+      );
+    } catch {
       return false;
+    } finally {
+      await fs.rm(probeDir, { recursive: true, force: true });
     }
   }
 
@@ -71,79 +396,231 @@ export class ClaudeCodeAdapter implements AgentAdapter {
   async execute(context: AgentExecutionContext): Promise<AgentExecutionResult> {
     const startedAt = new Date().toISOString();
     let output = '';
-    let exitCode = 0;
-    let status: 'success' | 'failed' | 'timeout' = 'success';
-    const errors: Array<{ message: string; timestamp: string; stackTrace?: string }> = [];
+    let exitCode = 1;
+    let status: AgentExecutionResult['status'] = 'failed';
+    let telemetry: AgentExecutionTelemetry | undefined;
+    const errors: AgentExecutionResult['errors'] = [];
 
     try {
-      // Ensure claude-code-logs directory exists
       const claudeLogsDir = path.join(context.artifactsDir, 'claude-code-logs');
       await fs.mkdir(claudeLogsDir, { recursive: true });
-
-      // Create a log file path for terminal output
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const terminalLogPath = path.join(claudeLogsDir, `terminal-output-${timestamp}.log`);
-
-      // Build Claude command
-      const { command, args } = this.buildClaudeCommand(context);
-
-      // Log the command being executed for debugging
-      console.log('[DEBUG] Claude Code CLI Command:');
-      console.log(`  Command: ${command}`);
-      console.log(`  Args: ${JSON.stringify(args)}`);
-      console.log(`  CWD: ${context.workspaceDir}`);
-      console.log(`  Terminal output log: ${terminalLogPath}`);
-
-      // Execute Claude with timeout
-      const result = await this.executeWithTimeout(
-        command,
-        args,
-        context.workspaceDir,
-        context.env,
-        context.timeout,
-        terminalLogPath
+      const eventsArtifactPath = path.join(
+        claudeLogsDir,
+        `events-${timestamp}.jsonl`
+      );
+      const stderrArtifactPath = path.join(
+        claudeLogsDir,
+        `stderr-${timestamp}.log`
       );
 
-      console.log('[DEBUG] Execution result:');
-      console.log(`  Exit code: ${result.exitCode}`);
-      console.log(`  Timed out: ${result.timedOut}`);
-      console.log(`  Truncated: ${result.truncated}`);
-      console.log(`  Output length: ${result.output.length} bytes`);
-      console.log(`  First 500 chars of output: ${result.output.substring(0, 500)}`);
+      const builtCommand = this.buildClaudeCommand(context);
+      const environment = { ...process.env, ...context.env };
+      const executable =
+        this.executable ??
+        (await this.resolveExecutable(builtCommand.command, {
+          env: environment,
+        }));
+      if (!executable) {
+        throw new Error(
+          'Claude Code CLI is not installed or is not available on PATH.'
+        );
+      }
 
-      output = result.output;
-      exitCode = result.exitCode;
+      logger.debug(
+        `Claude Code CLI executable: ${redactHome(executable.path)}`
+      );
+      logger.debug(`Claude Code working directory: ${context.workspaceDir}`);
+      logger.debug(
+        `Claude Code prompt length: ${(context.config.prompt as string)?.length || 0} chars`
+      );
+      logger.debug(`Claude Code event log: ${eventsArtifactPath}`);
 
-      if (result.timedOut) {
+      const retainedOutputLimit = maxOutputBytes(context.config);
+      const processResult = await this.runProcess({
+        executable,
+        args: builtCommand.args,
+        cwd: context.workspaceDir,
+        env: environment,
+        timeoutMs: context.timeout > 0 ? context.timeout : MAX_NODE_TIMEOUT_MS,
+        maxCapturedOutputBytes: retainedOutputLimit,
+        maxArtifactOutputBytes: MAX_ARTIFACT_OUTPUT_BYTES,
+        stdoutArtifactPath: eventsArtifactPath,
+        stderrArtifactPath,
+      });
+      const stream = await parseClaudeEventArtifact(
+        eventsArtifactPath,
+        retainedOutputLimit
+      );
+      output = stream.finalResponse ?? '';
+      exitCode = processResult.exitCode ?? 1;
+      const cachedPromptTokens =
+        stream.usage.cacheCreationInputTokens !== undefined ||
+        stream.usage.cacheReadInputTokens !== undefined
+          ? (stream.usage.cacheCreationInputTokens ?? 0) +
+            (stream.usage.cacheReadInputTokens ?? 0)
+          : undefined;
+      telemetry = {
+        cliVersion: stream.init?.claudeCodeVersion ?? this.cliVersion,
+        model: stream.model,
+        provider: 'Anthropic',
+        sessionId: stream.sessionId,
+        finalResponse: stream.finalResponse,
+        usage: {
+          promptTokens: stream.usage.inputTokens,
+          cachedPromptTokens,
+          completionTokens: stream.usage.outputTokens,
+          totalTokens: stream.usage.totalTokens,
+          costUsd: stream.usage.costUsd,
+          source: stream.usage.source,
+        },
+        messages: this.parseMessages(stream, '', {
+          exitCode,
+          status: 'success',
+          output,
+          startedAt,
+          completedAt: new Date().toISOString(),
+          durationMs: Date.now() - new Date(startedAt).getTime(),
+          errors: [],
+        }),
+        eventsArtifactPath,
+        resolvedExecutable: redactHome(executable.path),
+        configuredModel:
+          typeof context.config.model === 'string'
+            ? context.config.model
+            : undefined,
+        headlessMode: true,
+        sessionPersistence: false,
+        structuredOutputFormat: 'stream-json',
+        legacyParserUsed: false,
+        effectiveConfig: {
+          permission_mode:
+            context.config.permission_mode ??
+            (context.config.dangerously_skip_permissions === false
+              ? 'dontAsk'
+              : 'bypassPermissions'),
+          max_turns: context.config.max_turns,
+          max_budget_usd: context.config.max_budget_usd,
+          effort: context.config.effort,
+          fallback_model: context.config.fallback_model,
+          setting_sources: context.config.setting_sources,
+          tools: context.config.tools,
+          allowed_tools: context.config.allowed_tools,
+          disallowed_tools: context.config.disallowed_tools,
+          max_output_bytes: retainedOutputLimit,
+          max_artifact_output_bytes: MAX_ARTIFACT_OUTPUT_BYTES,
+          timeout_ms: context.timeout,
+        },
+        diagnostics: [
+          ...stream.diagnostics,
+          ...this.capabilityDiagnostics(context.config),
+          ...(processResult.stdoutTruncated
+            ? [
+                processResult.stdoutArtifactTruncated
+                  ? 'Captured stdout preview and the quota-bounded event artifact were truncated.'
+                  : 'Captured stdout preview was truncated; the event artifact was parsed.',
+              ]
+            : []),
+          ...(processResult.stderrTruncated
+            ? ['Captured stderr preview was truncated.']
+            : []),
+          ...(processResult.stdoutArtifactTruncated
+            ? [
+                `Claude event artifact reached its ${MAX_ARTIFACT_OUTPUT_BYTES}-byte limit and is incomplete.`,
+              ]
+            : []),
+          ...(processResult.stderrArtifactTruncated
+            ? [
+                `Claude stderr artifact reached its ${MAX_ARTIFACT_OUTPUT_BYTES}-byte limit and is incomplete.`,
+              ]
+            : []),
+        ],
+      };
+
+      if (processResult.error) {
+        errors.push({
+          message: redactSecretValues(processResult.error.message, environment),
+          timestamp: new Date().toISOString(),
+          stackTrace: processResult.error.stack
+            ? redactSecretValues(processResult.error.stack, environment)
+            : undefined,
+        });
+      }
+
+      if (processResult.timedOut) {
         status = 'timeout';
         errors.push({
           message: `Execution timed out after ${context.timeout}ms`,
           timestamp: new Date().toISOString(),
         });
-      } else if (result.truncated) {
-        // Output was truncated due to size limit
-        errors.push({
-          message: `Output exceeded ${MAX_OUTPUT_SIZE / (1024 * 1024)}MB limit and was truncated`,
-          timestamp: new Date().toISOString(),
-        });
-        if (exitCode !== 0) {
-          status = 'failed';
-          errors.push({
-            message: `Claude Code exited with code ${exitCode}`,
-            timestamp: new Date().toISOString(),
-          });
-        }
+      } else if (processResult.error) {
+        status = 'failed';
+        exitCode = 1;
       } else if (exitCode !== 0) {
         status = 'failed';
         errors.push({
-          message: `Claude Code exited with code ${exitCode}`,
+          message: `Claude Code exited with code ${exitCode}${stderrPreview(processResult)}`,
           timestamp: new Date().toISOString(),
         });
+      } else if (processResult.stdoutArtifactTruncated) {
+        status = 'failed';
+        exitCode = 1;
+        errors.push({
+          message: `Claude Code event artifact exceeded the ${MAX_ARTIFACT_OUTPUT_BYTES}-byte safety limit; the structured result is incomplete.`,
+          timestamp: new Date().toISOString(),
+        });
+      } else if (stream.malformedTerminal || !stream.terminal) {
+        status = 'failed';
+        exitCode = 1;
+        errors.push({
+          message: stream.malformedTerminal
+            ? 'Claude Code returned a malformed terminal result event'
+            : 'Claude Code stream ended without a terminal result event',
+          timestamp: new Date().toISOString(),
+        });
+      } else if (stream.terminal.isError) {
+        status = 'failed';
+        exitCode = 1;
+        const terminalErrors =
+          stream.errors.length > 0
+            ? stream.errors
+            : [
+                `Claude Code failed with result subtype "${stream.terminal.subtype ?? 'unknown'}"`,
+              ];
+        for (const message of terminalErrors) {
+          errors.push({
+            message: redactSecretValues(message, environment),
+            timestamp: new Date().toISOString(),
+          });
+        }
+      } else if (stream.errorEventCount > 0) {
+        status = 'failed';
+        exitCode = 1;
+        const structuredErrors =
+          stream.errors.length > 0
+            ? stream.errors
+            : [
+                `Claude Code reported ${stream.errorEventCount} structured error event${stream.errorEventCount === 1 ? '' : 's'}`,
+              ];
+        for (const message of structuredErrors) {
+          errors.push({
+            message: redactSecretValues(message, environment),
+            timestamp: new Date().toISOString(),
+          });
+        }
+      } else {
+        status = 'success';
       }
+
+      output =
+        stream.finalResponse ||
+        processResult.stderr.trim() ||
+        processResult.stdout.trim();
     } catch (error) {
       status = 'failed';
       exitCode = 1;
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       const stackTrace = error instanceof Error ? error.stack : undefined;
 
       errors.push({
@@ -156,7 +633,8 @@ export class ClaudeCodeAdapter implements AgentAdapter {
     }
 
     const completedAt = new Date().toISOString();
-    const durationMs = new Date(completedAt).getTime() - new Date(startedAt).getTime();
+    const durationMs =
+      new Date(completedAt).getTime() - new Date(startedAt).getTime();
 
     return {
       exitCode,
@@ -166,6 +644,7 @@ export class ClaudeCodeAdapter implements AgentAdapter {
       completedAt,
       durationMs,
       errors,
+      telemetry,
     };
   }
 
@@ -176,11 +655,12 @@ export class ClaudeCodeAdapter implements AgentAdapter {
     // Strip ANSI codes for parsing
     const cleanOutput = stripAnsiCodes(rawOutput);
 
-    // Parse Claude output to extract messages and tool calls
-    const messages = this.parseMessages(cleanOutput, result);
+    const stream = parseClaudeStream(cleanOutput);
 
-    // Extract usage metrics from output if available
-    const usage = this.extractUsageMetrics(cleanOutput);
+    // Parse Claude output to extract messages and measured tool calls.
+    const messages =
+      result.telemetry?.messages ??
+      this.parseMessages(stream, cleanOutput, result);
 
     // Build environment context
     const environment = {
@@ -191,8 +671,12 @@ export class ClaudeCodeAdapter implements AgentAdapter {
     };
 
     // Detect model and version from output
-    const model = this.parseModel(cleanOutput);
-    const version = this.parseVersion(cleanOutput);
+    const model =
+      result.telemetry?.model ?? stream.model ?? this.parseModel(cleanOutput);
+    const version =
+      result.telemetry?.cliVersion ?? this.parseVersion(cleanOutput);
+    const measuredUsage = result.telemetry?.usage;
+    const streamUsage = stream.usage;
 
     return {
       version: '1.0.0',
@@ -204,9 +688,7 @@ export class ClaudeCodeAdapter implements AgentAdapter {
       model: {
         name: model,
         provider: 'Anthropic',
-        parameters: {
-          temperature: 0.0, // Default Claude parameters
-        },
+        parameters: result.telemetry?.effectiveConfig ?? {},
       },
       execution: {
         started_at: result.startedAt,
@@ -216,22 +698,51 @@ export class ClaudeCodeAdapter implements AgentAdapter {
         status: result.status,
       },
       messages,
-      usage,
-      errors: result.errors.map(err => ({
+      usage: {
+        prompt_tokens:
+          measuredUsage?.promptTokens ?? streamUsage.inputTokens ?? 0,
+        cached_prompt_tokens:
+          measuredUsage?.cachedPromptTokens ??
+          (streamUsage.cacheCreationInputTokens !== undefined ||
+          streamUsage.cacheReadInputTokens !== undefined
+            ? (streamUsage.cacheCreationInputTokens ?? 0) +
+              (streamUsage.cacheReadInputTokens ?? 0)
+            : undefined),
+        completion_tokens:
+          measuredUsage?.completionTokens ?? streamUsage.outputTokens ?? 0,
+        reasoning_tokens: measuredUsage?.reasoningTokens,
+        total_tokens:
+          measuredUsage?.totalTokens ?? streamUsage.totalTokens ?? 0,
+        cost_usd: measuredUsage?.costUsd ?? streamUsage.costUsd,
+        measurement_source: measuredUsage?.source ?? streamUsage.source,
+      },
+      errors: result.errors.map((err) => ({
         message: err.message,
         timestamp: err.timestamp,
         stack_trace: err.stackTrace,
       })),
       environment,
+      provenance: normalizeExecutionProvenance(result.telemetry, this.version),
     };
   }
 
   /**
    * Build Claude Code command with proper platform handling
    */
-  private buildClaudeCommand(
-    context: AgentExecutionContext
-  ): { command: string; args: string[] } {
+  private buildClaudeCommand(context: AgentExecutionContext): {
+    command: 'claude';
+    args: string[];
+  } {
+    return {
+      command: 'claude',
+      args: this.buildClaudeArgs(context),
+    };
+  }
+
+  /**
+   * Build the platform-independent Claude argument array.
+   */
+  private buildClaudeArgs(context: AgentExecutionContext): string[] {
     let prompt: string | undefined;
 
     // Handle prompt_file vs prompt
@@ -275,19 +786,28 @@ export class ClaudeCodeAdapter implements AgentAdapter {
       );
     }
 
-    // Build base args - use print mode for non-interactive execution
-    // -p is a flag, prompt goes at the end as a positional argument
-    const args = ['-p'];
+    if (
+      context.config.max_tokens !== undefined ||
+      context.config.temperature !== undefined
+    ) {
+      const unsupported = [
+        context.config.max_tokens !== undefined ? '"max_tokens"' : undefined,
+        context.config.temperature !== undefined ? '"temperature"' : undefined,
+      ].filter((value): value is string => value !== undefined);
+      throw new Error(
+        `Unsupported Claude Code configuration: ${unsupported.join(
+          ' and '
+        )}. These are API parameters, not documented Claude Code CLI flags; use "max_turns" and/or "max_budget_usd" instead.`
+      );
+    }
 
-    // Add output format for structured response
-    args.push('--output-format', 'text');
-
-    // Add permission bypass for non-interactive execution
-    // This prevents Claude from waiting for permission prompts
-    args.push('--dangerously-skip-permissions');
-
-    // Enable verbose logging for better debugging
-    args.push('--verbose');
+    const args = [
+      '--print',
+      '--output-format',
+      'stream-json',
+      '--verbose',
+      '--no-session-persistence',
+    ];
 
     // Add model if specified
     const model = context.config.model as string | undefined;
@@ -295,8 +815,30 @@ export class ClaudeCodeAdapter implements AgentAdapter {
       args.push('--model', model);
     }
 
-    // Store agent name for later use in prompt modification
     const agentName = context.config.agent_name as string | undefined;
+    if (agentName !== undefined) {
+      if (
+        typeof agentName !== 'string' ||
+        !CLAUDE_AGENT_NAME_PATTERN.test(agentName)
+      ) {
+        throw new Error(
+          'Claude Code "agent_name" must start with a lowercase letter and contain only lowercase letters, digits, and hyphens (maximum 64 characters)'
+        );
+      }
+
+      const agentPath = path.join(
+        context.workspaceDir,
+        '.claude',
+        'agents',
+        `${agentName}.md`
+      );
+      if (!existsSync(agentPath)) {
+        throw new Error(
+          `Claude Code agent "${agentName}" was not discovered at ${agentPath}`
+        );
+      }
+      args.push('--agent', agentName);
+    }
 
     // Add system_prompt if specified (replaces default system prompt)
     const systemPrompt = context.config.system_prompt as string | undefined;
@@ -305,307 +847,263 @@ export class ClaudeCodeAdapter implements AgentAdapter {
     }
 
     // Add append_system_prompt if specified
-    const appendSystemPrompt = context.config.append_system_prompt as string | undefined;
+    const appendSystemPrompt = context.config.append_system_prompt as
+      | string
+      | undefined;
     if (appendSystemPrompt) {
       args.push('--append-system-prompt', appendSystemPrompt);
     }
 
-    // Add permission_mode if specified
     const permissionMode = context.config.permission_mode as string | undefined;
-    if (permissionMode) {
-      args.push('--permission-mode', permissionMode);
+    if (
+      permissionMode !== undefined &&
+      (typeof permissionMode !== 'string' ||
+        !CLAUDE_PERMISSION_MODES.has(permissionMode))
+    ) {
+      throw new Error(
+        `Unsupported Claude Code "permission_mode": ${String(
+          permissionMode
+        )}. Expected one of: ${[...CLAUDE_PERMISSION_MODES].join(', ')}`
+      );
     }
 
-    // Add allowed_tools if specified
-    const allowedTools = context.config.allowed_tools as string[] | undefined;
+    const dangerousSkip = context.config.dangerously_skip_permissions;
+    if (dangerousSkip !== undefined && typeof dangerousSkip !== 'boolean') {
+      throw new Error(
+        'Claude Code "dangerously_skip_permissions" must be a boolean'
+      );
+    }
+    if (permissionMode && dangerousSkip === true) {
+      throw new Error(
+        'Claude Code "permission_mode" cannot be combined with "dangerously_skip_permissions"'
+      );
+    }
+
+    if (permissionMode) {
+      this.assertAdvertisedCapability(
+        'permission mode',
+        permissionMode,
+        this.cliCapabilities?.permissionModes
+      );
+      args.push('--permission-mode', permissionMode);
+    } else if (dangerousSkip !== false) {
+      // Preserve the adapter's established permission behavior while ensuring
+      // an explicit permission mode never receives a contradictory bypass flag.
+      args.push('--dangerously-skip-permissions');
+    } else {
+      args.push('--permission-mode', 'dontAsk');
+    }
+
+    const tools = optionalStringList(context.config, 'tools');
+    if (tools && tools.length > 0) {
+      args.push('--tools', tools.join(','));
+    }
+
+    const allowedTools = optionalStringList(context.config, 'allowed_tools');
     if (allowedTools && allowedTools.length > 0) {
       args.push('--allowedTools', allowedTools.join(','));
     }
 
-    // Add max_tokens if specified
-    const maxTokens = context.config.max_tokens as number | undefined;
-    if (maxTokens !== undefined) {
-      args.push('--max-tokens', String(maxTokens));
+    const disallowedTools = optionalStringList(
+      context.config,
+      'disallowed_tools'
+    );
+    if (disallowedTools && disallowedTools.length > 0) {
+      args.push('--disallowedTools', disallowedTools.join(','));
     }
 
-    // Add temperature if specified
-    const temperature = context.config.temperature as number | undefined;
-    if (temperature !== undefined) {
-      args.push('--temperature', String(temperature));
+    const maxTurns = positiveNumber(context.config, 'max_turns', true);
+    if (maxTurns !== undefined) {
+      args.push('--max-turns', String(maxTurns));
     }
 
-    // Build the final prompt, prepending agent invocation if agent_name is specified
-    // Claude Code auto-discovers agents from .claude/agents/ directory
-    // We just need to tell it to use the agent by name
-    let finalPrompt = prompt;
-    if (agentName) {
-      finalPrompt = `Use the "${agentName}" agent for this task.\n\n${prompt}`;
+    const maxBudgetUsd = positiveNumber(
+      context.config,
+      'max_budget_usd',
+      false
+    );
+    if (maxBudgetUsd !== undefined) {
+      args.push('--max-budget-usd', String(maxBudgetUsd));
     }
 
-    // Prompt must be the last argument (positional argument)
-    args.push(finalPrompt);
-
-    // On Windows, use PowerShell with the & call operator to invoke claude
-    // This properly handles the command execution in PowerShell
-    if (process.platform === 'win32') {
-      // Build the PowerShell command using the call operator (&)
-      // Only quote arguments that contain spaces or special characters
-      const escapedArgs = args.map(arg => {
-        // Check if argument needs quoting (contains spaces, special chars, or is empty)
-        const needsQuoting = /[\s`$"']/.test(arg) || arg.length === 0;
-        
-        if (needsQuoting) {
-          // Escape special PowerShell characters and wrap in double quotes
-          const escaped = arg
-            .replace(/`/g, '``')
-            .replace(/\$/g, '`$')
-            .replace(/"/g, '`"');
-          return `"${escaped}"`;
-        }
-        
-        return arg;
-      });
-      
-      // Use & operator to call claude with arguments
-      const claudeCommand = `& claude ${escapedArgs.join(' ')}`;
-      
-      return {
-        command: 'powershell.exe',
-        args: ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', claudeCommand],
-      };
+    const effort = context.config.effort;
+    if (
+      effort !== undefined &&
+      (typeof effort !== 'string' || !CLAUDE_EFFORT_LEVELS.has(effort))
+    ) {
+      throw new Error(
+        `Unsupported Claude Code "effort": ${String(
+          effort
+        )}. Expected one of: ${[...CLAUDE_EFFORT_LEVELS].join(', ')}`
+      );
+    }
+    if (typeof effort === 'string') {
+      this.assertAdvertisedCapability(
+        'effort level',
+        effort,
+        this.cliCapabilities?.effortLevels
+      );
+      args.push('--effort', effort);
     }
 
-    // Unix-like systems can execute scripts directly
-    return {
-      command: 'claude',
-      args: args,
-    };
+    const fallbackModel = context.config.fallback_model;
+    if (
+      fallbackModel !== undefined &&
+      (typeof fallbackModel !== 'string' || fallbackModel.length === 0)
+    ) {
+      throw new Error(
+        'Claude Code "fallback_model" must be a non-empty string'
+      );
+    }
+    if (typeof fallbackModel === 'string') {
+      args.push('--fallback-model', fallbackModel);
+    }
+
+    const settingSources = optionalStringList(
+      context.config,
+      'setting_sources'
+    );
+    if (settingSources) {
+      const unsupportedSource = settingSources.find(
+        (source) => !CLAUDE_SETTING_SOURCES.has(source)
+      );
+      if (unsupportedSource) {
+        throw new Error(
+          `Unsupported Claude Code setting source "${unsupportedSource}". Expected one of: ${[
+            ...CLAUDE_SETTING_SOURCES,
+          ].join(', ')}`
+        );
+      }
+      args.push('--setting-sources', settingSources.join(','));
+    }
+
+    // The prompt remains unchanged and is the final positional argument.
+    args.push(prompt);
+    return args;
   }
 
-  /**
-   * Execute command with timeout support and output size limiting
-   */
-  private async executeWithTimeout(
-    command: string,
-    args: string[],
-    cwd: string,
-    env: Record<string, string>,
-    timeout: number,
-    logFilePath?: string
-  ): Promise<{ output: string; exitCode: number; timedOut: boolean; truncated: boolean }> {
-    return new Promise((resolve) => {
-      let output = '';
-      let outputSize = 0;
-      let timedOut = false;
-      let truncated = false;
-      let timeoutHandle: NodeJS.Timeout | null = null;
+  private assertAdvertisedCapability(
+    label: string,
+    value: string,
+    supportedValues: Set<string> | undefined
+  ): void {
+    if (
+      supportedValues &&
+      supportedValues.size > 0 &&
+      !supportedValues.has(value)
+    ) {
+      throw new Error(
+        `Claude Code ${this.cliVersion ?? 'installed version'} does not advertise ${label} "${value}". Update Claude Code or select one of: ${[
+          ...supportedValues,
+        ].join(', ')}`
+      );
+    }
+  }
 
-      // Create write stream for terminal output log if path provided
-      const logStream = logFilePath
-        ? createWriteStream(logFilePath, { encoding: 'utf8' })
-        : null;
-
-      const childProcess = spawn(command, args, {
-        cwd,
-        env: { ...process.env, ...env },
-        shell: false,
-        stdio: ['ignore', 'pipe', 'pipe'], // Close stdin, pipe stdout/stderr
-      });
-
-      // Set timeout if specified
-      if (timeout > 0) {
-        timeoutHandle = setTimeout(() => {
-          timedOut = true;
-          childProcess.kill('SIGTERM');
-
-          // Force kill after 5 seconds if still running
-          setTimeout(() => {
-            if (!childProcess.killed) {
-              childProcess.kill('SIGKILL');
-            }
-          }, 5000);
-        }, timeout);
+  private capabilityDiagnostics(config: Record<string, unknown>): string[] {
+    const diagnostics: string[] = [];
+    if (config.max_budget_usd !== undefined) {
+      if (this.cliVersion && isVersionBefore(this.cliVersion, '2.1.217')) {
+        diagnostics.push(
+          `Claude Code ${this.cliVersion} supports --max-budget-usd, but full subagent budget enforcement requires Claude Code >=2.1.217`
+        );
+      } else if (!this.cliVersion) {
+        diagnostics.push(
+          'Claude Code version was unavailable; full subagent max_budget_usd enforcement requires Claude Code >=2.1.217'
+        );
       }
+    }
 
-      // Capture stdout and stderr with size limiting
-      const handleData = (data: Buffer): void => {
-        const text = data.toString();
-        const textSize = Buffer.byteLength(text, 'utf8');
-
-        // Check if we've exceeded the output limit
-        if (outputSize + textSize > MAX_OUTPUT_SIZE) {
-          if (!truncated) {
-            truncated = true;
-            const remaining = MAX_OUTPUT_SIZE - outputSize;
-            const partial = text.substring(0, remaining);
-            output += partial;
-            output += `\n[OUTPUT TRUNCATED: Exceeded ${MAX_OUTPUT_SIZE / (1024 * 1024)}MB limit]`;
-            outputSize = MAX_OUTPUT_SIZE;
-          }
-        } else {
-          output += text;
-          outputSize += textSize;
-        }
-
-        // Stream to console in real-time (unless in test environment)
-        if (!process.env.JEST_WORKER_ID) {
-          process.stdout.write(text);
-        }
-
-        // Write to log file
-        if (logStream) {
-          logStream.write(text);
-        }
-      };
-
-      childProcess.stdout?.on('data', handleData);
-      childProcess.stderr?.on('data', handleData);
-
-      childProcess.on('error', (error) => {
-        if (timeoutHandle) clearTimeout(timeoutHandle);
-        if (logStream) {
-          logStream.end(() => {
-            resolve({
-              output: output + '\n' + error.message,
-              exitCode: 1,
-              timedOut,
-              truncated,
-            });
-          });
-        } else {
-          resolve({
-            output: output + '\n' + error.message,
-            exitCode: 1,
-            timedOut,
-            truncated,
-          });
-        }
-      });
-
-      childProcess.on('close', (code) => {
-        if (timeoutHandle) clearTimeout(timeoutHandle);
-        if (logStream) {
-          logStream.end(() => {
-            resolve({
-              output,
-              exitCode: code ?? 1,
-              timedOut,
-              truncated,
-            });
-          });
-        } else {
-          resolve({
-            output,
-            exitCode: code ?? 1,
-            timedOut,
-            truncated,
-          });
-        }
-      });
-    });
+    if (
+      !this.cliCapabilities &&
+      (config.permission_mode !== undefined || config.effort !== undefined)
+    ) {
+      diagnostics.push(
+        `Claude Code ${this.cliVersion ?? 'version unknown'} capability metadata was unavailable; version-dependent permission and effort options were passed through`
+      );
+    }
+    return diagnostics;
   }
 
   /**
    * Parse Claude Code output into messages array
    */
   private parseMessages(
+    stream: ClaudeStreamParseResult,
     rawOutput: string,
     result: AgentExecutionResult
   ): YouBenchaLog['messages'] {
     const messages: YouBenchaLog['messages'] = [];
 
-    // Add system message
+    const capabilities = [
+      stream.init?.model ? `model=${stream.init.model}` : undefined,
+      stream.init?.tools.length
+        ? `tools=${stream.init.tools.join(',')}`
+        : undefined,
+      stream.init?.agents.length
+        ? `agents=${stream.init.agents.join(',')}`
+        : undefined,
+      stream.init?.skills.length
+        ? `skills=${stream.init.skills.join(',')}`
+        : undefined,
+    ].filter((value): value is string => value !== undefined);
+
     messages.push({
       role: 'system',
-      content: 'Claude Code CLI started',
+      content:
+        capabilities.length > 0
+          ? `Claude Code CLI started (${capabilities.join('; ')})`
+          : 'Claude Code CLI started',
       timestamp: result.startedAt,
     });
 
-    let currentMessageContent = '';
-    const currentToolCalls: Array<{
-      id: string;
-      type: string;
-      function: { name: string; arguments: string };
-    }> = [];
+    const toolCalls = stream.toolEvents
+      .filter((event) => event.kind === 'tool_use')
+      .map((event, index) => ({
+        id: event.id ?? `claude_tool_${index}`,
+        type: 'function',
+        function: {
+          name: event.name ?? 'unknown',
+          arguments: serializeClaudeValue(event.input),
+        },
+      }));
 
-    const lines = rawOutput.split('\n');
-
-    for (const line of lines) {
-      const trimmed = line.trim();
-
-      if (!trimmed) continue;
-
-      // Parse tool calls - Claude Code outputs [TOOL: name] pattern
-      const toolMatch = trimmed.match(/\[TOOL:\s*(\w+)\]\s*(.*)/);
-      if (toolMatch) {
-        currentToolCalls.push({
-          id: `call_${Date.now()}_${currentToolCalls.length}`,
-          type: 'function',
-          function: {
-            name: toolMatch[1],
-            arguments: JSON.stringify({ input: toolMatch[2] }),
-          },
-        });
-      } else {
-        currentMessageContent += line + '\n';
-      }
-    }
-
-    // Add final assistant message with content and tool calls
-    if (currentMessageContent.trim() || currentToolCalls.length > 0) {
+    if (stream.assistantMessages.length > 0 || toolCalls.length > 0) {
       messages.push({
         role: 'assistant',
-        content: currentMessageContent.trim() || rawOutput || 'No output captured',
+        content:
+          stream.assistantMessages.join('\n') ||
+          stream.finalResponse ||
+          'Claude Code invoked tools',
         timestamp: result.completedAt,
-        tool_calls: currentToolCalls.length > 0 ? currentToolCalls : undefined,
+        tool_calls: toolCalls.length > 0 ? toolCalls : undefined,
       });
     }
 
-    // If no messages were parsed, add default assistant message
+    for (const event of stream.toolEvents) {
+      if (event.kind === 'tool_result') {
+        messages.push({
+          role: 'tool',
+          content: serializeClaudeValue(event.content),
+          timestamp: result.completedAt,
+          tool_call_id: event.id,
+        });
+      }
+    }
+
     if (messages.length === 1) {
       messages.push({
         role: 'assistant',
-        content: rawOutput || 'No output captured',
+        content:
+          stream.finalResponse ||
+          rawOutput ||
+          stream.errors.join('\n') ||
+          'No output captured',
         timestamp: result.completedAt,
       });
     }
 
     return messages;
-  }
-
-  /**
-   * Extract usage metrics from Claude Code output
-   */
-  private extractUsageMetrics(rawOutput: string): YouBenchaLog['usage'] {
-    // Try to extract token usage from output
-    // Claude Code may include usage information in output
-    const inputTokensMatch = rawOutput.match(/[Ii]nput\s+tokens?:\s*(\d+)/i);
-    const outputTokensMatch = rawOutput.match(/[Oo]utput\s+tokens?:\s*(\d+)/i);
-
-    const promptTokens = inputTokensMatch ? parseInt(inputTokensMatch[1], 10) : 0;
-    const completionTokens = outputTokensMatch ? parseInt(outputTokensMatch[1], 10) : 0;
-
-    // Estimate tokens if not available (rough estimate: 1 token ≈ 4 characters)
-    const estimatedPromptTokens = promptTokens || Math.ceil(rawOutput.length / 4);
-    const estimatedCompletionTokens = completionTokens || Math.ceil(rawOutput.length / 8);
-
-    return {
-      prompt_tokens: estimatedPromptTokens,
-      completion_tokens: estimatedCompletionTokens,
-      total_tokens: estimatedPromptTokens + estimatedCompletionTokens,
-      estimated_cost_usd: this.estimateCost(estimatedPromptTokens, estimatedCompletionTokens),
-    };
-  }
-
-  /**
-   * Estimate cost based on token usage
-   * Using approximate Claude pricing
-   */
-  private estimateCost(promptTokens: number, completionTokens: number): number {
-    // Claude Sonnet approximate pricing: $3 per 1M input tokens, $15 per 1M output tokens
-    const promptCost = (promptTokens / 1000000) * 3;
-    const completionCost = (completionTokens / 1000000) * 15;
-    return promptCost + completionCost;
   }
 
   /**
@@ -619,12 +1117,14 @@ export class ClaudeCodeAdapter implements AgentAdapter {
     }
 
     // Look for model mentions in the output
-    const mentionMatch = rawOutput.match(/(claude-(?:sonnet|opus|haiku)-[\d.-]+)/i);
+    const mentionMatch = rawOutput.match(
+      /(claude-(?:sonnet|opus|haiku)-[\d.-]+)/i
+    );
     if (mentionMatch) {
       return mentionMatch[1];
     }
 
-    return 'claude-sonnet-4';
+    return 'unknown';
   }
 
   /**
@@ -632,13 +1132,17 @@ export class ClaudeCodeAdapter implements AgentAdapter {
    */
   parseVersion(rawOutput: string): string {
     // Try to detect version from output
-    const versionMatch = rawOutput.match(/[Vv]ersion[:\s]+([0-9]+\.[0-9]+\.[0-9]+)/);
+    const versionMatch = rawOutput.match(
+      /[Vv]ersion[:\s]+([0-9]+\.[0-9]+\.[0-9]+)/
+    );
     if (versionMatch) {
       return versionMatch[1];
     }
 
     // Look for claude code version pattern
-    const claudeVersionMatch = rawOutput.match(/claude[_\s-]?code[_\s]?v?([0-9]+\.[0-9]+\.[0-9]+)/i);
+    const claudeVersionMatch = rawOutput.match(
+      /claude[_\s-]?code[_\s]?v?([0-9]+\.[0-9]+\.[0-9]+)/i
+    );
     if (claudeVersionMatch) {
       return claudeVersionMatch[1];
     }
@@ -653,7 +1157,9 @@ export class ClaudeCodeAdapter implements AgentAdapter {
     try {
       // Try to read version from package.json
       const packageJsonPath = path.join(process.cwd(), 'package.json');
-      const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8')) as { version?: string };
+      const packageJson = JSON.parse(
+        readFileSync(packageJsonPath, 'utf-8')
+      ) as { version?: string };
       return packageJson.version || '1.0.0';
     } catch {
       return '1.0.0';

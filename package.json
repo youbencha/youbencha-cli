@@ -5,17 +5,19 @@
   "main": "dist/cli/index.js",
   "bin": {
     "youbencha": "dist/cli/index.js",
-    "yb": "dist/cli/index.js"
+    "yb": "dist/cli/index.js",
+    "youbencha-run-cell": "dist/e2b/runner-cli.js"
   },
   "type": "module",
   "scripts": {
     "build": "tsc && node -e \"const fs = require('fs'); fs.mkdirSync('dist/evaluators/prompts', {recursive: true}); fs.copyFileSync('src/evaluators/prompts/agentic-judge.template.md', 'dist/evaluators/prompts/agentic-judge.template.md');\"",
+    "pretest": "npm run build",
     "test": "jest",
     "lint": "eslint src/**/*.ts tests/**/*.ts",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
     "format:check": "prettier --check \"src/**/*.ts\" \"tests/**/*.ts\"",
-    "prepublishOnly": "npm run build",
-    "prepublishOnly2": "npm run lint && npm run test && npm run build",
+    "verify:release": "npm run lint && npm test -- --runInBand && npm run build && npm pack --dry-run",
+    "prepublishOnly": "npm run verify:release",
     "prepack": "npm run build"
   },
   "keywords": [
@@ -44,15 +46,17 @@
     "dist/",
     "examples/",
     "README.md",
-    "GETTING-STARTED.md",
+    "docs/",
     "LICENSE"
   ],
   "engines": {
     "node": ">=20.0.0"
   },
   "dependencies": {
+    "@mongodb-js/zstd": "^2.0.1",
     "commander": "^12.1.0",
     "diff": "^5.2.0",
+    "e2b": "^2.36.1",
     "fs-extra": "^11.3.2",
     "ora": "^8.2.0",
     "simple-git": "^3.30.0",

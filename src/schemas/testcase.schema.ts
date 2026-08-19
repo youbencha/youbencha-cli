@@ -1,70 +1,42 @@
 /**
  * Test Case Configuration Schema
- * 
+ *
  * Zod schema for test case configuration.
  * Defines what to test and how to evaluate the results.
  */
 
 import { z } from 'zod';
+import { agentConfigSchema, type AgentConfig } from './agent-config/index.js';
 import { postEvaluationConfigSchema } from './post-evaluation.schema.js';
 import { preExecutionConfigSchema } from './pre-execution.schema.js';
 
-/**
- * Agent configuration schema
- */
-const agentConfigSchema = z.object({
-  type: z.enum(['copilot-cli', 'claude-code']), // Supported agent types
-  agent_name: z.string().optional(), // Optional agent name (e.g., for copilot-cli agents in .github/agents/)
-  model: z.string().min(1).optional(), // Optional model name (accepts any valid model string)
-  config: z
-    .object({
-      prompt: z
-        .string()
-        .min(1, 'Prompt is required')
-        .max(50000, 'Prompt exceeds maximum length of 50000 characters')
-        .optional(),
-      prompt_file: z
-        .string()
-        .min(1, 'Prompt file path is required')
-        .optional(),
-    })
-    .catchall(z.any()) // Allow other agent-specific config
-    .refine(
-      (data) => {
-        // Ensure prompt and prompt_file are mutually exclusive
-        if (data.prompt && data.prompt_file) {
-          return false;
-        }
-        return true;
-      },
-      {
-        message: 'Cannot specify both "prompt" and "prompt_file". Please use only one.',
-      }
-    )
-    .optional(),
-});
+export { agentConfigSchema };
 
 /**
  * Evaluator configuration schema
  * Evaluators run checks and generate assertions about the code
- * 
+ *
  * Supports two modes:
  * 1. Inline configuration: { name: 'evaluator-name', config: {...} }
  * 2. File reference: { file: './path/to/evaluator.yaml' }
- * 
+ *
  * These modes are mutually exclusive - an evaluator config must have
  * either 'name' or 'file', but not both.
  */
 const evaluatorConfigSchema = z.union([
   // Mode 1: Inline evaluator configuration
-  z.object({
-    name: z.string(),
-    config: z.record(z.any()).optional(), // Evaluator-specific configuration
-  }).strict(), // Strict mode prevents extra fields like 'file'
+  z
+    .object({
+      name: z.string(),
+      config: z.record(z.any()).optional(), // Evaluator-specific configuration
+    })
+    .strict(), // Strict mode prevents extra fields like 'file'
   // Mode 2: Reference to external evaluator definition file
-  z.object({
-    file: z.string().min(1, 'Evaluator file path is required'),
-  }).strict(), // Strict mode prevents extra fields like 'name'
+  z
+    .object({
+      file: z.string().min(1, 'Evaluator file path is required'),
+    })
+    .strict(), // Strict mode prevents extra fields like 'name'
 ]);
 
 /**
@@ -80,7 +52,10 @@ export const testCaseConfigSchema = z
     description: z
       .string()
       .min(1, 'Test case description is required')
-      .max(1000, 'Test case description exceeds maximum length of 1000 characters'),
+      .max(
+        1000,
+        'Test case description exceeds maximum length of 1000 characters'
+      ),
 
     // Repository configuration (test data)
     repo: z
@@ -92,12 +67,14 @@ export const testCaseConfigSchema = z
           if (!url.startsWith('http://') && !url.startsWith('https://')) {
             return false;
           }
-          
+
           // Validate URL format
           try {
             const parsed = new URL(url);
             // Prevent localhost/internal network access
-            const hostname = parsed.hostname.toLowerCase();
+            const hostname = parsed.hostname
+              .toLowerCase()
+              .replace(/^\[|\]$/g, '');
             if (
               hostname === 'localhost' ||
               hostname === '127.0.0.1' ||
@@ -115,7 +92,8 @@ export const testCaseConfigSchema = z
           }
         },
         {
-          message: 'Repository must be a valid HTTP(S) URL to a public repository',
+          message:
+            'Repository must be a valid HTTP(S) URL to a public repository',
         }
       ),
     branch: z.string().optional(),
@@ -175,7 +153,7 @@ export type TestCaseConfig = z.infer<typeof testCaseConfigSchema>;
 /**
  * Helper type for agent configuration
  */
-export type AgentConfig = z.infer<typeof agentConfigSchema>;
+export type { AgentConfig };
 
 /**
  * Helper type for evaluator configuration

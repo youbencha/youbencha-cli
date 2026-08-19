@@ -1,6 +1,6 @@
 /**
  * Webhook Post-Evaluation
- * 
+ *
  * Posts evaluation results to an HTTP endpoint.
  * Useful for integrating with external systems, notifications, or dashboards.
  */
@@ -9,7 +9,10 @@ import * as https from 'https';
 import * as http from 'http';
 import { URL } from 'url';
 import { PostEvaluation, PostEvaluationContext } from './base.js';
-import { PostEvaluationResult, WebhookConfig } from '../schemas/post-evaluation.schema.js';
+import {
+  PostEvaluationResult,
+  WebhookConfig,
+} from '../schemas/post-evaluation.schema.js';
 import * as logger from '../lib/logger.js';
 
 // User-Agent version - update this when releasing new versions
@@ -27,13 +30,15 @@ export class WebhookPostEvaluation implements PostEvaluation {
    */
   async checkPreconditions(context: PostEvaluationContext): Promise<boolean> {
     const config = context.config as WebhookConfig;
-    
+
     try {
       // Validate URL
       new URL(config.url);
       return true;
     } catch (error) {
-      logger.warn(`Webhook URL invalid: ${error instanceof Error ? error.message : String(error)}`);
+      logger.warn(
+        `Webhook URL invalid: ${error instanceof Error ? error.message : String(error)}`
+      );
       return false;
     }
   }
@@ -61,7 +66,7 @@ export class WebhookPostEvaluation implements PostEvaluation {
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
           await this.makeRequest(config, payload);
-          
+
           const duration = Date.now() - startTime;
           return {
             post_evaluator: this.name,
@@ -77,7 +82,7 @@ export class WebhookPostEvaluation implements PostEvaluation {
           };
         } catch (error) {
           lastError = error instanceof Error ? error : new Error(String(error));
-          
+
           if (attempt < maxRetries) {
             logger.warn(`Webhook attempt ${attempt} failed, retrying...`);
             await this.sleep(1000 * attempt); // Exponential backoff
@@ -121,14 +126,17 @@ export class WebhookPostEvaluation implements PostEvaluation {
   /**
    * Make HTTP request
    */
-  private async makeRequest(config: WebhookConfig, payload: unknown): Promise<void> {
+  private async makeRequest(
+    config: WebhookConfig,
+    payload: unknown
+  ): Promise<void> {
     return new Promise((resolve, reject) => {
       const url = new URL(config.url);
       const isHttps = url.protocol === 'https:';
       const client = isHttps ? https : http;
 
       const postData = JSON.stringify(payload);
-      
+
       const options = {
         hostname: url.hostname,
         port: url.port || (isHttps ? 443 : 80),
@@ -154,7 +162,9 @@ export class WebhookPostEvaluation implements PostEvaluation {
           if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
             resolve();
           } else {
-            reject(new Error(`Webhook returned status ${res.statusCode}: ${data}`));
+            reject(
+              new Error(`Webhook returned status ${res.statusCode}: ${data}`)
+            );
           }
         });
       });
@@ -165,7 +175,9 @@ export class WebhookPostEvaluation implements PostEvaluation {
 
       req.on('timeout', () => {
         req.destroy();
-        reject(new Error(`Webhook request timed out after ${config.timeout_ms}ms`));
+        reject(
+          new Error(`Webhook request timed out after ${config.timeout_ms}ms`)
+        );
       });
 
       req.write(postData);

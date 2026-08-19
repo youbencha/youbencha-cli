@@ -1,6 +1,6 @@
 /**
  * JSON Reporter
- * 
+ *
  * Generates JSON reports from evaluation results.
  * Produces pretty-printed JSON files for easy reading and parsing.
  */
@@ -12,7 +12,7 @@ import * as path from 'path';
 
 /**
  * JSON Reporter implementation
- * 
+ *
  * Serializes ResultsBundle to pretty-printed JSON format.
  */
 export class JsonReporter implements Reporter {
@@ -21,7 +21,7 @@ export class JsonReporter implements Reporter {
 
   /**
    * Generate JSON report from results bundle
-   * 
+   *
    * @param bundle - Complete evaluation results
    * @param options - Reporter-specific options (unused for JSON)
    * @returns Promise resolving to pretty-printed JSON string
@@ -36,7 +36,7 @@ export class JsonReporter implements Reporter {
 
   /**
    * Write JSON report to file
-   * 
+   *
    * @param bundle - Complete evaluation results
    * @param outputPath - Path where report should be written
    * @param options - Reporter-specific options (unused for JSON)

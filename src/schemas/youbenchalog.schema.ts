@@ -1,9 +1,9 @@
 /**
  * youBencha Log Schema
- * 
+ *
  * Zod schema for normalized agent execution logs.
  * Ensures consistent log format across all agent adapters.
- * 
+ *
  * Version: 1.0.0
  */
 
@@ -75,9 +75,16 @@ const executionSchema = z.object({
  */
 const usageSchema = z.object({
   prompt_tokens: z.number().nonnegative(),
+  cached_prompt_tokens: z.number().nonnegative().optional(),
   completion_tokens: z.number().nonnegative(),
+  reasoning_tokens: z.number().nonnegative().optional(),
   total_tokens: z.number().nonnegative(),
+  cost_usd: z.number().nonnegative().optional(),
+  credits: z.number().nonnegative().optional(),
   estimated_cost_usd: z.number().nonnegative().optional(),
+  measurement_source: z
+    .enum(['measured', 'estimated', 'unavailable'])
+    .optional(),
 });
 
 /**
@@ -88,6 +95,27 @@ const environmentSchema = z.object({
   node_version: z.string(),
   youbencha_version: z.string(),
   working_directory: z.string(),
+});
+
+/**
+ * Reproducibility metadata for a headless agent invocation.
+ *
+ * Optional so existing version 1.0.0 logs remain valid.
+ */
+const provenanceSchema = z.object({
+  cli_version: z.string().optional(),
+  adapter_version: z.string().optional(),
+  resolved_executable: z.string().optional(),
+  configured_model: z.string().optional(),
+  reported_model: z.string().optional(),
+  session_id: z.string().optional(),
+  headless: z.boolean().optional(),
+  session_persistence: z.boolean().optional(),
+  structured_output_format: z.string().optional(),
+  usage_source: z.enum(['measured', 'estimated', 'unavailable']).optional(),
+  legacy_parser_used: z.boolean().optional(),
+  effective_config: z.record(z.unknown()).optional(),
+  diagnostics: z.array(z.string()).optional(),
 });
 
 /**
@@ -102,6 +130,7 @@ export const youBenchaLogSchema = z.object({
   usage: usageSchema,
   errors: z.array(errorSchema),
   environment: environmentSchema,
+  provenance: provenanceSchema.optional(),
 });
 
 /**

@@ -1,6 +1,6 @@
 /**
  * Orchestrator
- * 
+ *
  * Main evaluation orchestration - coordinates workspace setup, agent execution,
  * evaluator runs, results bundling, and cleanup.
  */
@@ -15,22 +15,35 @@ import { PreExecutionResult } from '../schemas/pre-execution.schema.js';
 import { YouBenchaLog } from '../schemas/youbenchalog.schema.js';
 import { WorkspaceManager, Workspace, WorkspaceConfig } from './workspace.js';
 import { detectEnvironment } from './env.js';
-import { saveYouBenchaLog, saveResultsBundle, getArtifactManifest } from './storage.js';
+import {
+  saveYouBenchaLog,
+  saveResultsBundle,
+  getArtifactManifest,
+} from './storage.js';
 import { AgentAdapter, AgentExecutionContext } from '../adapters/base.js';
 import { CopilotCLIAdapter } from '../adapters/copilot-cli.js';
 import { ClaudeCodeAdapter } from '../adapters/claude-code.js';
+import { CodexCLIAdapter } from '../adapters/codex-cli.js';
 import { Evaluator, EvaluationContext } from '../evaluators/base.js';
 import { GitDiffEvaluator } from '../evaluators/git-diff.js';
 import { ExpectedDiffEvaluator } from '../evaluators/expected-diff.js';
 import { AgenticJudgeEvaluator } from '../evaluators/agentic-judge.js';
 import { PreExecution, PreExecutionContext } from '../pre-execution/base.js';
 import { ScriptPreExecution } from '../pre-execution/script.js';
-import { PostEvaluation, PostEvaluationContext } from '../post-evaluation/base.js';
+import {
+  PostEvaluation,
+  PostEvaluationContext,
+} from '../post-evaluation/base.js';
 import { WebhookPostEvaluation } from '../post-evaluation/webhook.js';
 import { DatabasePostEvaluation } from '../post-evaluation/database.js';
 import { ScriptPostEvaluation } from '../post-evaluation/script.js';
-import { resolveEvaluatorConfigs, type ResolvedEvaluatorConfig } from '../lib/evaluator-loader.js';
+import {
+  resolveEvaluatorConfigs,
+  validateEvaluatorNames,
+  type ResolvedEvaluatorConfig,
+} from '../lib/evaluator-loader.js';
 import { resolvePromptValue } from '../lib/prompt-loader.js';
+import { mapWithConcurrency } from '../lib/concurrency.js';
 import * as logger from '../lib/logger.js';
 
 /**
@@ -39,16 +52,25 @@ import * as logger from '../lib/logger.js';
 export interface OrchestratorOptions {
   /** Keep workspace after evaluation (for debugging) - defaults to true */
   keepWorkspace?: boolean;
-  
+
   /** Maximum number of concurrent evaluators (default: 4) */
   maxConcurrentEvaluators?: number;
-  
+
+  /** Default timeout for workspace and other non-agent operations */
+  defaultTimeout?: number;
+
+  /** Default timeout for agent execution */
+  agentTimeout?: number;
+
+  /** Default agent model when the test case does not select one */
+  agentModel?: string;
+
   /** Maximum file size in bytes (default: 10MB) */
   maxFileSize?: number;
-  
+
   /** Maximum directory depth (default: 10) */
   maxDirectoryDepth?: number;
-  
+
   /** Maximum workspace size in bytes (default: 1GB) */
   maxWorkspaceSize?: number;
 }
@@ -58,6 +80,11 @@ export interface OrchestratorOptions {
  */
 interface ResolvedTestCaseConfig extends Omit<TestCaseConfig, 'evaluators'> {
   evaluators: ResolvedEvaluatorConfig[];
+}
+
+export interface OrchestratorRunOptions {
+  /** Stable unique workspace identifier supplied by a parent scheduler. */
+  workspaceRunId?: string;
 }
 
 /**
@@ -71,7 +98,9 @@ export class Orchestrator {
     this.options = {
       keepWorkspace: true, // Changed default to true - keep workspace by default
       maxConcurrentEvaluators: 4,
-      maxFileSize: 10 * 1024 * 1024,        // 10MB
+      defaultTimeout: 300000,
+      agentTimeout: 600000,
+      maxFileSize: 10 * 1024 * 1024, // 10MB
       maxDirectoryDepth: 10,
       maxWorkspaceSize: 1024 * 1024 * 1024, // 1GB
       ...options,
@@ -81,12 +110,16 @@ export class Orchestrator {
 
   /**
    * Run complete evaluation workflow
-   * 
+   *
    * @param testCaseConfig - Test case configuration
    * @param configFile - Path to the config file used
    * @returns Results bundle with evaluation results
    */
-  async runEvaluation(testCaseConfig: TestCaseConfig, configFile: string): Promise<ResultsBundle> {
+  async runEvaluation(
+    testCaseConfig: TestCaseConfig,
+    configFile: string,
+    runOptions: OrchestratorRunOptions = {}
+  ): Promise<ResultsBundle> {
     const startedAt = new Date().toISOString();
     logger.info('Starting evaluation workflow');
 
@@ -99,33 +132,44 @@ export class Orchestrator {
         testCaseConfig.evaluators,
         configFileDir
       );
-      
+      validateEvaluatorNames(resolvedEvaluators);
+
       // Create a resolved test case config with inline evaluators
       const resolvedTestCaseConfig: ResolvedTestCaseConfig = {
         ...testCaseConfig,
         evaluators: resolvedEvaluators,
       };
-      
+
       // 1. Create workspace and clone repository
-      workspace = await this.setupWorkspace(resolvedTestCaseConfig);
+      workspace = await this.setupWorkspace(
+        resolvedTestCaseConfig,
+        runOptions.workspaceRunId
+      );
       logger.info(`Workspace created: ${workspace.runId}`);
 
       // 2. Run pre-execution hooks (if configured)
-      if (resolvedTestCaseConfig.pre_execution && resolvedTestCaseConfig.pre_execution.length > 0) {
-        logger.info(`Running ${resolvedTestCaseConfig.pre_execution.length} pre-execution hook(s)...`);
+      if (
+        resolvedTestCaseConfig.pre_execution &&
+        resolvedTestCaseConfig.pre_execution.length > 0
+      ) {
+        logger.info(
+          `Running ${resolvedTestCaseConfig.pre_execution.length} pre-execution hook(s)...`
+        );
         const preExecutionResults = await this.runPreExecutions(
           resolvedTestCaseConfig,
           workspace
         );
-        
+
         // Check if any pre-execution failed
-        const failedPreExecutions = preExecutionResults.filter(r => r.status === 'failed');
+        const failedPreExecutions = preExecutionResults.filter(
+          (r) => r.status === 'failed'
+        );
         if (failedPreExecutions.length > 0) {
-          const errorMsg = `Pre-execution failed: ${failedPreExecutions.map(r => r.message).join(', ')}`;
+          const errorMsg = `Pre-execution failed: ${failedPreExecutions.map((r) => r.message).join(', ')}`;
           logger.error(errorMsg);
           throw new Error(errorMsg);
         }
-        
+
         logger.info('Pre-execution completed successfully');
       }
 
@@ -172,15 +216,22 @@ export class Orchestrator {
       logger.info(`Results bundle saved: ${resultsBundlePath}`);
 
       // 8. Run post-evaluations (if configured)
-      if (resolvedTestCaseConfig.post_evaluation && resolvedTestCaseConfig.post_evaluation.length > 0) {
-        logger.info(`Running ${resolvedTestCaseConfig.post_evaluation.length} post-evaluation(s)...`);
+      if (
+        resolvedTestCaseConfig.post_evaluation &&
+        resolvedTestCaseConfig.post_evaluation.length > 0
+      ) {
+        logger.info(
+          `Running ${resolvedTestCaseConfig.post_evaluation.length} post-evaluation(s)...`
+        );
         const postEvaluationResults = await this.runPostEvaluations(
           resolvedTestCaseConfig,
           resultsBundle,
           resultsBundlePath,
           workspace
         );
-        logger.info(`Post-evaluations completed: ${postEvaluationResults.length} results`);
+        logger.info(
+          `Post-evaluations completed: ${postEvaluationResults.length} results`
+        );
       }
 
       // 8. Cleanup workspace (unless keeping)
@@ -206,21 +257,25 @@ export class Orchestrator {
 
   /**
    * Run evaluation-only workflow (no agent execution)
-   * 
+   *
    * This method runs evaluators on existing directories without executing an agent.
    * Useful for:
    * - Re-evaluating existing agent outputs
    * - Evaluating manual code changes
    * - Testing evaluators during development
    * - CI/CD integration with other tools
-   * 
+   *
    * @param evalConfig - Eval configuration
    * @param configFile - Path to the config file used
    * @returns Results bundle with evaluation results
    */
-  async runEvaluationOnly(evalConfig: EvalConfig, configFile: string): Promise<ResultsBundle> {
+  async runEvaluationOnly(
+    evalConfig: EvalConfig,
+    configFile: string
+  ): Promise<ResultsBundle> {
     const startedAt = new Date().toISOString();
     logger.info('Starting evaluation-only workflow (no agent execution)');
+    validateEvaluatorNames(evalConfig.evaluators);
 
     // Detect environment
     const env = detectEnvironment();
@@ -242,23 +297,27 @@ export class Orchestrator {
       try {
         const expectedDirStat = await fs.stat(evalConfig.expected_directory);
         if (!expectedDirStat.isDirectory()) {
-          throw new Error(`Expected path is not a directory: ${evalConfig.expected_directory}`);
+          throw new Error(
+            `Expected path is not a directory: ${evalConfig.expected_directory}`
+          );
         }
         expectedDir = path.resolve(evalConfig.expected_directory);
       } catch (error) {
-        throw new Error(`Expected directory does not exist: ${evalConfig.expected_directory}`);
+        throw new Error(
+          `Expected directory does not exist: ${evalConfig.expected_directory}`
+        );
       }
     }
 
     // Resolve paths
     const modifiedDir = path.resolve(evalConfig.directory);
     const outputDir = evalConfig.output_dir || '.youbencha-eval';
-    
+
     // Create output directory with timestamp
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const runId = `eval-${timestamp}`;
     const artifactsDir = path.join(outputDir, runId, 'artifacts');
-    
+
     await fs.mkdir(artifactsDir, { recursive: true });
     logger.info(`Output directory created: ${path.join(outputDir, runId)}`);
 
@@ -294,7 +353,7 @@ export class Orchestrator {
           prompt_tokens: 0,
           completion_tokens: 0,
           total_tokens: 0,
-          estimated_cost_usd: 0,
+          measurement_source: 'unavailable',
         },
         errors: [],
         environment: {
@@ -334,15 +393,20 @@ export class Orchestrator {
       );
 
       // Save results bundle
-      const resultsBundlePath = await saveResultsBundle(resultsBundle, artifactsDir);
+      const resultsBundlePath = await saveResultsBundle(
+        resultsBundle,
+        artifactsDir
+      );
       logger.info(`Results bundle saved: ${resultsBundlePath}`);
 
       // Run post-evaluations (if configured)
       if (evalConfig.post_evaluation && evalConfig.post_evaluation.length > 0) {
-        logger.info(`Running ${evalConfig.post_evaluation.length} post-evaluation(s)...`);
-        
+        logger.info(
+          `Running ${evalConfig.post_evaluation.length} post-evaluation(s)...`
+        );
+
         const runDirPath = path.join(outputDir, runId);
-        
+
         // Create a synthetic workspace object for post-evaluations
         const syntheticWorkspace: Pick<Workspace, 'paths'> = {
           paths: {
@@ -355,14 +419,16 @@ export class Orchestrator {
             lockFile: path.join(runDirPath, '.lock'),
           },
         };
-        
+
         const postEvaluationResults = await this.runPostEvaluationsForEvalOnly(
           evalConfig,
           resultsBundle,
           resultsBundlePath,
           syntheticWorkspace
         );
-        logger.info(`Post-evaluations completed: ${postEvaluationResults.length} results`);
+        logger.info(
+          `Post-evaluations completed: ${postEvaluationResults.length} results`
+        );
       }
 
       return resultsBundle;
@@ -382,79 +448,57 @@ export class Orchestrator {
     artifactsDir: string,
     agentLog: YouBenchaLog
   ): Promise<EvaluationResult[]> {
-    const results: EvaluationResult[] = [];
+    return mapWithConcurrency(
+      evalConfig.evaluators,
+      this.options.maxConcurrentEvaluators ?? 4,
+      async (evaluatorConfig) => {
+        try {
+          const evaluator = this.getEvaluator(evaluatorConfig.name);
+          if (!evaluator) {
+            return {
+              evaluator: evaluatorConfig.name,
+              status: 'skipped' as const,
+              metrics: {},
+              message: `Unknown evaluator: ${evaluatorConfig.name}`,
+              duration_ms: 0,
+              timestamp: new Date().toISOString(),
+              error: {
+                message: `Evaluator '${evaluatorConfig.name}' not found`,
+              },
+            };
+          }
 
-    // Run evaluators in parallel using Promise.allSettled
-    const evaluatorPromises = evalConfig.evaluators.map(async (evaluatorConfig) => {
-      try {
-        const evaluator = this.getEvaluator(evaluatorConfig.name);
-        if (!evaluator) {
+          // Build evaluation context
+          const context: EvaluationContext = {
+            modifiedDir,
+            expectedDir,
+            artifactsDir,
+            agentLog,
+            config: evaluatorConfig.config || {},
+            testCaseConfig: undefined, // No test case config in eval-only mode
+          };
+
+          // Run evaluator
+          const result = await evaluator.evaluate(context);
+          return result;
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
           return {
             evaluator: evaluatorConfig.name,
             status: 'skipped' as const,
             metrics: {},
-            message: `Unknown evaluator: ${evaluatorConfig.name}`,
+            message: `Evaluator error: ${errorMessage}`,
             duration_ms: 0,
             timestamp: new Date().toISOString(),
             error: {
-              message: `Evaluator '${evaluatorConfig.name}' not found`,
+              message: errorMessage,
+              stack_trace: error instanceof Error ? error.stack : undefined,
             },
           };
         }
-
-        // Build evaluation context
-        const context: EvaluationContext = {
-          modifiedDir,
-          expectedDir,
-          artifactsDir,
-          agentLog,
-          config: evaluatorConfig.config || {},
-          testCaseConfig: undefined, // No test case config in eval-only mode
-        };
-
-        // Run evaluator
-        const result = await evaluator.evaluate(context);
-        return result;
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        return {
-          evaluator: evaluatorConfig.name,
-          status: 'skipped' as const,
-          metrics: {},
-          message: `Evaluator error: ${errorMessage}`,
-          duration_ms: 0,
-          timestamp: new Date().toISOString(),
-          error: {
-            message: errorMessage,
-            stack_trace: error instanceof Error ? error.stack : undefined,
-          },
-        };
       }
-    });
-
-    const settledResults = await Promise.allSettled(evaluatorPromises);
-
-    // Collect results
-    for (const settled of settledResults) {
-      if (settled.status === 'fulfilled') {
-        results.push(settled.value);
-      } else {
-        logger.error('Evaluator promise rejected', settled.reason);
-        results.push({
-          evaluator: 'unknown',
-          status: 'skipped',
-          metrics: {},
-          message: `Evaluator failed: ${settled.reason}`,
-          duration_ms: 0,
-          timestamp: new Date().toISOString(),
-          error: {
-            message: String(settled.reason),
-          },
-        });
-      }
-    }
-
-    return results;
+    );
   }
 
   /**
@@ -472,7 +516,8 @@ export class Orchestrator {
     startedAt: string
   ): Promise<ResultsBundle> {
     const completedAt = new Date().toISOString();
-    const durationMs = new Date(completedAt).getTime() - new Date(startedAt).getTime();
+    const durationMs =
+      new Date(completedAt).getTime() - new Date(startedAt).getTime();
     const env = detectEnvironment();
 
     // Calculate summary statistics
@@ -480,9 +525,8 @@ export class Orchestrator {
 
     // Get artifacts manifest
     const allArtifacts = await getArtifactManifest(artifactsDir);
-    const evaluatorArtifacts = allArtifacts.filter(
-      (f) => !f.includes('youbencha.log.json') && !f.includes('results.json')
-    );
+    const { agentArtifacts, evaluatorArtifacts } =
+      partitionArtifactManifest(allArtifacts);
 
     // Generate config hash
     const configHash = createHash('sha256')
@@ -523,6 +567,7 @@ export class Orchestrator {
       summary,
       artifacts: {
         agent_log: path.basename(agentLogPath),
+        agent_artifacts: agentArtifacts,
         reports: [],
         evaluator_artifacts: evaluatorArtifacts,
       },
@@ -538,13 +583,19 @@ export class Orchestrator {
     resultsBundlePath: string,
     workspace: Pick<Workspace, 'paths'>
   ): Promise<PostEvaluationResult[]> {
-    if (!evalConfig.post_evaluation || evalConfig.post_evaluation.length === 0) {
+    if (
+      !evalConfig.post_evaluation ||
+      evalConfig.post_evaluation.length === 0
+    ) {
       return [];
     }
 
     // Reuse the existing post-evaluation logic with a synthetic test case config
     // Only post_evaluation field is needed by runPostEvaluations
-    const syntheticTestCaseConfig: Pick<ResolvedTestCaseConfig, 'post_evaluation'> = {
+    const syntheticTestCaseConfig: Pick<
+      ResolvedTestCaseConfig,
+      'post_evaluation'
+    > = {
       post_evaluation: evalConfig.post_evaluation,
     };
 
@@ -559,7 +610,10 @@ export class Orchestrator {
   /**
    * Setup workspace and clone repository
    */
-  private async setupWorkspace(testCaseConfig: ResolvedTestCaseConfig): Promise<Workspace> {
+  private async setupWorkspace(
+    testCaseConfig: ResolvedTestCaseConfig,
+    workspaceRunId?: string
+  ): Promise<Workspace> {
     logger.info('Setting up workspace...');
 
     const workspaceConfig: WorkspaceConfig = {
@@ -568,11 +622,13 @@ export class Orchestrator {
       commit: testCaseConfig.commit,
       expectedBranch: testCaseConfig.expected,
       workspaceRoot: testCaseConfig.workspace_dir,
+      runId: workspaceRunId,
       workspaceName: testCaseConfig.workspace_name,
-      timeout: testCaseConfig.timeout,
+      timeout: testCaseConfig.timeout ?? this.options.defaultTimeout,
     };
 
-    const workspace = await this.workspaceManager.createWorkspace(workspaceConfig);
+    const workspace =
+      await this.workspaceManager.createWorkspace(workspaceConfig);
 
     return workspace;
   }
@@ -585,7 +641,10 @@ export class Orchestrator {
     testCaseConfig: ResolvedTestCaseConfig,
     workspace: Workspace
   ): Promise<PreExecutionResult[]> {
-    if (!testCaseConfig.pre_execution || testCaseConfig.pre_execution.length === 0) {
+    if (
+      !testCaseConfig.pre_execution ||
+      testCaseConfig.pre_execution.length === 0
+    ) {
       return [];
     }
 
@@ -596,7 +655,7 @@ export class Orchestrator {
     // Run pre-executions in sequence (not parallel) to maintain order
     for (const config of testCaseConfig.pre_execution) {
       const startTime = Date.now();
-      
+
       try {
         const preExecution = this.getPreExecution(config.name);
         if (!preExecution) {
@@ -637,23 +696,30 @@ export class Orchestrator {
             timestamp: new Date().toISOString(),
           };
           results.push(result);
-          logger.warn(`Pre-execution ${config.name} skipped: preconditions not met`);
+          logger.warn(
+            `Pre-execution ${config.name} skipped: preconditions not met`
+          );
           continue;
         }
 
         // Execute pre-execution
         const result = await preExecution.execute(context);
         results.push(result);
-        
+
         if (result.status === 'success') {
           logger.info(`Pre-execution ${config.name} completed successfully`);
         } else if (result.status === 'failed') {
-          logger.error(`Pre-execution ${config.name} failed: ${result.message}`);
+          logger.error(
+            `Pre-execution ${config.name} failed: ${result.message}`
+          );
         } else {
-          logger.warn(`Pre-execution ${config.name} skipped: ${result.message}`);
+          logger.warn(
+            `Pre-execution ${config.name} skipped: ${result.message}`
+          );
         }
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         const result: PreExecutionResult = {
           pre_executor: config.name,
           status: 'failed',
@@ -666,7 +732,9 @@ export class Orchestrator {
           },
         };
         results.push(result);
-        logger.error(`Pre-execution ${config.name} threw error: ${errorMessage}`);
+        logger.error(
+          `Pre-execution ${config.name} threw error: ${errorMessage}`
+        );
       }
     }
 
@@ -689,27 +757,49 @@ export class Orchestrator {
   }> {
     // Copy agent files if agent name is specified
     if (testCaseConfig.agent.agent_name) {
-      logger.info(`Copying agent definition for: ${testCaseConfig.agent.agent_name}`);
+      logger.info(
+        `Copying agent definition for: ${testCaseConfig.agent.agent_name}`
+      );
       const fs = await import('fs-extra');
-      
+
       // Copy .github/agents folder (for copilot-cli)
-      const sourceGithubAgentsDir = path.join(process.cwd(), '.github', 'agents');
-      const destGithubAgentsDir = path.join(workspace.paths.modifiedDir, '.github', 'agents');
+      const sourceGithubAgentsDir = path.join(
+        process.cwd(),
+        '.github',
+        'agents'
+      );
+      const destGithubAgentsDir = path.join(
+        workspace.paths.modifiedDir,
+        '.github',
+        'agents'
+      );
       try {
         await fs.default.copy(sourceGithubAgentsDir, destGithubAgentsDir);
         logger.info('.github/agents copied successfully');
       } catch (error) {
-        logger.warn(`Failed to copy .github/agents: ${error instanceof Error ? error.message : String(error)}`);
+        logger.warn(
+          `Failed to copy .github/agents: ${error instanceof Error ? error.message : String(error)}`
+        );
       }
-      
+
       // Copy .claude/agents folder (for claude-code)
-      const sourceClaudeAgentsDir = path.join(process.cwd(), '.claude', 'agents');
-      const destClaudeAgentsDir = path.join(workspace.paths.modifiedDir, '.claude', 'agents');
+      const sourceClaudeAgentsDir = path.join(
+        process.cwd(),
+        '.claude',
+        'agents'
+      );
+      const destClaudeAgentsDir = path.join(
+        workspace.paths.modifiedDir,
+        '.claude',
+        'agents'
+      );
       try {
         await fs.default.copy(sourceClaudeAgentsDir, destClaudeAgentsDir);
         logger.info('.claude/agents copied successfully');
       } catch (error) {
-        logger.warn(`Failed to copy .claude/agents: ${error instanceof Error ? error.message : String(error)}`);
+        logger.warn(
+          `Failed to copy .claude/agents: ${error instanceof Error ? error.message : String(error)}`
+        );
       }
     }
 
@@ -718,16 +808,22 @@ export class Orchestrator {
     const promptFileFromConfig = testCaseConfig.agent.config?.prompt_file;
     const resolvedPrompt = resolvePromptValue(
       typeof promptFromConfig === 'string' ? promptFromConfig : undefined,
-      typeof promptFileFromConfig === 'string' ? promptFileFromConfig : undefined,
+      typeof promptFileFromConfig === 'string'
+        ? promptFileFromConfig
+        : undefined,
       configFileDir
     );
 
     // Display agent context before execution
     if (resolvedPrompt) {
       if (promptFileFromConfig) {
-        logger.info(`Agent prompt loaded from file: "${promptFileFromConfig}"`);
+        logger.info(
+          `Agent prompt loaded from file: "${promptFileFromConfig}" (${resolvedPrompt.length} characters)`
+        );
       } else {
-        logger.info(`Agent prompt: "${resolvedPrompt}"`);
+        logger.info(
+          `Agent prompt loaded from inline configuration (${resolvedPrompt.length} characters)`
+        );
       }
     }
     logger.info(`Agent type: ${testCaseConfig.agent.type}`);
@@ -736,7 +832,7 @@ export class Orchestrator {
     }
     logger.info(`Working directory: ${workspace.paths.modifiedDir}`);
     logger.info('Starting agent execution...');
-    console.log(''); // Add blank line for readability
+    logger.info('');
 
     // Get agent adapter
     const adapter = this.getAgentAdapter(testCaseConfig.agent.type);
@@ -744,7 +840,9 @@ export class Orchestrator {
     // Check availability
     const isAvailable = await adapter.checkAvailability();
     if (!isAvailable) {
-      throw new Error(`Agent ${testCaseConfig.agent.type} is not available or not authenticated`);
+      throw new Error(
+        `Agent ${testCaseConfig.agent.type} is not available or not authenticated`
+      );
     }
 
     // Execute agent
@@ -761,16 +859,20 @@ export class Orchestrator {
         // Pass agent name if specified in test case config
         agent_name: testCaseConfig.agent.agent_name,
         // Pass model if specified in test case config
-        model: testCaseConfig.agent.model,
+        model: testCaseConfig.agent.model ?? this.options.agentModel,
       },
-      timeout: testCaseConfig.timeout || 300000, // 5 min default
+      timeout:
+        testCaseConfig.timeout ??
+        this.options.agentTimeout ??
+        this.options.defaultTimeout ??
+        300000,
       env: {},
     };
 
     const result = await adapter.execute(executionContext);
 
     // Display completion summary
-    console.log(''); // Add blank line for readability
+    logger.info('');
     logger.info(`Agent execution completed: ${result.status}`);
     logger.info(`Duration: ${(result.durationMs / 1000).toFixed(2)}s`);
     logger.info(`Exit code: ${result.exitCode}`);
@@ -779,10 +881,21 @@ export class Orchestrator {
     const agentLog = adapter.normalizeLog(result.output, result);
 
     // Display usage metrics if available
-    if (agentLog.usage) {
-      logger.info(`Token usage: ${agentLog.usage.total_tokens} tokens (prompt: ${agentLog.usage.prompt_tokens}, completion: ${agentLog.usage.completion_tokens})`);
-      if (agentLog.usage.estimated_cost_usd) {
-        logger.info(`Estimated cost: $${agentLog.usage.estimated_cost_usd.toFixed(4)}`);
+    if (agentLog.usage && agentLog.usage.measurement_source !== 'unavailable') {
+      logger.info(
+        `Token usage (${agentLog.usage.measurement_source ?? 'legacy'}): ${agentLog.usage.total_tokens} tokens (prompt: ${agentLog.usage.prompt_tokens}, completion: ${agentLog.usage.completion_tokens})`
+      );
+      if (agentLog.usage.cost_usd !== undefined) {
+        logger.info(
+          `Provider-reported cost: $${agentLog.usage.cost_usd.toFixed(4)}`
+        );
+      } else if (agentLog.usage.estimated_cost_usd !== undefined) {
+        logger.info(
+          `Estimated cost: $${agentLog.usage.estimated_cost_usd.toFixed(4)}`
+        );
+      }
+      if (agentLog.usage.credits !== undefined) {
+        logger.info(`Provider-reported credits: ${agentLog.usage.credits}`);
       }
     }
 
@@ -808,105 +921,92 @@ export class Orchestrator {
   ): Promise<EvaluationResult[]> {
     logger.info('Running evaluators...');
 
-    const results: EvaluationResult[] = [];
+    return mapWithConcurrency(
+      testCaseConfig.evaluators,
+      this.options.maxConcurrentEvaluators ?? 4,
+      async (evaluatorConfig) => {
+        try {
+          const evaluator = this.getEvaluator(evaluatorConfig.name);
+          if (!evaluator) {
+            return {
+              evaluator: evaluatorConfig.name,
+              status: 'skipped' as const,
+              metrics: {},
+              message: `Unknown evaluator: ${evaluatorConfig.name}`,
+              duration_ms: 0,
+              timestamp: new Date().toISOString(),
+              error: {
+                message: `Evaluator '${evaluatorConfig.name}' not found`,
+              },
+            };
+          }
 
-    // Run evaluators in parallel using Promise.allSettled
-    const evaluatorPromises = testCaseConfig.evaluators.map(async (evaluatorConfig) => {
-      try {
-        const evaluator = this.getEvaluator(evaluatorConfig.name);
-        if (!evaluator) {
+          // Resolve prompt_file in evaluator config if present
+          const evaluatorConfigWithResolvedPrompt = {
+            ...evaluatorConfig.config,
+          };
+          if (evaluatorConfig.config) {
+            const promptFromConfig =
+              evaluatorConfigWithResolvedPrompt.prompt as string | undefined;
+            const promptFileFromConfig =
+              evaluatorConfigWithResolvedPrompt.prompt_file as
+                | string
+                | undefined;
+
+            // Validate mutual exclusivity
+            if (promptFromConfig && promptFileFromConfig) {
+              throw new Error(
+                `Evaluator "${evaluatorConfig.name}": Cannot specify both "prompt" and "prompt_file". Please use only one.`
+              );
+            }
+
+            if (promptFileFromConfig || promptFromConfig) {
+              const resolvedPrompt = resolvePromptValue(
+                typeof promptFromConfig === 'string'
+                  ? promptFromConfig
+                  : undefined,
+                typeof promptFileFromConfig === 'string'
+                  ? promptFileFromConfig
+                  : undefined,
+                configFileDir
+              );
+              // Update config with resolved prompt, removing prompt_file
+              evaluatorConfigWithResolvedPrompt.prompt = resolvedPrompt;
+              delete evaluatorConfigWithResolvedPrompt.prompt_file;
+            }
+          }
+
+          // Build evaluation context
+          const context: EvaluationContext = {
+            modifiedDir: workspace.paths.modifiedDir,
+            expectedDir: workspace.paths.expectedDir,
+            artifactsDir: workspace.paths.artifactsDir,
+            agentLog,
+            config: evaluatorConfigWithResolvedPrompt,
+            testCaseConfig,
+          };
+
+          // Run evaluator
+          const result = await evaluator.evaluate(context);
+          return result;
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
           return {
             evaluator: evaluatorConfig.name,
             status: 'skipped' as const,
             metrics: {},
-            message: `Unknown evaluator: ${evaluatorConfig.name}`,
+            message: `Evaluator error: ${errorMessage}`,
             duration_ms: 0,
             timestamp: new Date().toISOString(),
             error: {
-              message: `Evaluator '${evaluatorConfig.name}' not found`,
+              message: errorMessage,
+              stack_trace: error instanceof Error ? error.stack : undefined,
             },
           };
         }
-
-        // Resolve prompt_file in evaluator config if present
-        const evaluatorConfigWithResolvedPrompt = { ...evaluatorConfig.config };
-        if (evaluatorConfig.config) {
-          const promptFromConfig = evaluatorConfigWithResolvedPrompt.prompt as string | undefined;
-          const promptFileFromConfig = evaluatorConfigWithResolvedPrompt.prompt_file as string | undefined;
-          
-          // Validate mutual exclusivity
-          if (promptFromConfig && promptFileFromConfig) {
-            throw new Error(
-              `Evaluator "${evaluatorConfig.name}": Cannot specify both "prompt" and "prompt_file". Please use only one.`
-            );
-          }
-          
-          if (promptFileFromConfig || promptFromConfig) {
-            const resolvedPrompt = resolvePromptValue(
-              typeof promptFromConfig === 'string' ? promptFromConfig : undefined,
-              typeof promptFileFromConfig === 'string' ? promptFileFromConfig : undefined,
-              configFileDir
-            );
-            // Update config with resolved prompt, removing prompt_file
-            evaluatorConfigWithResolvedPrompt.prompt = resolvedPrompt;
-            delete evaluatorConfigWithResolvedPrompt.prompt_file;
-          }
-        }
-
-        // Build evaluation context
-        const context: EvaluationContext = {
-          modifiedDir: workspace.paths.modifiedDir,
-          expectedDir: workspace.paths.expectedDir,
-          artifactsDir: workspace.paths.artifactsDir,
-          agentLog,
-          config: evaluatorConfigWithResolvedPrompt || {},
-          testCaseConfig,
-        };
-
-        // Run evaluator
-        const result = await evaluator.evaluate(context);
-        return result;
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        return {
-          evaluator: evaluatorConfig.name,
-          status: 'skipped' as const,
-          metrics: {},
-          message: `Evaluator error: ${errorMessage}`,
-          duration_ms: 0,
-          timestamp: new Date().toISOString(),
-          error: {
-            message: errorMessage,
-            stack_trace: error instanceof Error ? error.stack : undefined,
-          },
-        };
       }
-    });
-
-    const settledResults = await Promise.allSettled(evaluatorPromises);
-
-    // Collect results
-    for (const settled of settledResults) {
-      if (settled.status === 'fulfilled') {
-        results.push(settled.value);
-      } else {
-        // Promise rejected (should not happen as we catch errors above)
-        logger.error('Evaluator promise rejected', settled.reason);
-        results.push({
-          evaluator: 'unknown',
-          status: 'skipped',
-          metrics: {},
-          message: `Evaluator failed: ${settled.reason}`,
-          duration_ms: 0,
-          timestamp: new Date().toISOString(),
-          error: {
-            message: String(settled.reason),
-          },
-        });
-      }
-    }
-
-    return results;
+    );
   }
 
   /**
@@ -922,17 +1022,19 @@ export class Orchestrator {
     startedAt: string
   ): Promise<ResultsBundle> {
     const completedAt = new Date().toISOString();
-    const durationMs = new Date(completedAt).getTime() - new Date(startedAt).getTime();
+    const durationMs =
+      new Date(completedAt).getTime() - new Date(startedAt).getTime();
     const env = detectEnvironment();
 
     // Calculate summary statistics
     const summary = this.calculateSummary(evaluatorResults);
 
     // Get artifacts manifest
-    const allArtifacts = await getArtifactManifest(workspace.paths.artifactsDir);
-    const evaluatorArtifacts = allArtifacts.filter(
-      (f) => !f.includes('youbencha.log.json') && !f.includes('results.json')
+    const allArtifacts = await getArtifactManifest(
+      workspace.paths.artifactsDir
     );
+    const { agentArtifacts, evaluatorArtifacts } =
+      partitionArtifactManifest(allArtifacts);
 
     // Generate config hash
     const configHash = this.generateConfigHash(testCaseConfig);
@@ -965,6 +1067,7 @@ export class Orchestrator {
       summary,
       artifacts: {
         agent_log: path.basename(agentLogPath),
+        agent_artifacts: agentArtifacts,
         reports: [], // Reports generated separately via yb report command
         evaluator_artifacts: evaluatorArtifacts,
       },
@@ -974,7 +1077,9 @@ export class Orchestrator {
   /**
    * Calculate summary statistics from evaluator results
    */
-  private calculateSummary(results: EvaluationResult[]): ResultsBundle['summary'] {
+  private calculateSummary(
+    results: EvaluationResult[]
+  ): ResultsBundle['summary'] {
     const total = results.length;
     const passed = results.filter((r) => r.status === 'passed').length;
     const failed = results.filter((r) => r.status === 'failed').length;
@@ -1007,7 +1112,10 @@ export class Orchestrator {
    */
   private generateConfigHash(testCaseConfig: TestCaseConfig): string {
     const configString = JSON.stringify(testCaseConfig, null, 0);
-    return createHash('sha256').update(configString).digest('hex').substring(0, 16);
+    return createHash('sha256')
+      .update(configString)
+      .digest('hex')
+      .substring(0, 16);
   }
 
   /**
@@ -1019,6 +1127,8 @@ export class Orchestrator {
         return new CopilotCLIAdapter();
       case 'claude-code':
         return new ClaudeCodeAdapter();
+      case 'codex-cli':
+        return new CodexCLIAdapter();
       default:
         throw new Error(`Unknown agent adapter type: ${adapterType}`);
     }
@@ -1039,7 +1149,10 @@ export class Orchestrator {
       default:
         // Support custom-named agentic-judge evaluators
         // Names like 'agentic-judge-error-handling' or 'agentic-judge-docs'
-        if (evaluatorName.startsWith('agentic-judge-') || evaluatorName.startsWith('agentic-judge:')) {
+        if (
+          evaluatorName.startsWith('agentic-judge-') ||
+          evaluatorName.startsWith('agentic-judge:')
+        ) {
           return new AgenticJudgeEvaluator(evaluatorName);
         }
         return null;
@@ -1084,81 +1197,91 @@ export class Orchestrator {
     resultsBundlePath: string,
     workspace: Workspace
   ): Promise<PostEvaluationResult[]> {
-    if (!testCaseConfig.post_evaluation || testCaseConfig.post_evaluation.length === 0) {
+    if (
+      !testCaseConfig.post_evaluation ||
+      testCaseConfig.post_evaluation.length === 0
+    ) {
       return [];
     }
 
     logger.info('Running post-evaluations...');
 
     // Run all post-evaluations in parallel using Promise.allSettled
-    const postEvaluationPromises = testCaseConfig.post_evaluation.map(async (config) => {
-      const startTime = Date.now();
-      
-      try {
-        // Get post-evaluation instance
-        const postEvaluation = this.getPostEvaluation(config.name);
-        if (!postEvaluation) {
-          logger.warn(`Unknown post-evaluation: ${config.name}, skipping`);
+    const postEvaluationPromises = testCaseConfig.post_evaluation.map(
+      async (config) => {
+        const startTime = Date.now();
+
+        try {
+          // Get post-evaluation instance
+          const postEvaluation = this.getPostEvaluation(config.name);
+          if (!postEvaluation) {
+            logger.warn(`Unknown post-evaluation: ${config.name}, skipping`);
+            return {
+              post_evaluator: config.name,
+              status: 'skipped' as const,
+              message: `Unknown post-evaluation type: ${config.name}`,
+              duration_ms: Date.now() - startTime,
+              timestamp: new Date().toISOString(),
+            };
+          }
+
+          // Create context
+          const context: PostEvaluationContext = {
+            resultsBundle,
+            resultsBundlePath,
+            artifactsDir: workspace.paths.artifactsDir,
+            workspaceDir: workspace.paths.runDir,
+            config: config.config,
+          };
+
+          // Check preconditions
+          const canRun = await postEvaluation.checkPreconditions(context);
+          if (!canRun) {
+            logger.warn(
+              `Post-evaluation ${config.name} preconditions not met, skipping`
+            );
+            return {
+              post_evaluator: config.name,
+              status: 'skipped' as const,
+              message: 'Preconditions not met',
+              duration_ms: Date.now() - startTime,
+              timestamp: new Date().toISOString(),
+            };
+          }
+
+          // Execute post-evaluation
+          logger.info(`Executing post-evaluation: ${config.name}`);
+          const result = await postEvaluation.execute(context);
+
+          if (result.status === 'success') {
+            logger.info(`✓ ${config.name}: ${result.message}`);
+          } else if (result.status === 'failed') {
+            logger.warn(`✗ ${config.name}: ${result.message}`);
+          } else {
+            logger.info(`⊘ ${config.name}: ${result.message}`);
+          }
+
+          return result;
+        } catch (error) {
+          // Catch any unexpected errors and convert to failed result
+          logger.error(
+            `Post-evaluation ${config.name} threw unexpected error:`,
+            error
+          );
           return {
             post_evaluator: config.name,
-            status: 'skipped' as const,
-            message: `Unknown post-evaluation type: ${config.name}`,
+            status: 'failed' as const,
+            message: 'Unexpected error during execution',
             duration_ms: Date.now() - startTime,
             timestamp: new Date().toISOString(),
+            error: {
+              message: error instanceof Error ? error.message : String(error),
+              stack_trace: error instanceof Error ? error.stack : undefined,
+            },
           };
         }
-
-        // Create context
-        const context: PostEvaluationContext = {
-          resultsBundle,
-          resultsBundlePath,
-          artifactsDir: workspace.paths.artifactsDir,
-          workspaceDir: workspace.paths.runDir,
-          config: config.config,
-        };
-
-        // Check preconditions
-        const canRun = await postEvaluation.checkPreconditions(context);
-        if (!canRun) {
-          logger.warn(`Post-evaluation ${config.name} preconditions not met, skipping`);
-          return {
-            post_evaluator: config.name,
-            status: 'skipped' as const,
-            message: 'Preconditions not met',
-            duration_ms: Date.now() - startTime,
-            timestamp: new Date().toISOString(),
-          };
-        }
-
-        // Execute post-evaluation
-        logger.info(`Executing post-evaluation: ${config.name}`);
-        const result = await postEvaluation.execute(context);
-        
-        if (result.status === 'success') {
-          logger.info(`✓ ${config.name}: ${result.message}`);
-        } else if (result.status === 'failed') {
-          logger.warn(`✗ ${config.name}: ${result.message}`);
-        } else {
-          logger.info(`⊘ ${config.name}: ${result.message}`);
-        }
-
-        return result;
-      } catch (error) {
-        // Catch any unexpected errors and convert to failed result
-        logger.error(`Post-evaluation ${config.name} threw unexpected error:`, error);
-        return {
-          post_evaluator: config.name,
-          status: 'failed' as const,
-          message: 'Unexpected error during execution',
-          duration_ms: Date.now() - startTime,
-          timestamp: new Date().toISOString(),
-          error: {
-            message: error instanceof Error ? error.message : String(error),
-            stack_trace: error instanceof Error ? error.stack : undefined,
-          },
-        };
       }
-    });
+    );
 
     // Wait for all post-evaluations to complete
     const settled = await Promise.allSettled(postEvaluationPromises);
@@ -1170,7 +1293,10 @@ export class Orchestrator {
       } else {
         // Should not happen since we catch all errors above, but handle it anyway
         const config = testCaseConfig.post_evaluation![index];
-        logger.error(`Post-evaluation ${config.name} promise rejected:`, result.reason);
+        logger.error(
+          `Post-evaluation ${config.name} promise rejected:`,
+          result.reason
+        );
         return {
           post_evaluator: config.name,
           status: 'failed' as const,
@@ -1178,7 +1304,10 @@ export class Orchestrator {
           duration_ms: 0,
           timestamp: new Date().toISOString(),
           error: {
-            message: result.reason instanceof Error ? result.reason.message : String(result.reason),
+            message:
+              result.reason instanceof Error
+                ? result.reason.message
+                : String(result.reason),
           },
         };
       }
@@ -1186,4 +1315,31 @@ export class Orchestrator {
 
     return results;
   }
+}
+
+function partitionArtifactManifest(allArtifacts: string[]): {
+  agentArtifacts: string[];
+  evaluatorArtifacts: string[];
+} {
+  const agentDirectories = new Set([
+    'claude-code-logs',
+    'codex-cli-logs',
+    'copilot-logs',
+  ]);
+  const agentArtifacts: string[] = [];
+  const evaluatorArtifacts: string[] = [];
+
+  for (const artifact of allArtifacts) {
+    const segments = artifact.split(/[\\/]/);
+    if (agentDirectories.has(segments[0])) {
+      agentArtifacts.push(artifact);
+    } else if (
+      artifact !== 'youbencha.log.json' &&
+      artifact !== 'results.json'
+    ) {
+      evaluatorArtifacts.push(artifact);
+    }
+  }
+
+  return { agentArtifacts, evaluatorArtifacts };
 }

@@ -1,16 +1,16 @@
 /**
  * Config Command
- * 
+ *
  * Manages youBencha configuration files at project or user level.
  */
 
 import * as fs from 'fs/promises';
 import { stringify as stringifyYaml, parse as parseYaml } from 'yaml';
-import { 
-  loadConfig, 
-  getDefaultConfigPath, 
-  configExists, 
-  findActiveConfigFile 
+import {
+  loadConfig,
+  getDefaultConfigPath,
+  configExists,
+  findActiveConfigFile,
 } from '../../lib/config-loader.js';
 import { Config } from '../../schemas/config.schema.js';
 import * as logger from '../../lib/logger.js';
@@ -46,22 +46,26 @@ interface ConfigListOptions {
 
 /**
  * Initialize a configuration file
- * 
+ *
  * Creates a starter configuration file with helpful comments
  */
-export async function configInitCommand(options: ConfigInitOptions): Promise<void> {
+export async function configInitCommand(
+  options: ConfigInitOptions
+): Promise<void> {
   const level = options.global ? 'user' : 'project';
   const configPath = getDefaultConfigPath(level);
-  
+
   // Check if config already exists
   const exists = await configExists(level);
   if (exists && !options.force) {
     const existingFile = await findActiveConfigFile();
-    logger.error(`Configuration file already exists at ${level} level: ${existingFile}`);
+    logger.error(
+      `Configuration file already exists at ${level} level: ${existingFile}`
+    );
     logger.info('Use --force to overwrite');
     process.exit(1);
   }
-  
+
   // Create config file with helpful comments
   const configContent = `# youBencha Configuration File
 #
@@ -98,8 +102,10 @@ export async function configInitCommand(options: ConfigInitOptions): Promise<voi
 # Default evaluator configuration
 # evaluators:
 #   max_concurrent: 4
+
+{}
 `;
-  
+
   await fs.writeFile(configPath, configContent, 'utf-8');
   logger.info(`✓ Created ${level}-level configuration file: ${configPath}`);
   logger.info('');
@@ -109,22 +115,24 @@ export async function configInitCommand(options: ConfigInitOptions): Promise<voi
 
 /**
  * List current configuration
- * 
+ *
  * Shows the merged configuration from all sources
  */
-export async function configListCommand(_options: ConfigListOptions): Promise<void> {
+export async function configListCommand(
+  _options: ConfigListOptions
+): Promise<void> {
   const config = await loadConfig();
   const activeFile = await findActiveConfigFile();
-  
+
   logger.info('Current youBencha Configuration:');
   logger.info('');
-  
+
   if (activeFile) {
     logger.info(`Active config file: ${activeFile}`);
   } else {
     logger.info('No config file found (using defaults)');
   }
-  
+
   logger.info('');
   logger.info('Settings:');
   logger.info(stringifyYaml(config));
@@ -132,16 +140,19 @@ export async function configListCommand(_options: ConfigListOptions): Promise<vo
 
 /**
  * Get a specific configuration value
- * 
+ *
  * @param key - Configuration key (supports dot notation, e.g., 'agent.timeout_ms')
  */
-export async function configGetCommand(key: string, _options: ConfigGetOptions): Promise<void> {
+export async function configGetCommand(
+  key: string,
+  _options: ConfigGetOptions
+): Promise<void> {
   const config = await loadConfig();
-  
+
   // Parse key path
   const keys = key.split('.');
   let value: unknown = config;
-  
+
   for (const k of keys) {
     if (value && typeof value === 'object' && k in value) {
       value = (value as Record<string, unknown>)[k];
@@ -150,7 +161,7 @@ export async function configGetCommand(key: string, _options: ConfigGetOptions):
       process.exit(1);
     }
   }
-  
+
   if (typeof value === 'object') {
     logger.info(stringifyYaml({ [key]: value }));
   } else {
@@ -160,21 +171,21 @@ export async function configGetCommand(key: string, _options: ConfigGetOptions):
 
 /**
  * Set a configuration value
- * 
+ *
  * @param key - Configuration key
  * @param value - Value to set
  */
 export async function configSetCommand(
-  key: string, 
-  value: string, 
+  key: string,
+  value: string,
   options: ConfigSetOptions
 ): Promise<void> {
   const level = options.global ? 'user' : 'project';
   const configPath = getDefaultConfigPath(level);
-  
+
   // Load existing config or create new one
   let config: Config;
-  
+
   // Check if config exists at the specific level
   try {
     await fs.access(configPath);
@@ -185,11 +196,11 @@ export async function configSetCommand(
     // Config doesn't exist at this level, start with empty config
     config = {};
   }
-  
+
   // Parse key path and set value
   const keys = key.split('.');
   let current = config as unknown as Record<string, unknown>;
-  
+
   for (let i = 0; i < keys.length - 1; i++) {
     const k = keys[i];
     if (!(k in current)) {
@@ -197,22 +208,26 @@ export async function configSetCommand(
     }
     current = current[k] as Record<string, unknown>;
   }
-  
+
   const lastKey = keys[keys.length - 1];
-  
+
   // Try to parse value as number or boolean
   let parsedValue: string | number | boolean = value;
   if (value === 'true') {
     parsedValue = true;
   } else if (value === 'false') {
     parsedValue = false;
-  } else if (value.trim() !== '' && !isNaN(Number(value)) && /^-?\d+\.?\d*$/.test(value)) {
+  } else if (
+    value.trim() !== '' &&
+    !isNaN(Number(value)) &&
+    /^-?\d+\.?\d*$/.test(value)
+  ) {
     // Only convert to number if it looks like a valid number (digits, optional decimal, optional minus)
     parsedValue = Number(value);
   }
-  
+
   current[lastKey] = parsedValue;
-  
+
   // Write config file
   await fs.writeFile(configPath, stringifyYaml(config), 'utf-8');
   logger.info(`✓ Set ${key} = ${value} in ${level}-level config`);
@@ -221,7 +236,7 @@ export async function configSetCommand(
 
 /**
  * Unset/remove a configuration value
- * 
+ *
  * @param key - Configuration key to remove
  */
 export async function configUnsetCommand(
@@ -230,7 +245,7 @@ export async function configUnsetCommand(
 ): Promise<void> {
   const level = options.global ? 'user' : 'project';
   const configPath = getDefaultConfigPath(level);
-  
+
   // Check if config exists at the specific level
   try {
     await fs.access(configPath);
@@ -238,15 +253,15 @@ export async function configUnsetCommand(
     logger.error(`No ${level}-level config file found at ${configPath}`);
     process.exit(1);
   }
-  
+
   // Read existing config from the specific level's config file
   const content = await fs.readFile(configPath, 'utf-8');
   const config = (parseYaml(content) || {}) as Record<string, unknown>;
-  
+
   // Parse key path and remove value
   const keys = key.split('.');
   let current = config;
-  
+
   for (let i = 0; i < keys.length - 1; i++) {
     const k = keys[i];
     if (!(k in current)) {
@@ -255,15 +270,15 @@ export async function configUnsetCommand(
     }
     current = current[k] as Record<string, unknown>;
   }
-  
+
   const lastKey = keys[keys.length - 1];
   if (!(lastKey in current)) {
     logger.error(`Configuration key not found: ${key}`);
     process.exit(1);
   }
-  
+
   delete current[lastKey];
-  
+
   // Write config file
   await fs.writeFile(configPath, stringifyYaml(config), 'utf-8');
   logger.info(`✓ Removed ${key} from ${level}-level config`);

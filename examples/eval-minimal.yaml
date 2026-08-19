@@ -1,0 +1,10 @@
+# Minimal offline first-run example for the current Git working tree.
+name: "Current Working Tree"
+description: "Objective Git diff checks for the current repository"
+directory: "."
+evaluators:
+  - name: git-diff
+    config:
+      assertions:
+        max_files_changed: 10
+        max_total_changes: 500

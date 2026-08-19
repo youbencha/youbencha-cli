@@ -16,12 +16,12 @@ describe('DiffAnalyzer', () => {
 
   beforeEach(async () => {
     analyzer = new DiffAnalyzer();
-    
+
     // Create temporary test directories
     tempDir = path.join(process.cwd(), '.test-temp', `diff-test-${Date.now()}`);
     sourceDir = path.join(tempDir, 'source');
     outputDir = path.join(tempDir, 'output');
-    
+
     await fs.mkdir(sourceDir, { recursive: true });
     await fs.mkdir(outputDir, { recursive: true });
   });
@@ -39,7 +39,7 @@ describe('DiffAnalyzer', () => {
     test('returns true for git repository', async () => {
       // Create .git directory
       await fs.mkdir(path.join(sourceDir, '.git'));
-      
+
       const result = await analyzer.isGitRepo(sourceDir);
       expect(result).toBe(true);
     });
@@ -63,7 +63,7 @@ describe('DiffAnalyzer', () => {
         'src/helper.js',
         'README.md',
         'docs/guide.md',
-        'config.json'
+        'config.json',
       ];
 
       const result = analyzer.detectFileTypes(files);
@@ -72,7 +72,7 @@ describe('DiffAnalyzer', () => {
         '.ts': 2,
         '.js': 1,
         '.md': 2,
-        '.json': 1
+        '.json': 1,
       });
     });
 
@@ -82,7 +82,7 @@ describe('DiffAnalyzer', () => {
       const result = analyzer.detectFileTypes(files);
 
       expect(result).toEqual({
-        '': 3
+        '': 3,
       });
     });
 
@@ -102,12 +102,12 @@ describe('DiffAnalyzer', () => {
           added: ['tests/auth.test.ts', 'src/utils.spec.js'],
           modified: [],
           deleted: [],
-          renamed: []
+          renamed: [],
         },
         lines: {
           added: 100,
           removed: 0,
-          total_changed: 100
+          total_changed: 100,
         },
         file_types: { '.ts': 1, '.js': 1 },
         patterns: {
@@ -118,12 +118,12 @@ describe('DiffAnalyzer', () => {
           docs_added: false,
           docs_modified: false,
           auth_patterns: false,
-          api_changes: false
+          api_changes: false,
         },
         density: {
           files_changed_ratio: 0.5,
-          lines_changed_ratio: 0.3
-        }
+          lines_changed_ratio: 0.3,
+        },
       };
 
       const result = analyzer.detectPatterns(analysis);
@@ -141,12 +141,12 @@ describe('DiffAnalyzer', () => {
           added: [],
           modified: ['__tests__/integration.test.ts'],
           deleted: [],
-          renamed: []
+          renamed: [],
         },
         lines: {
           added: 50,
           removed: 20,
-          total_changed: 70
+          total_changed: 70,
         },
         file_types: { '.ts': 1 },
         patterns: {
@@ -157,12 +157,12 @@ describe('DiffAnalyzer', () => {
           docs_added: false,
           docs_modified: false,
           auth_patterns: false,
-          api_changes: false
+          api_changes: false,
         },
         density: {
           files_changed_ratio: 0.2,
-          lines_changed_ratio: 0.1
-        }
+          lines_changed_ratio: 0.1,
+        },
       };
 
       const result = analyzer.detectPatterns(analysis);
@@ -180,12 +180,12 @@ describe('DiffAnalyzer', () => {
           added: [],
           modified: ['package.json', 'tsconfig.json', '.eslintrc.yaml'],
           deleted: [],
-          renamed: []
+          renamed: [],
         },
         lines: {
           added: 10,
           removed: 5,
-          total_changed: 15
+          total_changed: 15,
         },
         file_types: { '.json': 2, '.yaml': 1 },
         patterns: {
@@ -196,12 +196,12 @@ describe('DiffAnalyzer', () => {
           docs_added: false,
           docs_modified: false,
           auth_patterns: false,
-          api_changes: false
+          api_changes: false,
         },
         density: {
           files_changed_ratio: 0.3,
-          lines_changed_ratio: 0.05
-        }
+          lines_changed_ratio: 0.05,
+        },
       };
 
       const result = analyzer.detectPatterns(analysis);
@@ -218,12 +218,12 @@ describe('DiffAnalyzer', () => {
           added: [],
           modified: ['package.json', 'package-lock.json'],
           deleted: [],
-          renamed: []
+          renamed: [],
         },
         lines: {
           added: 50,
           removed: 10,
-          total_changed: 60
+          total_changed: 60,
         },
         file_types: { '.json': 2 },
         patterns: {
@@ -234,12 +234,12 @@ describe('DiffAnalyzer', () => {
           docs_added: false,
           docs_modified: false,
           auth_patterns: false,
-          api_changes: false
+          api_changes: false,
         },
         density: {
           files_changed_ratio: 0.1,
-          lines_changed_ratio: 0.05
-        }
+          lines_changed_ratio: 0.05,
+        },
       };
 
       const result = analyzer.detectPatterns(analysis);
@@ -256,12 +256,12 @@ describe('DiffAnalyzer', () => {
           added: ['README.md', 'docs/api-guide.md'],
           modified: [],
           deleted: [],
-          renamed: []
+          renamed: [],
         },
         lines: {
           added: 200,
           removed: 0,
-          total_changed: 200
+          total_changed: 200,
         },
         file_types: { '.md': 2 },
         patterns: {
@@ -272,12 +272,12 @@ describe('DiffAnalyzer', () => {
           docs_added: false,
           docs_modified: false,
           auth_patterns: false,
-          api_changes: false
+          api_changes: false,
         },
         density: {
           files_changed_ratio: 0.2,
-          lines_changed_ratio: 0.1
-        }
+          lines_changed_ratio: 0.1,
+        },
       };
 
       const result = analyzer.detectPatterns(analysis);
@@ -295,12 +295,12 @@ describe('DiffAnalyzer', () => {
           added: [],
           modified: ['docs/README.md'],
           deleted: [],
-          renamed: []
+          renamed: [],
         },
         lines: {
           added: 50,
           removed: 20,
-          total_changed: 70
+          total_changed: 70,
         },
         file_types: { '.md': 1 },
         patterns: {
@@ -311,12 +311,12 @@ describe('DiffAnalyzer', () => {
           docs_added: false,
           docs_modified: false,
           auth_patterns: false,
-          api_changes: false
+          api_changes: false,
         },
         density: {
           files_changed_ratio: 0.05,
-          lines_changed_ratio: 0.02
-        }
+          lines_changed_ratio: 0.02,
+        },
       };
 
       const result = analyzer.detectPatterns(analysis);
@@ -334,12 +334,12 @@ describe('DiffAnalyzer', () => {
           added: ['src/middleware/auth.ts', 'src/utils/jwt-token.ts'],
           modified: ['src/security/validate.ts'],
           deleted: [],
-          renamed: []
+          renamed: [],
         },
         lines: {
           added: 300,
           removed: 50,
-          total_changed: 350
+          total_changed: 350,
         },
         file_types: { '.ts': 3 },
         patterns: {
@@ -350,12 +350,12 @@ describe('DiffAnalyzer', () => {
           docs_added: false,
           docs_modified: false,
           auth_patterns: false,
-          api_changes: false
+          api_changes: false,
         },
         density: {
           files_changed_ratio: 0.3,
-          lines_changed_ratio: 0.2
-        }
+          lines_changed_ratio: 0.2,
+        },
       };
 
       const result = analyzer.detectPatterns(analysis);
@@ -372,12 +372,12 @@ describe('DiffAnalyzer', () => {
           added: ['src/api/users.ts', 'src/routes/handler.ts'],
           modified: ['src/endpoints/posts.ts'],
           deleted: [],
-          renamed: []
+          renamed: [],
         },
         lines: {
           added: 400,
           removed: 100,
-          total_changed: 500
+          total_changed: 500,
         },
         file_types: { '.ts': 3 },
         patterns: {
@@ -388,12 +388,12 @@ describe('DiffAnalyzer', () => {
           docs_added: false,
           docs_modified: false,
           auth_patterns: false,
-          api_changes: false
+          api_changes: false,
         },
         density: {
           files_changed_ratio: 0.4,
-          lines_changed_ratio: 0.3
-        }
+          lines_changed_ratio: 0.3,
+        },
       };
 
       const result = analyzer.detectPatterns(analysis);
@@ -410,16 +410,16 @@ describe('DiffAnalyzer', () => {
           added: [
             'src/auth/jwt.ts',
             'tests/auth.test.ts',
-            'docs/auth-guide.md'
+            'docs/auth-guide.md',
           ],
           modified: ['package.json'],
           deleted: [],
-          renamed: []
+          renamed: [],
         },
         lines: {
           added: 500,
           removed: 10,
-          total_changed: 510
+          total_changed: 510,
         },
         file_types: { '.ts': 2, '.md': 1, '.json': 1 },
         patterns: {
@@ -430,12 +430,12 @@ describe('DiffAnalyzer', () => {
           docs_added: false,
           docs_modified: false,
           auth_patterns: false,
-          api_changes: false
+          api_changes: false,
         },
         density: {
           files_changed_ratio: 0.5,
-          lines_changed_ratio: 0.4
-        }
+          lines_changed_ratio: 0.4,
+        },
       };
 
       const result = analyzer.detectPatterns(analysis);
@@ -482,14 +482,22 @@ describe('DiffAnalyzer', () => {
     });
 
     test('calculates line changes', async () => {
-      await fs.writeFile(path.join(sourceDir, 'file.ts'), 'line1\nline2\nline3');
-      await fs.writeFile(path.join(outputDir, 'file.ts'), 'line1\nmodified\nline3\nline4');
+      await fs.writeFile(
+        path.join(sourceDir, 'file.ts'),
+        'line1\nline2\nline3'
+      );
+      await fs.writeFile(
+        path.join(outputDir, 'file.ts'),
+        'line1\nmodified\nline3\nline4'
+      );
 
       const result = await analyzer.analyzeFolders(sourceDir, outputDir);
 
       expect(result.lines.added).toBeGreaterThan(0);
       expect(result.lines.removed).toBeGreaterThan(0);
-      expect(result.lines.total_changed).toBe(result.lines.added + result.lines.removed);
+      expect(result.lines.total_changed).toBe(
+        result.lines.added + result.lines.removed
+      );
     });
 
     test('detects file types distribution', async () => {
@@ -509,9 +517,12 @@ describe('DiffAnalyzer', () => {
       // Create baseline files
       await fs.writeFile(path.join(sourceDir, 'file1.ts'), 'a\nb\nc\nd\ne');
       await fs.writeFile(path.join(sourceDir, 'file2.ts'), 'x\ny\nz');
-      
+
       // Modify one file
-      await fs.writeFile(path.join(outputDir, 'file1.ts'), 'a\nmodified\nc\nd\ne');
+      await fs.writeFile(
+        path.join(outputDir, 'file1.ts'),
+        'a\nmodified\nc\nd\ne'
+      );
       await fs.writeFile(path.join(outputDir, 'file2.ts'), 'x\ny\nz');
 
       const result = await analyzer.analyzeFolders(sourceDir, outputDir);
@@ -527,7 +538,10 @@ describe('DiffAnalyzer', () => {
       await fs.mkdir(path.join(outputDir, 'src'), { recursive: true });
       await fs.mkdir(path.join(outputDir, 'tests'), { recursive: true });
       await fs.writeFile(path.join(outputDir, 'src', 'auth.ts'), 'auth code');
-      await fs.writeFile(path.join(outputDir, 'tests', 'auth.test.ts'), 'test code');
+      await fs.writeFile(
+        path.join(outputDir, 'tests', 'auth.test.ts'),
+        'test code'
+      );
       await fs.writeFile(path.join(outputDir, 'README.md'), 'docs');
 
       const result = await analyzer.analyzeFolders(sourceDir, outputDir);
@@ -540,7 +554,10 @@ describe('DiffAnalyzer', () => {
     test('handles nested directories', async () => {
       // Create nested structure
       await fs.mkdir(path.join(outputDir, 'src', 'api'), { recursive: true });
-      await fs.writeFile(path.join(outputDir, 'src', 'api', 'handler.ts'), 'content');
+      await fs.writeFile(
+        path.join(outputDir, 'src', 'api', 'handler.ts'),
+        'content'
+      );
 
       const result = await analyzer.analyzeFolders(sourceDir, outputDir);
 
@@ -578,10 +595,13 @@ describe('DiffAnalyzer', () => {
     test('ignores common excluded patterns', async () => {
       // Create files that should be ignored
       await fs.mkdir(path.join(outputDir, 'node_modules'), { recursive: true });
-      await fs.writeFile(path.join(outputDir, 'node_modules', 'pkg.js'), 'content');
+      await fs.writeFile(
+        path.join(outputDir, 'node_modules', 'pkg.js'),
+        'content'
+      );
       await fs.mkdir(path.join(outputDir, '.git'), { recursive: true });
       await fs.writeFile(path.join(outputDir, '.git', 'config'), 'content');
-      
+
       // Create file that should NOT be ignored
       await fs.writeFile(path.join(outputDir, 'src.ts'), 'content');
 

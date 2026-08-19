@@ -1,19 +1,28 @@
 /**
  * Git Diff Evaluator
- * 
+ *
  * Evaluates agent changes by analyzing git diff statistics.
  * Measures files changed, lines added/removed, and change entropy.
  * Supports threshold-based assertions for all metrics.
- * 
+ *
  * Note: Automatically stages all changes (including untracked new files)
  * before running diff to ensure complete visibility of agent modifications.
  */
 
-import { simpleGit, DiffResult, SimpleGit, DiffResultTextFile } from 'simple-git';
+import {
+  simpleGit,
+  DiffResult,
+  SimpleGit,
+  DiffResultTextFile,
+} from 'simple-git';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { Evaluator, EvaluationContext } from './base.js';
-import { EvaluationResult, EvaluationArtifact } from '../schemas/result.schema.js';
+import {
+  EvaluationResult,
+  EvaluationArtifact,
+} from '../schemas/result.schema.js';
+import * as logger from '../lib/logger.js';
 
 /**
  * File-level diff metrics
@@ -50,7 +59,8 @@ interface GitDiffConfig {
  */
 export class GitDiffEvaluator implements Evaluator {
   readonly name = 'git-diff';
-  readonly description = 'Measures the scope of changes: how many files were modified, lines added/removed, and how changes are distributed. Supports assertions via max_files_changed, max_lines_added, max_lines_removed, max_total_changes, and min/max_change_entropy thresholds.';
+  readonly description =
+    'Measures the scope of changes: how many files were modified, lines added/removed, and how changes are distributed. Supports assertions via max_files_changed, max_lines_added, max_lines_removed, max_total_changes, and min/max_change_entropy thresholds.';
   readonly requiresExpectedReference = false;
 
   /**
@@ -60,11 +70,11 @@ export class GitDiffEvaluator implements Evaluator {
     try {
       // Check if directory exists
       await fs.access(context.modifiedDir);
-      
+
       // Check if it's a git repository by checking for .git directory
       const gitDir = path.join(context.modifiedDir, '.git');
       await fs.access(gitDir);
-      
+
       return true;
     } catch (error) {
       return false;
@@ -76,7 +86,7 @@ export class GitDiffEvaluator implements Evaluator {
    */
   async evaluate(context: EvaluationContext): Promise<EvaluationResult> {
     const startedAt = new Date().toISOString();
-    
+
     try {
       // Check preconditions
       const canRun = await this.checkPreconditions(context);
@@ -88,40 +98,41 @@ export class GitDiffEvaluator implements Evaluator {
       }
 
       const git: SimpleGit = simpleGit(context.modifiedDir);
-      
+
       // Extract config
       const config = context.config as GitDiffConfig;
-      
+
       // Get base commit (default to HEAD)
       const baseCommit = config.base_commit || 'HEAD';
-      
+
       // Check for untracked files and stage all changes to ensure git diff captures everything
       // This is necessary because agents may create new files without staging them
       // Note: This is safe as evaluation runs in an isolated workspace
       const gitStatus = await git.status();
-      
+
       // Check if there are any unstaged or untracked changes
       // not_added: untracked files, modified: unstaged changes
       // Note: created files are already staged, so we don't need to check them
-      const hasUnstagedChanges = gitStatus.not_added.length > 0 || gitStatus.modified.length > 0;
-        
+      const hasUnstagedChanges =
+        gitStatus.not_added.length > 0 || gitStatus.modified.length > 0;
+
       if (hasUnstagedChanges) {
         // Stage all changes including new files
         await git.add('.');
       }
-      
+
       // Get diff summary
       const diffSummary = await git.diffSummary([baseCommit]);
-      
+
       // Get detailed diff
       const diff = await git.diff([baseCommit]);
-      
+
       // Calculate file-level metrics
       const fileMetrics = this.calculateFileMetrics(diffSummary);
-      
+
       // Calculate change entropy
       const entropy = this.calculateEntropy(fileMetrics);
-      
+
       // Evaluate against assertions
       const { status, violations } = this.evaluateAssertions(
         diffSummary.files.length,
@@ -130,16 +141,17 @@ export class GitDiffEvaluator implements Evaluator {
         entropy,
         config.assertions || {}
       );
-      
+
       // Save diff as artifact
       const artifacts = await this.saveDiffArtifact(context.artifactsDir, diff);
-      
+
       // Get current commit hash
       const log = await git.log({ maxCount: 1 });
       const currentCommit = log.latest?.hash || 'unknown';
-      
+
       const completedAt = new Date().toISOString();
-      const durationMs = new Date(completedAt).getTime() - new Date(startedAt).getTime();
+      const durationMs =
+        new Date(completedAt).getTime() - new Date(startedAt).getTime();
 
       // Build message with violations if any
       const message = this.buildMessage(
@@ -168,21 +180,25 @@ export class GitDiffEvaluator implements Evaluator {
         duration_ms: durationMs,
         timestamp: completedAt,
         // Include assertions at top level for transparency
-        assertions: config.assertions ? {
-          max_files_changed: config.assertions.max_files_changed,
-          max_lines_added: config.assertions.max_lines_added,
-          max_lines_removed: config.assertions.max_lines_removed,
-          max_total_changes: config.assertions.max_total_changes,
-          min_change_entropy: config.assertions.min_change_entropy,
-          max_change_entropy: config.assertions.max_change_entropy,
-        } : undefined,
+        assertions: config.assertions
+          ? {
+              max_files_changed: config.assertions.max_files_changed,
+              max_lines_added: config.assertions.max_lines_added,
+              max_lines_removed: config.assertions.max_lines_removed,
+              max_total_changes: config.assertions.max_total_changes,
+              min_change_entropy: config.assertions.min_change_entropy,
+              max_change_entropy: config.assertions.max_change_entropy,
+            }
+          : undefined,
         artifacts,
       };
     } catch (error) {
       const completedAt = new Date().toISOString();
-      const durationMs = new Date(completedAt).getTime() - new Date(startedAt).getTime();
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      
+      const durationMs =
+        new Date(completedAt).getTime() - new Date(startedAt).getTime();
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+
       return {
         evaluator: this.name,
         status: 'skipped',
@@ -202,7 +218,7 @@ export class GitDiffEvaluator implements Evaluator {
    * Calculate file-level metrics from diff summary
    */
   private calculateFileMetrics(diffSummary: DiffResult): FileDiffMetrics[] {
-    return diffSummary.files.map(file => {
+    return diffSummary.files.map((file) => {
       // Handle text files which have insertions/deletions/changes
       const textFile = file as DiffResultTextFile;
       return {
@@ -216,11 +232,11 @@ export class GitDiffEvaluator implements Evaluator {
 
   /**
    * Calculate change entropy (distribution of changes across files)
-   * 
+   *
    * Entropy measures how dispersed changes are:
    * - High entropy: Changes spread across many files
    * - Low entropy: Changes concentrated in few files
-   * 
+   *
    * Uses Shannon entropy formula: H = -Σ(p_i * log2(p_i))
    * where p_i is the proportion of changes in file i
    */
@@ -230,8 +246,11 @@ export class GitDiffEvaluator implements Evaluator {
     }
 
     // Calculate total changes
-    const totalChanges = fileMetrics.reduce((sum, file) => sum + file.changes, 0);
-    
+    const totalChanges = fileMetrics.reduce(
+      (sum, file) => sum + file.changes,
+      0
+    );
+
     if (totalChanges === 0) {
       return 0;
     }
@@ -261,21 +280,30 @@ export class GitDiffEvaluator implements Evaluator {
     const violations: string[] = [];
 
     // Check max files changed
-    if (assertions.max_files_changed !== undefined && filesChanged > assertions.max_files_changed) {
+    if (
+      assertions.max_files_changed !== undefined &&
+      filesChanged > assertions.max_files_changed
+    ) {
       violations.push(
         `files_changed (${filesChanged}) exceeds max_files_changed (${assertions.max_files_changed})`
       );
     }
 
     // Check max lines added
-    if (assertions.max_lines_added !== undefined && linesAdded > assertions.max_lines_added) {
+    if (
+      assertions.max_lines_added !== undefined &&
+      linesAdded > assertions.max_lines_added
+    ) {
       violations.push(
         `lines_added (${linesAdded}) exceeds max_lines_added (${assertions.max_lines_added})`
       );
     }
 
     // Check max lines removed
-    if (assertions.max_lines_removed !== undefined && linesRemoved > assertions.max_lines_removed) {
+    if (
+      assertions.max_lines_removed !== undefined &&
+      linesRemoved > assertions.max_lines_removed
+    ) {
       violations.push(
         `lines_removed (${linesRemoved}) exceeds max_lines_removed (${assertions.max_lines_removed})`
       );
@@ -283,21 +311,30 @@ export class GitDiffEvaluator implements Evaluator {
 
     // Check max total changes
     const totalChanges = linesAdded + linesRemoved;
-    if (assertions.max_total_changes !== undefined && totalChanges > assertions.max_total_changes) {
+    if (
+      assertions.max_total_changes !== undefined &&
+      totalChanges > assertions.max_total_changes
+    ) {
       violations.push(
         `total_changes (${totalChanges}) exceeds max_total_changes (${assertions.max_total_changes})`
       );
     }
 
     // Check min change entropy
-    if (assertions.min_change_entropy !== undefined && changeEntropy < assertions.min_change_entropy) {
+    if (
+      assertions.min_change_entropy !== undefined &&
+      changeEntropy < assertions.min_change_entropy
+    ) {
       violations.push(
         `change_entropy (${changeEntropy.toFixed(2)}) below min_change_entropy (${assertions.min_change_entropy})`
       );
     }
 
     // Check max change entropy
-    if (assertions.max_change_entropy !== undefined && changeEntropy > assertions.max_change_entropy) {
+    if (
+      assertions.max_change_entropy !== undefined &&
+      changeEntropy > assertions.max_change_entropy
+    ) {
       violations.push(
         `change_entropy (${changeEntropy.toFixed(2)}) exceeds max_change_entropy (${assertions.max_change_entropy})`
       );
@@ -340,13 +377,13 @@ export class GitDiffEvaluator implements Evaluator {
     try {
       const artifactPath = 'git-diff.patch';
       const fullPath = path.join(artifactsDir, artifactPath);
-      
+
       // Ensure artifacts directory exists
       await fs.mkdir(artifactsDir, { recursive: true });
-      
+
       // Write diff to file
       await fs.writeFile(fullPath, diff, 'utf-8');
-      
+
       return [
         {
           type: 'diff',
@@ -356,7 +393,9 @@ export class GitDiffEvaluator implements Evaluator {
       ];
     } catch (error) {
       // Don't fail evaluation if artifact saving fails
-      console.error('Failed to save diff artifact:', error);
+      logger.warn(
+        `Failed to save diff artifact: ${error instanceof Error ? error.message : String(error)}`
+      );
       return [];
     }
   }
@@ -364,10 +403,14 @@ export class GitDiffEvaluator implements Evaluator {
   /**
    * Create a skipped evaluation result
    */
-  private createSkippedResult(startedAt: string, message: string): EvaluationResult {
+  private createSkippedResult(
+    startedAt: string,
+    message: string
+  ): EvaluationResult {
     const completedAt = new Date().toISOString();
-    const durationMs = new Date(completedAt).getTime() - new Date(startedAt).getTime();
-    
+    const durationMs =
+      new Date(completedAt).getTime() - new Date(startedAt).getTime();
+
     return {
       evaluator: this.name,
       status: 'skipped',

@@ -8,12 +8,12 @@
 #
 # Note: Some options require specific Claude Code CLI versions
 
-name: "Advanced Claude Code Evaluation"
-description: "Comprehensive evaluation with custom model, agent, and advanced options"
+name: 'Advanced Claude Code Evaluation'
+description: 'Comprehensive evaluation with custom model, agent, and advanced options'
 
 # Repository configuration
-repo: "https://github.com/youbencha/hello-world.git"
-branch: "main"
+repo: 'https://github.com/youbencha/hello-world.git'
+branch: 'main'
 
 # Agent configuration with all available options
 agent:
@@ -23,15 +23,25 @@ agent:
   # Optional: Override the default model
   model: claude-sonnet-4-5-20250929
   config:
-    prompt: "Add a comment to README explaining what this repository is about"
-    
+    prompt: 'Add a comment to README explaining what this repository is about'
+
     # Optional: Override the default system prompt entirely
     # system_prompt: "You are an expert code reviewer specialized in security and performance."
-    
+
     # Optional: Append additional system instructions (preferred over system_prompt)
     append_system_prompt: |
       Focus on code quality, security vulnerabilities, and performance issues.
       Provide actionable recommendations for each finding.
+    permission_mode: dontAsk
+    setting_sources:
+      - project
+    allowed_tools:
+      - Read
+      - Grep
+      - Edit
+    max_turns: 8
+    max_budget_usd: 2
+    max_output_bytes: 10485760
 
 # Evaluators to run
 evaluators:
@@ -39,16 +49,20 @@ evaluators:
     config:
       # Track specific metrics
       include_entropy: true
-  
+
   - name: agentic-judge
     config:
       type: claude-code
-      agent_name: agentic-judge  # Uses the built-in evaluation agent
+      agent_name: agentic-judge # Uses the built-in evaluation agent
+      max_turns: 4
+      max_budget_usd: 1
+      setting_sources:
+        - project
       # Define explicit pass/fail assertions (keys become metric names in the report)
       assertions:
-        readme_was_modified: "The README.md file was modified. Score 1 if true, 0 if false."
-        message_is_friendly: "A friendly welcome message was added. Score 1 if friendly, 0.5 if neutral, 0 if absent or unfriendly."
-        no_errors: "No syntax errors or broken markdown. Score 1 if valid, 0 if broken."
+        readme_was_modified: 'The README.md file was modified. Score 1 if true, 0 if false.'
+        message_is_friendly: 'A friendly welcome message was added. Score 1 if friendly, 0.5 if neutral, 0 if absent or unfriendly.'
+        no_errors: 'No syntax errors or broken markdown. Score 1 if valid, 0 if broken.'
 
 # Timeout in milliseconds (10 minutes for complex evaluations)
 timeout: 600000

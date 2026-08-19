@@ -1,10 +1,13 @@
 /**
  * Contract tests for pre-execution schema
- * 
+ *
  * Validates that pre-execution configuration conforms to schema
  */
 
-import { preExecutionConfigSchema, PreExecutionConfig } from '../../src/schemas/pre-execution.schema.js';
+import {
+  preExecutionConfigSchema,
+  PreExecutionConfig,
+} from '../../src/schemas/pre-execution.schema.js';
 
 describe('PreExecutionConfig Schema', () => {
   describe('valid configurations', () => {

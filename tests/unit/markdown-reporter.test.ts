@@ -1,6 +1,6 @@
 /**
  * Unit tests for Markdown Reporter
- * 
+ *
  * Tests Markdown report generation and file writing.
  * These tests MUST FAIL until implementation is complete (TDD).
  */
@@ -17,7 +17,9 @@ describe('MarkdownReporter', () => {
 
   beforeEach(async () => {
     reporter = new MarkdownReporter();
-    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'markdown-reporter-test-'));
+    tempDir = await fs.mkdtemp(
+      path.join(os.tmpdir(), 'markdown-reporter-test-')
+    );
   });
 
   afterEach(async () => {
@@ -220,7 +222,33 @@ describe('MarkdownReporter', () => {
 
       expect(result).toContain('## Artifacts');
       expect(result).toContain('agent-log.json');
+      expect(result).toContain('codex-cli-logs/events-run.jsonl');
       expect(result).toContain('report.md');
+    });
+
+    it('should generate clickable artifact links', async () => {
+      const bundle: ResultsBundle = createMockResultsBundle();
+
+      const result = await reporter.generate(bundle);
+
+      expect(result).toContain(
+        '[`artifacts/agent-log.json`](artifacts/agent-log.json)'
+      );
+      expect(result).toContain(
+        '[`codex-cli-logs/events-run.jsonl`](codex-cli-logs/events-run.jsonl)'
+      );
+      expect(result).toContain('[`artifacts/report.md`](artifacts/report.md)');
+    });
+
+    it('should escape table delimiters and newlines in metric values', async () => {
+      const bundle: ResultsBundle = createMockResultsBundle();
+      bundle.evaluators[0].metrics = {
+        'quality|score': 'good|better\nbest',
+      };
+
+      const result = await reporter.generate(bundle);
+
+      expect(result).toContain('| quality\\|score | good\\|better<br>best |');
     });
 
     it('should handle options parameter gracefully', async () => {
@@ -240,7 +268,7 @@ describe('MarkdownReporter', () => {
         status: 'passed',
         metrics: {
           aggregate_similarity: 0.85,
-          threshold: 0.80,
+          threshold: 0.8,
           files_matched: 5,
           files_changed: 2,
           files_added: 1,
@@ -270,7 +298,7 @@ describe('MarkdownReporter', () => {
         status: 'failed',
         metrics: {
           aggregate_similarity: 0.65,
-          threshold: 0.80,
+          threshold: 0.8,
           files_matched: 3,
           files_changed: 5,
           files_added: 2,
@@ -300,20 +328,20 @@ describe('MarkdownReporter', () => {
 
     it('should truncate file-level details to 20 files', async () => {
       const bundle: ResultsBundle = createMockResultsBundle();
-      
+
       // Create 30 file similarities
       const file_similarities = Array.from({ length: 30 }, (_, i) => ({
         path: `file${i}.ts`,
         similarity: Math.random(),
         status: 'changed' as const,
       }));
-      
+
       bundle.evaluators.push({
         evaluator: 'expected-diff',
         status: 'failed',
         metrics: {
-          aggregate_similarity: 0.70,
-          threshold: 0.80,
+          aggregate_similarity: 0.7,
+          threshold: 0.8,
           files_matched: 10,
           files_changed: 20,
           files_added: 0,
@@ -339,7 +367,10 @@ describe('MarkdownReporter', () => {
 
       await reporter.writeToFile(bundle, outputPath);
 
-      const fileExists = await fs.stat(outputPath).then(() => true).catch(() => false);
+      const fileExists = await fs
+        .stat(outputPath)
+        .then(() => true)
+        .catch(() => false);
       expect(fileExists).toBe(true);
     });
 
@@ -349,7 +380,10 @@ describe('MarkdownReporter', () => {
 
       await reporter.writeToFile(bundle, outputPath);
 
-      const fileExists = await fs.stat(outputPath).then(() => true).catch(() => false);
+      const fileExists = await fs
+        .stat(outputPath)
+        .then(() => true)
+        .catch(() => false);
       expect(fileExists).toBe(true);
     });
 
@@ -392,7 +426,10 @@ describe('MarkdownReporter', () => {
 
       await reporter.writeToFile(bundle, outputPath, options);
 
-      const fileExists = await fs.stat(outputPath).then(() => true).catch(() => false);
+      const fileExists = await fs
+        .stat(outputPath)
+        .then(() => true)
+        .catch(() => false);
       expect(fileExists).toBe(true);
     });
 
@@ -470,6 +507,7 @@ function createMockResultsBundle(): ResultsBundle {
     },
     artifacts: {
       agent_log: 'artifacts/agent-log.json',
+      agent_artifacts: ['codex-cli-logs/events-run.jsonl'],
       reports: ['artifacts/report.md'],
       evaluator_artifacts: [],
     },

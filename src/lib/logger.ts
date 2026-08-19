@@ -1,6 +1,6 @@
 /**
  * Logger Utility
- * 
+ *
  * Console-based logging with multiple severity levels.
  * Provides consistent logging across the youBencha framework.
  */
@@ -21,10 +21,10 @@ export enum LogLevel {
 export interface LoggerConfig {
   /** Minimum log level to display */
   level: LogLevel;
-  
+
   /** Whether to include timestamps */
   timestamps: boolean;
-  
+
   /** Custom prefix for all log messages */
   prefix?: string;
 }
@@ -149,22 +149,34 @@ export function createLogger(prefix: string): {
   return {
     debug: (message: string, ...args: unknown[]): void => {
       if (shouldLog(LogLevel.DEBUG)) {
-        console.debug(formatMessage(LogLevel.DEBUG, `${prefix} ${message}`), ...args);
+        console.debug(
+          formatMessage(LogLevel.DEBUG, `${prefix} ${message}`),
+          ...args
+        );
       }
     },
     info: (message: string, ...args: unknown[]): void => {
       if (shouldLog(LogLevel.INFO)) {
-        console.info(formatMessage(LogLevel.INFO, `${prefix} ${message}`), ...args);
+        console.info(
+          formatMessage(LogLevel.INFO, `${prefix} ${message}`),
+          ...args
+        );
       }
     },
     warn: (message: string, ...args: unknown[]): void => {
       if (shouldLog(LogLevel.WARN)) {
-        console.warn(formatMessage(LogLevel.WARN, `${prefix} ${message}`), ...args);
+        console.warn(
+          formatMessage(LogLevel.WARN, `${prefix} ${message}`),
+          ...args
+        );
       }
     },
     error: (message: string, ...args: unknown[]): void => {
       if (shouldLog(LogLevel.ERROR)) {
-        console.error(formatMessage(LogLevel.ERROR, `${prefix} ${message}`), ...args);
+        console.error(
+          formatMessage(LogLevel.ERROR, `${prefix} ${message}`),
+          ...args
+        );
       }
     },
   };

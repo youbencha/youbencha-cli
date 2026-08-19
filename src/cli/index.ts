@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * youBencha CLI Entry Point
- * 
+ *
  * Main CLI application using Commander.js.
  * Registers all commands and handles version/help.
  */
@@ -20,12 +20,17 @@ import { listCommand } from './commands/list.js';
 import { initCommand } from './commands/init.js';
 import { validateCommand } from './commands/validate.js';
 import { installAgentsCommand } from './commands/install-agents.js';
-import { 
-  configInitCommand, 
-  configListCommand, 
-  configGetCommand, 
+import { doctorCommand } from './commands/doctor.js';
+import { registerExperimentCommand } from './commands/experiment.js';
+import { registerBaselineCommand } from './commands/baseline.js';
+import { registerRegressCommand } from './commands/regress.js';
+import { registerSandboxCommand } from './commands/sandbox.js';
+import {
+  configInitCommand,
+  configListCommand,
+  configGetCommand,
   configSetCommand,
-  configUnsetCommand 
+  configUnsetCommand,
 } from './commands/config.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -37,45 +42,82 @@ const __dirname = dirname(__filename);
 async function main(): Promise<void> {
   // Read package.json for version
   const packageJsonPath = join(__dirname, '..', '..', 'package.json');
-  const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf-8')) as { version: string };
+  const packageJson = JSON.parse(await readFile(packageJsonPath, 'utf-8')) as {
+    version: string;
+  };
 
   // Detect command name from how the CLI was invoked (supports both 'yb' and 'youbencha')
-  const commandName = process.argv[1]?.includes('youbencha') ? 'youbencha' : 'yb';
+  const commandName = process.argv[1]?.includes('youbencha')
+    ? 'youbencha'
+    : 'yb';
 
   // Create Commander program
   const program = new Command();
 
   program
     .name(commandName)
-    .description('youBencha - Evaluate and compare AI coding agents with confidence\n\n' +
-      '  A developer-friendly framework for testing AI coding tools.\n' +
-      '  Run agents, measure their output, and get objective insights.\n\n' +
-      '  Quick start:\n' +
-      `    ${commandName} init                   # Create a starter configuration\n` +
-      `    ${commandName} run -c testcase.yaml  # Run an evaluation\n` +
-      `    ${commandName} eval -c eval.yaml     # Evaluate existing code without running agent`)
+    .description(
+      'youBencha - Evaluate and compare AI coding agents with confidence\n\n' +
+        '  A developer-friendly framework for testing AI coding tools.\n' +
+        '  Run agents, measure their output, and get objective insights.\n\n' +
+        '  Quick start:\n' +
+        `    ${commandName} init                   # Create a starter configuration\n` +
+        `    ${commandName} run -c testcase.yaml  # Run an evaluation\n` +
+        `    ${commandName} eval -c eval.yaml     # Evaluate existing code without running agent`
+    )
     .version(packageJson.version);
 
   // Register init command (create starter test case)
   program
     .command('init')
     .description('Create a starter testcase.yaml configuration')
-    .option('--force', 'Overwrite existing testcase.yaml if present')
-    .addHelpText('after', `
+    .option('--force', 'Overwrite the generated configuration if present')
+    .option(
+      '--minimal',
+      'Create an offline git-diff eval.yaml for the current working tree'
+    )
+    .addHelpText(
+      'after',
+      `
 Examples:
   $ ${commandName} init                    # Create testcase.yaml in current directory
+  $ ${commandName} init --minimal          # Create an offline eval.yaml smoke workflow
   $ ${commandName} init --force            # Overwrite existing testcase.yaml
-  
-  This creates a fully-commented starter configuration you can customize.
-    `)
+
+  Minimal mode evaluates the current Git working tree. It does not clone a
+  repository, invoke an agent, or use an AI judge.
+    `
+    )
     .action(initCommand);
+
+  program
+    .command('doctor')
+    .description('Check prerequisites and configuration for a successful run')
+    .addHelpText(
+      'after',
+      `
+Checks:
+  - Node.js and Git
+  - GitHub Copilot CLI and Claude Code CLI availability
+  - Writable workspace path and effective configuration
+  - Agent files used by the agentic-judge evaluator
+
+Examples:
+  $ ${commandName} doctor
+    `
+    )
+    .action(doctorCommand);
 
   // Register install-agents command (install agent files for agentic-judge)
   program
     .command('install-agents')
-    .description('Install agentic-judge agent files for GitHub Copilot CLI and Claude Code')
+    .description(
+      'Install agentic-judge agent files for GitHub Copilot CLI and Claude Code'
+    )
     .option('--force', 'Overwrite existing agent files')
-    .addHelpText('after', `
+    .addHelpText(
+      'after',
+      `
 Examples:
   $ ${commandName} install-agents                  # Install agent files (skip existing)
   $ ${commandName} install-agents --force          # Overwrite existing agent files
@@ -85,61 +127,92 @@ This installs the following files in your current directory:
   - .claude/agents/agentic-judge.md (for Claude Code)
 
 These files are required for the agentic-judge evaluator to function.
-    `)
+    `
+    )
     .action(installAgentsCommand);
 
   // Register commands
+  registerExperimentCommand(program);
+  registerBaselineCommand(program);
+  registerRegressCommand(program);
+  registerSandboxCommand(program);
+
   program
     .command('run')
     .description('Run a test case against an AI agent')
-    .requiredOption('-c, --config <path>', 'Path to test case configuration file (YAML or JSON, e.g., testcase.yaml or testcase.json)')
-    .option('--delete-workspace', 'Delete workspace directory after evaluation (by default, workspace is kept for inspection)')
-    .addHelpText('after', `
+    .requiredOption(
+      '-c, --config <path>',
+      'Path to test case configuration file (YAML or JSON, e.g., testcase.yaml or testcase.json)'
+    )
+    .option(
+      '--delete-workspace',
+      'Delete workspace directory after evaluation (by default, workspace is kept for inspection)'
+    )
+    .addHelpText(
+      'after',
+      `
 Examples:
   $ ${commandName} run -c testcase.yaml                    # Run evaluation (workspace kept by default)
   $ ${commandName} run -c testcase.json                    # JSON format is also supported
   $ ${commandName} run -c testcase.yaml --delete-workspace # Delete workspace after completion
-  
-  See examples/testcase-simple.yaml or examples/testcase-simple.json for working configurations.
-    `)
+
+  See examples/testcase-basic.yaml for an agent run, or use init --minimal
+  for an offline eval-only workflow.
+    `
+    )
     .action(runCommand);
 
   program
     .command('eval')
     .description('Run evaluators on existing directories (no agent execution)')
-    .requiredOption('-c, --config <path>', 'Path to eval configuration file (YAML or JSON)')
-    .addHelpText('after', `
+    .requiredOption(
+      '-c, --config <path>',
+      'Path to eval configuration file (YAML or JSON)'
+    )
+    .addHelpText(
+      'after',
+      `
 Examples:
   $ ${commandName} eval -c eval.yaml                    # Evaluate existing directory
   $ ${commandName} eval -c eval.json                    # JSON format is also supported
-  
+
   Use cases:
   - Re-evaluate agent outputs with different evaluators
   - Evaluate manual code changes
   - Test custom evaluators during development
   - CI/CD integration with other tools
-  
+
   The eval command runs evaluators without executing an agent, making it
   faster and more flexible for iterative evaluation workflows.
-    `)
+    `
+    )
     .action(evalCommand);
 
   program
     .command('report')
     .description('Generate a human-readable report from evaluation results')
-    .requiredOption('--from <path>', 'Path to results JSON file (e.g., .youbencha-workspace/run-*/artifacts/results.json)')
+    .requiredOption(
+      '--from <path>',
+      'Path to results JSON file (e.g., .youbencha-workspace/run-*/artifacts/results.json)'
+    )
     .option('--format <format>', 'Report format: json, markdown', 'markdown')
-    .option('--output <path>', 'Output path for report (defaults to artifacts directory)')
-    .addHelpText('after', `
+    .option(
+      '--output <path>',
+      'Output path for report (defaults to artifacts directory)'
+    )
+    .addHelpText(
+      'after',
+      `
 Examples:
   $ ${commandName} report --from .youbencha-workspace/run-abc123/artifacts/results.json
   $ ${commandName} report --from results.json --format markdown --output report.md
-  
+
   The report includes:
   - Overall evaluation status
   - Individual evaluator results with metrics
   - Links to detailed artifacts
-    `)
+    `
+    )
     .action(reportCommand);
 
   // Register suggest-testcase command (User Story 3)
@@ -149,28 +222,37 @@ Examples:
   program
     .command('list')
     .description('List available evaluators and their descriptions')
-    .addHelpText('after', `
+    .addHelpText(
+      'after',
+      `
 Examples:
   $ ${commandName} list                           # Show all available evaluators
-  
+
   Use this to discover which evaluators you can use in your testcase.yaml or testcase.json
-    `)
+    `
+    )
     .action(listCommand);
 
   // Register validate command (check test case configuration)
   program
     .command('validate')
     .description('Validate a test case configuration without running it')
-    .requiredOption('-c, --config <path>', 'Path to test case configuration file (YAML or JSON)')
+    .requiredOption(
+      '-c, --config <path>',
+      'Path to test case configuration file (YAML or JSON)'
+    )
     .option('-v, --verbose', 'Show detailed validation information')
-    .addHelpText('after', `
+    .addHelpText(
+      'after',
+      `
 Examples:
   $ ${commandName} validate -c testcase.yaml         # Quick validation check
   $ ${commandName} validate -c testcase.json         # JSON format is also supported
   $ ${commandName} validate -c testcase.yaml -v      # Detailed validation with suggestions
-  
+
   Use this to check your configuration before committing or running.
-    `)
+    `
+    )
     .action(validateCommand);
 
   // Register config command (manage configuration)
@@ -181,44 +263,56 @@ Examples:
   configCmd
     .command('init')
     .description('Create a configuration file')
-    .option('--global', 'Create user-level config (~/.youbencharc) instead of project-level')
+    .option(
+      '--global',
+      'Create user-level config (~/.youbencharc) instead of project-level'
+    )
     .option('--force', 'Overwrite existing configuration file')
-    .addHelpText('after', `
+    .addHelpText(
+      'after',
+      `
 Examples:
   $ ${commandName} config init                     # Create .youbencharc in current directory
   $ ${commandName} config init --global            # Create ~/.youbencharc
   $ ${commandName} config init --force             # Overwrite existing config
-  
+
   Configuration files use YAML format and support settings like:
   - workspace_dir: Default workspace location
   - output_dir: Default evaluator output location
   - variables: Environment variables for config substitution
-    `)
+    `
+    )
     .action(configInitCommand);
 
   configCmd
     .command('list')
     .description('Show current configuration')
-    .addHelpText('after', `
+    .addHelpText(
+      'after',
+      `
 Examples:
   $ ${commandName} config list                     # Show merged configuration from all sources
-  
+
   This displays the effective configuration after merging:
   - Default values
   - User-level config (~/.youbencharc)
   - Project-level config (.youbencharc)
-    `)
+    `
+    )
     .action(configListCommand);
 
   configCmd
     .command('get')
     .description('Get a configuration value')
     .argument('<key>', 'Configuration key (supports dot notation)')
-    .addHelpText('after', `
+    .addHelpText(
+      'after',
+      `
 Examples:
   $ ${commandName} config get workspace_dir        # Get workspace directory
   $ ${commandName} config get agent.timeout_ms     # Get nested value with dot notation
-    `)
+    `
+    )
     .action(configGetCommand);
 
   configCmd
@@ -227,24 +321,33 @@ Examples:
     .argument('<key>', 'Configuration key')
     .argument('<value>', 'Value to set')
     .option('--global', 'Set in user-level config instead of project-level')
-    .addHelpText('after', `
+    .addHelpText(
+      'after',
+      `
 Examples:
   $ ${commandName} config set workspace_dir /tmp/yb-workspace
   $ ${commandName} config set agent.timeout_ms 900000
   $ ${commandName} config set log_level debug --global
-    `)
+    `
+    )
     .action(configSetCommand);
 
   configCmd
     .command('unset')
     .description('Remove a configuration value')
     .argument('<key>', 'Configuration key to remove')
-    .option('--global', 'Remove from user-level config instead of project-level')
-    .addHelpText('after', `
+    .option(
+      '--global',
+      'Remove from user-level config instead of project-level'
+    )
+    .addHelpText(
+      'after',
+      `
 Examples:
   $ ${commandName} config unset workspace_dir
   $ ${commandName} config unset agent.model --global
-    `)
+    `
+    )
     .action(configUnsetCommand);
 
   // Parse arguments

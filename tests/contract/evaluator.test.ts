@@ -1,16 +1,13 @@
 /**
  * Contract tests for Evaluator interface
- * 
+ *
  * These tests define the contract that all evaluators must follow.
  * Tests MUST be written first and MUST FAIL before implementation.
- * 
+ *
  * Purpose: Ensure evaluators conform to standard interface
  */
 
-import {
-  Evaluator,
-  EvaluationContext,
-} from '../../src/evaluators/base';
+import { Evaluator, EvaluationContext } from '../../src/evaluators/base';
 import { YouBenchaLog } from '../../src/schemas/youbenchalog.schema';
 import { SuiteConfig } from '../../src/schemas/suite.schema';
 import { EvaluationResult } from '../../src/schemas/result.schema';
@@ -121,7 +118,9 @@ describe('Evaluator Contract', () => {
     });
 
     it('should not throw errors', async () => {
-      await expect(evaluator.checkPreconditions(mockContext)).resolves.not.toThrow();
+      await expect(
+        evaluator.checkPreconditions(mockContext)
+      ).resolves.not.toThrow();
     });
   });
 
@@ -171,7 +170,9 @@ describe('Evaluator Contract', () => {
         },
       };
 
-      await expect(evaluator.evaluate(contextWithConfig)).resolves.toBeDefined();
+      await expect(
+        evaluator.evaluate(contextWithConfig)
+      ).resolves.toBeDefined();
     });
 
     it('should provide access to youBencha Log', async () => {
@@ -221,7 +222,7 @@ describe('Evaluator Contract', () => {
   describe('Expected Reference Handling', () => {
     it('should skip gracefully when expected reference required but not provided', async () => {
       const expectedRefEvaluator = new MockExpectedRefEvaluator();
-      
+
       expect(expectedRefEvaluator.requiresExpectedReference).toBe(true);
 
       const contextWithoutExpected: EvaluationContext = {
@@ -233,7 +234,9 @@ describe('Evaluator Contract', () => {
         suiteConfig: {} as SuiteConfig,
       };
 
-      const result = await expectedRefEvaluator.evaluate(contextWithoutExpected);
+      const result = await expectedRefEvaluator.evaluate(
+        contextWithoutExpected
+      );
       expect(result.status).toBe('skipped');
       expect(result.error).toBeDefined();
     });
@@ -265,7 +268,9 @@ describe('Evaluator Contract', () => {
         suiteConfig: {} as SuiteConfig,
       };
 
-      const canRun = await expectedRefEvaluator.checkPreconditions(contextWithoutExpected);
+      const canRun = await expectedRefEvaluator.checkPreconditions(
+        contextWithoutExpected
+      );
       expect(canRun).toBe(false);
     });
   });
@@ -317,11 +322,13 @@ describe('Evaluator Contract', () => {
       };
 
       const result = await evaluator.evaluate(context);
-      
+
       // Metrics can be any JSON-serializable value
       Object.values(result.metrics).forEach((value) => {
         const type = typeof value;
-        expect(['string', 'number', 'boolean', 'object'].includes(type)).toBe(true);
+        expect(['string', 'number', 'boolean', 'object'].includes(type)).toBe(
+          true
+        );
       });
     });
   });

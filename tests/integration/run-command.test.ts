@@ -1,180 +1,180 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import * as fs from 'fs/promises';
+import * as os from 'os';
 import * as path from 'path';
-import { execSync } from 'child_process';
-import { rimraf } from 'rimraf';
+import { execFileSync } from 'child_process';
+import { pathToFileURL } from 'url';
 
 describe('Integration: Run Command', () => {
-  const testWorkspaceDir = path.join(__dirname, '..', '..', '.test-workspace');
-  const testSuiteConfig = path.join(testWorkspaceDir, 'test-suite.yaml');
-  const testRepoDir = path.join(testWorkspaceDir, 'test-repo');
+  const projectDir = path.join(__dirname, '..', '..');
+  const remoteRepoUrl = 'https://example.com/youbencha-offline-fixture.git';
+  let testWorkspaceDir: string;
+  let testSuiteConfig: string;
+  let testRepoDir: string;
+  let fakeBinDir: string;
+  let commandEnvironment: NodeJS.ProcessEnv;
 
   beforeAll(async () => {
-    // Create test workspace
-    await fs.mkdir(testWorkspaceDir, { recursive: true });
+    testWorkspaceDir = await fs.mkdtemp(
+      path.join(os.tmpdir(), 'youbencha-run-command-')
+    );
+    testSuiteConfig = path.join(testWorkspaceDir, 'test-suite.yaml');
+    testRepoDir = path.join(testWorkspaceDir, 'test-repo');
+    fakeBinDir = path.join(testWorkspaceDir, 'bin');
 
-    // Create a minimal test repository
-    await fs.mkdir(testRepoDir, { recursive: true });
-    
-    // Initialize git repo
-    execSync('git init -b main', { cwd: testRepoDir });
-    execSync('git config user.email "test@example.com"', { cwd: testRepoDir });
-    execSync('git config user.name "Test User"', { cwd: testRepoDir });
-    
-    // Create test file
-    const testFile = path.join(testRepoDir, 'test.txt');
-    await fs.writeFile(testFile, 'Hello World\n');
-    
-    execSync('git add .', { cwd: testRepoDir });
-    execSync('git commit -m "Initial commit"', { cwd: testRepoDir });
+    await fs.mkdir(testRepoDir);
+    await fs.mkdir(fakeBinDir);
+    execFileSync('git', ['init', '-b', 'master'], { cwd: testRepoDir });
+    execFileSync('git', ['config', 'user.email', 'test@example.com'], {
+      cwd: testRepoDir,
+    });
+    execFileSync('git', ['config', 'user.name', 'Test User'], {
+      cwd: testRepoDir,
+    });
+    await fs.writeFile(
+      path.join(testRepoDir, 'README.md'),
+      '# Offline fixture\n'
+    );
+    execFileSync('git', ['add', 'README.md'], { cwd: testRepoDir });
+    execFileSync('git', ['commit', '-m', 'Initial commit'], {
+      cwd: testRepoDir,
+    });
 
-    // Create test suite configuration
-    // Note: Using a well-known public GitHub repo for schema validation
-    // The actual test will check workspace creation, not full execution
+    const fakeAgentPath = path.join(
+      fakeBinDir,
+      process.platform === 'win32' ? 'copilot.ps1' : 'copilot'
+    );
+    if (process.platform === 'win32') {
+      await fs.writeFile(
+        fakeAgentPath,
+        [
+          `Write-Output '{"type":"assistant.message","data":{"messageId":"m1","content":"Offline test agent completed"}}'`,
+          `Write-Output '{"type":"result","data":{"exitCode":0,"usage":{"inputTokens":1,"outputTokens":1}}}'`,
+          '',
+        ].join('\r\n')
+      );
+      await fs.writeFile(
+        path.join(fakeBinDir, 'where.cmd'),
+        `@echo off\r\necho ${fakeAgentPath}\r\n`
+      );
+    } else {
+      await fs.writeFile(
+        fakeAgentPath,
+        [
+          '#!/usr/bin/env sh',
+          `printf '%s\\n' '{"type":"assistant.message","data":{"messageId":"m1","content":"Offline test agent completed"}}'`,
+          `printf '%s\\n' '{"type":"result","data":{"exitCode":0,"usage":{"inputTokens":1,"outputTokens":1}}}'`,
+          '',
+        ].join('\n')
+      );
+      await fs.chmod(fakeAgentPath, 0o755);
+    }
+
     const suiteYaml = `
 name: run-command-integration-test
 description: Integration test for run command
-repo: "https://github.com/octocat/Hello-World.git"
+repo: "${remoteRepoUrl}"
 branch: master
 agent:
   type: copilot-cli
   config:
-    prompt: "Add a new line to README"
+    prompt: "Inspect the local fixture"
 evaluators:
   - name: git-diff
     config: {}
-workspace_dir: "${testWorkspaceDir.replace(/\\/g, '/')}/.youbencha-workspace"
-timeout: 300
+workspace_dir: "${path.join(testWorkspaceDir, '.youbencha-workspace').replace(/\\/g, '/')}"
+timeout: 5000
 `.trim();
-
     await fs.writeFile(testSuiteConfig, suiteYaml);
+
+    const localRepoUrl = pathToFileURL(testRepoDir).href;
+    const pathKey =
+      Object.keys(process.env).find((key) => key.toLowerCase() === 'path') ??
+      'PATH';
+    commandEnvironment = {
+      ...process.env,
+      GIT_ALLOW_PROTOCOL: 'file',
+      GIT_CONFIG_COUNT: '1',
+      GIT_CONFIG_KEY_0: `url.${localRepoUrl}.insteadOf`,
+      GIT_CONFIG_VALUE_0: remoteRepoUrl,
+    };
+    commandEnvironment[pathKey] =
+      `${fakeBinDir}${path.delimiter}${process.env[pathKey] ?? ''}`;
   });
 
   afterAll(async () => {
-    // Cleanup test workspace
-    await rimraf(testWorkspaceDir);
+    await fs.rm(testWorkspaceDir, { recursive: true, force: true });
   });
 
-  it('should run complete evaluation workflow', async () => {
-    // Build the CLI
-    execSync('npm run build', { cwd: path.join(__dirname, '..', '..') });
-
-    // Run the evaluation (using node to run the built CLI)
-    const cliPath = path.join(__dirname, '..', '..', 'dist', 'cli', 'index.js');
-    
-    let output: string;
-    let exitCode = 0;
-    
-    try {
-      output = execSync(`node "${cliPath}" run -c "${testSuiteConfig}"`, {
-        cwd: path.join(__dirname, '..', '..'),
+  it('runs a complete evaluation without network or a real agent CLI', () => {
+    const cliPath = path.join(projectDir, 'dist', 'cli', 'index.js');
+    const output = execFileSync(
+      process.execPath,
+      [cliPath, 'run', '-c', testSuiteConfig],
+      {
+        cwd: projectDir,
         encoding: 'utf-8',
-        env: {
-          ...process.env,
-          // Skip actual copilot execution for integration test
-          YOUBENCHA_TEST_MODE: 'true'
-        }
-      });
-    } catch (error: any) {
-      output = error.stdout || error.message;
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      exitCode = error.status || 1;
-    }
-
-    // For now, we expect this to fail gracefully if copilot-cli is not available
-    // The test validates that the workflow structure is correct
-    expect(output).toBeTruthy();
-    
-    // Check if workspace was created
-    const workspaceDir = path.join(testWorkspaceDir, '.youbencha-workspace');
-    const workspaceExists = await fs.access(workspaceDir)
-      .then(() => true)
-      .catch(() => false);
-    
-    // Workspace should exist even if copilot-cli fails
-    expect(workspaceExists).toBe(true);
-  }, 60000); // 60 second timeout
-
-  it('should generate valid results.json structure', async () => {
-    // This test assumes the previous test ran and created artifacts
-    // In a real scenario with copilot-cli available, we would check:
-    // 1. results.json exists
-    // 2. results.json has valid structure
-    // 3. evaluators array is populated
-    // 4. git-diff evaluator results are present
-    
-    const workspaceDir = path.join(testWorkspaceDir, '.youbencha-workspace');
-    
-    // Try to find run directories
-    let runDirs: string[] = [];
-    try {
-      const entries = await fs.readdir(workspaceDir);
-      runDirs = entries.filter(entry => entry.startsWith('run-'));
-    } catch (error) {
-      // Workspace might not exist if copilot-cli is not available
-    }
-
-    if (runDirs.length > 0) {
-      // Get the most recent run directory
-      const latestRun = runDirs.sort().reverse()[0];
-      const resultsPath = path.join(workspaceDir, latestRun, 'artifacts', 'results.json');
-      
-      try {
-        const resultsContent = await fs.readFile(resultsPath, 'utf-8');
-        const results = JSON.parse(resultsContent);
-        
-        // Validate structure
-        expect(results).toHaveProperty('version');
-        expect(results).toHaveProperty('suite');
-        expect(results).toHaveProperty('execution');
-        expect(results).toHaveProperty('evaluators');
-        expect(results).toHaveProperty('summary');
-        
-        // Validate evaluators array
-        expect(Array.isArray(results.evaluators)).toBe(true);
-        
-        // Check for git-diff evaluator
-        const gitDiffEval = results.evaluators.find(
-          (e: any) => e.evaluator_name === 'git-diff'
-        );
-        expect(gitDiffEval).toBeDefined();
-      } catch (error) {
-        // Results might not be generated if copilot-cli is not available
-        // This is expected in CI environments
-        console.log('Results validation skipped - copilot-cli may not be available');
+        env: commandEnvironment,
       }
-    }
+    );
+
+    expect(output).toContain('Evaluation completed successfully');
+  }, 60000);
+
+  it('generates a valid results.json structure', async () => {
+    const workspaceDir = path.join(testWorkspaceDir, '.youbencha-workspace');
+    const entries = await fs.readdir(workspaceDir);
+    const runDirs = entries.filter((entry) => entry.startsWith('run-'));
+    expect(runDirs).toHaveLength(1);
+
+    const resultsPath = path.join(
+      workspaceDir,
+      runDirs[0],
+      'artifacts',
+      'results.json'
+    );
+    const results = JSON.parse(await fs.readFile(resultsPath, 'utf-8')) as {
+      version: string;
+      test_case: object;
+      execution: object;
+      evaluators: Array<{ evaluator: string }>;
+      summary: object;
+    };
+
+    expect(results.version).toBe('1.0.0');
+    expect(results.test_case).toBeDefined();
+    expect(results.execution).toBeDefined();
+    expect(results.summary).toBeDefined();
+    expect(
+      results.evaluators.some(
+        (evaluation) => evaluation.evaluator === 'git-diff'
+      )
+    ).toBe(true);
   });
 
-  it('should handle suite configuration validation', async () => {
-    const invalidSuiteConfig = path.join(testWorkspaceDir, 'invalid-suite.yaml');
-    
-    // Create invalid suite (missing required fields)
-    const invalidYaml = `
-version: "1.0"
-repo: "${testRepoDir.replace(/\\/g, '/')}"
-# Missing branch, agent, and evaluators
-`.trim();
+  it('rejects an invalid suite configuration before execution', async () => {
+    const invalidSuiteConfig = path.join(
+      testWorkspaceDir,
+      'invalid-suite.yaml'
+    );
+    await fs.writeFile(invalidSuiteConfig, 'version: "1.0"\n');
 
-    await fs.writeFile(invalidSuiteConfig, invalidYaml);
-
-    // Build the CLI
-    execSync('npm run build', { cwd: path.join(__dirname, '..', '..') });
-
-    const cliPath = path.join(__dirname, '..', '..', 'dist', 'cli', 'index.js');
-    
-    let error: any;
+    const cliPath = path.join(projectDir, 'dist', 'cli', 'index.js');
+    let exitStatus: number | undefined;
     try {
-      execSync(`node "${cliPath}" run -c "${invalidSuiteConfig}"`, {
-        cwd: path.join(__dirname, '..', '..'),
-        encoding: 'utf-8'
-      });
-    } catch (err) {
-      error = err;
+      execFileSync(
+        process.execPath,
+        [cliPath, 'run', '-c', invalidSuiteConfig],
+        {
+          cwd: projectDir,
+          encoding: 'utf-8',
+          env: commandEnvironment,
+        }
+      );
+    } catch (error) {
+      exitStatus = (error as { status?: number }).status;
     }
 
-    // Should fail with validation error
-    expect(error).toBeDefined();
-    expect(error.status).toBe(1);
+    expect(exitStatus).toBe(1);
   });
 });

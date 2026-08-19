@@ -1,13 +1,13 @@
 /**
  * Agentic Judge Agent File Content
- * 
+ *
  * Contains the bundled content for agentic-judge agent files.
  * These are installed to user projects during `yb init` or `yb install-agents`.
  */
 
 /**
  * Content of the GitHub Copilot CLI agentic-judge agent file
- * 
+ *
  * This is the source of truth for .github/agents/agentic-judge.md
  */
 export const GITHUB_AGENTIC_JUDGE_CONTENT = `---
@@ -127,7 +127,7 @@ Begin your analysis now based the users evaluation criteria and end with the req
 
 /**
  * Content of the Claude Code agentic-judge agent file
- * 
+ *
  * This is the source of truth for .claude/agents/agentic-judge.md
  */
 export const CLAUDE_AGENTIC_JUDGE_CONTENT = `---

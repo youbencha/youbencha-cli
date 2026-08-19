@@ -1,6 +1,6 @@
 /**
  * Base Post-Evaluation Interface
- * 
+ *
  * Defines the contract that all post-evaluations must implement.
  * Post-evaluations run after evaluation completes to export or process results.
  */
@@ -30,7 +30,7 @@ export interface PostEvaluationContext {
 
 /**
  * Post-Evaluator interface for exporting/processing results
- * 
+ *
  * Each post-evaluation (webhook, database, script, etc.) implements
  * this interface to enable pluggable post-evaluation actions.
  */
@@ -49,14 +49,14 @@ export interface PostEvaluation {
   /**
    * Check if post-evaluation can run in current environment
    * Example: checking for API keys, required tools, network connectivity, etc.
-   * 
+   *
    * @returns Promise resolving to true if post-evaluation can run
    */
   checkPreconditions(context: PostEvaluationContext): Promise<boolean>;
 
   /**
    * Execute the post-evaluation action
-   * 
+   *
    * @param context - Post-evaluation context with results and config
    * @returns Promise resolving to post-evaluation result
    * @throws Error only for fatal errors; use PostEvaluationResult.status='skipped' for recoverable issues

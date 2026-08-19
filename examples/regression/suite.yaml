@@ -1,0 +1,62 @@
+version: 2
+name: coding-agent-regression
+suite:
+  tasks:
+    - id: fix-auth
+      file: ./tasks/fix-auth.yaml
+  repetitions: 3
+
+profiles:
+  smoke:
+    tasks: [fix-auth]
+    targets: [candidate]
+    repetitions: 1
+    comparisons: []
+    rules: []
+  overlap:
+    tasks: '*'
+    targets: [production, candidate]
+    repetitions: 3
+    comparisons: [current-overlap]
+    rules: [pass-drop]
+
+targets:
+  - id: production
+    agent:
+      type: codex-cli
+      model: incumbent-model
+      config:
+        reasoning_effort: high
+    harness:
+      exact_version: '1.2.3'
+  - id: candidate
+    agent:
+      type: codex-cli
+      model: replacement-model
+      config:
+        reasoning_effort: high
+    harness:
+      exact_version: '1.2.3'
+
+execution:
+  max_concurrent: 4
+  max_creations_per_second: 1
+  provider:
+    type: host-trusted
+
+regression:
+  default_candidate_target: candidate
+  comparisons:
+    - id: current-overlap
+      candidate_target: candidate
+      baseline:
+        source: current_run
+        target: production
+  rules:
+    - id: pass-drop
+      metric: overall_pass_rate
+      scopes: [target, testcase_target]
+      max_absolute_drop: 0.05
+      comparisons: [current-overlap]
+      minimum_samples: 3
+      insufficient_samples: partial

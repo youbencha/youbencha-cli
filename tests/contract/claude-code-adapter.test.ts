@@ -1,19 +1,23 @@
 /**
  * Contract tests for Claude Code Adapter
- * 
+ *
  * These tests verify Claude Code adapter follows the AgentAdapter contract
  * and implements Claude Code-specific requirements correctly.
- * 
+ *
  * Tests written following TDD approach - tests MUST FAIL before implementation.
- * 
+ *
  * Note: Tests that require actual Claude CLI execution will be skipped
  * in normal test runs. Set CLAUDE_CODE_INTEGRATION_TESTS=1 to run them.
  */
 
 import { ClaudeCodeAdapter } from '../../src/adapters/claude-code.js';
-import { AgentExecutionContext, AgentExecutionResult } from '../../src/adapters/base.js';
+import {
+  AgentExecutionContext,
+  AgentExecutionResult,
+} from '../../src/adapters/base.js';
 import * as path from 'path';
 import * as fs from 'fs/promises';
+import * as os from 'os';
 
 // Check if we should run integration tests
 const RUN_INTEGRATION_TESTS = process.env.CLAUDE_CODE_INTEGRATION_TESTS === '1';
@@ -29,7 +33,9 @@ describe('ClaudeCodeAdapter Contract Tests', () => {
   // Helper to skip tests when Claude is not available or integration tests disabled
   const skipIfNoClaude = (): boolean => {
     if (!RUN_INTEGRATION_TESTS) {
-      console.log('Skipping: Set CLAUDE_CODE_INTEGRATION_TESTS=1 to run Claude CLI tests');
+      console.log(
+        'Skipping: Set CLAUDE_CODE_INTEGRATION_TESTS=1 to run Claude CLI tests'
+      );
       return true;
     }
     if (!isClaudeAvailable) {
@@ -41,6 +47,10 @@ describe('ClaudeCodeAdapter Contract Tests', () => {
 
   beforeAll(async () => {
     adapter = new ClaudeCodeAdapter();
+    if (!RUN_INTEGRATION_TESTS) {
+      isClaudeAvailable = false;
+      return;
+    }
     // Check if Claude CLI is available for tests that require it
     try {
       isClaudeAvailable = await adapter.checkAvailability();
@@ -50,8 +60,9 @@ describe('ClaudeCodeAdapter Contract Tests', () => {
   });
 
   beforeEach(async () => {
-    tempWorkspace = path.join('/tmp', `test-claude-${Date.now()}`);
-    await fs.mkdir(tempWorkspace, { recursive: true });
+    tempWorkspace = await fs.mkdtemp(
+      path.join(os.tmpdir(), 'claude-contract-')
+    );
     await fs.mkdir(path.join(tempWorkspace, 'artifacts'), { recursive: true });
   });
 
@@ -164,11 +175,7 @@ describe('ClaudeCodeAdapter Contract Tests', () => {
       it('should handle custom agent names', async () => {
         if (skipIfNoClaude()) return;
 
-        const agentNames = [
-          'custom-agent',
-          'code-reviewer',
-          'test-assistant',
-        ];
+        const agentNames = ['custom-agent', 'code-reviewer', 'test-assistant'];
 
         for (const agentName of agentNames) {
           const context: AgentExecutionContext = {
@@ -414,7 +421,8 @@ describe('ClaudeCodeAdapter Contract Tests', () => {
         const mockResult: AgentExecutionResult = {
           exitCode: 0,
           status: 'success',
-          output: 'Model: claude-sonnet-4\nProcessing request...\nTask completed successfully.',
+          output:
+            'Model: claude-sonnet-4\nProcessing request...\nTask completed successfully.',
           startedAt: '2025-11-25T10:00:00Z',
           completedAt: '2025-11-25T10:01:00Z',
           durationMs: 60000,
@@ -458,7 +466,9 @@ describe('ClaudeCodeAdapter Contract Tests', () => {
 
         const log = adapter.normalizeLog(mockResult.output, mockResult);
 
-        const assistantMessage = log.messages.find(m => m.role === 'assistant');
+        const assistantMessage = log.messages.find(
+          (m) => m.role === 'assistant'
+        );
         expect(assistantMessage).toBeDefined();
         expect(assistantMessage?.timestamp).toBeDefined();
         expect(assistantMessage?.content).toBeDefined();
@@ -479,164 +489,6 @@ describe('ClaudeCodeAdapter Contract Tests', () => {
 
         expect(log.messages).toBeDefined();
         expect(log.messages.length).toBeGreaterThan(0);
-      });
-    });
-
-    describe('CR-3.5: Tool Call Parsing', () => {
-      it('should parse [TOOL: name] patterns from output', () => {
-        const mockResult: AgentExecutionResult = {
-          exitCode: 0,
-          status: 'success',
-          output: '[TOOL: read_file] src/index.ts\n[TOOL: write_file] README.md',
-          startedAt: '2025-11-25T10:00:00Z',
-          completedAt: '2025-11-25T10:01:00Z',
-          durationMs: 60000,
-          errors: [],
-        };
-
-        const log = adapter.normalizeLog(mockResult.output, mockResult);
-
-        const assistantMessage = log.messages.find(m => m.role === 'assistant');
-        expect(assistantMessage?.tool_calls).toBeDefined();
-        expect(assistantMessage?.tool_calls?.length).toBe(2);
-      });
-
-      it('should extract tool name from [TOOL: name] pattern', () => {
-        const mockResult: AgentExecutionResult = {
-          exitCode: 0,
-          status: 'success',
-          output: '[TOOL: list_files] ./src',
-          startedAt: '2025-11-25T10:00:00Z',
-          completedAt: '2025-11-25T10:01:00Z',
-          durationMs: 60000,
-          errors: [],
-        };
-
-        const log = adapter.normalizeLog(mockResult.output, mockResult);
-
-        const assistantMessage = log.messages.find(m => m.role === 'assistant');
-        const toolCall = assistantMessage?.tool_calls?.[0];
-        expect(toolCall?.function.name).toBe('list_files');
-      });
-
-      it('should extract tool arguments after tool name', () => {
-        const mockResult: AgentExecutionResult = {
-          exitCode: 0,
-          status: 'success',
-          output: '[TOOL: search_files] *.ts --pattern "function"',
-          startedAt: '2025-11-25T10:00:00Z',
-          completedAt: '2025-11-25T10:01:00Z',
-          durationMs: 60000,
-          errors: [],
-        };
-
-        const log = adapter.normalizeLog(mockResult.output, mockResult);
-
-        const assistantMessage = log.messages.find(m => m.role === 'assistant');
-        const toolCall = assistantMessage?.tool_calls?.[0];
-        expect(toolCall?.function.arguments).toContain('*.ts');
-      });
-
-      it('should handle output with no tool calls', () => {
-        const mockResult: AgentExecutionResult = {
-          exitCode: 0,
-          status: 'success',
-          output: 'Regular output without tool calls',
-          startedAt: '2025-11-25T10:00:00Z',
-          completedAt: '2025-11-25T10:01:00Z',
-          durationMs: 60000,
-          errors: [],
-        };
-
-        const log = adapter.normalizeLog(mockResult.output, mockResult);
-
-        const assistantMessage = log.messages.find(m => m.role === 'assistant');
-        expect(assistantMessage?.tool_calls).toBeUndefined();
-      });
-    });
-
-    describe('CR-3.6: Usage Metrics', () => {
-      it('should extract input tokens from output', () => {
-        const mockResult: AgentExecutionResult = {
-          exitCode: 0,
-          status: 'success',
-          output: 'Input tokens: 1234\nOutput tokens: 5678',
-          startedAt: '2025-11-25T10:00:00Z',
-          completedAt: '2025-11-25T10:01:00Z',
-          durationMs: 60000,
-          errors: [],
-        };
-
-        const log = adapter.normalizeLog(mockResult.output, mockResult);
-
-        expect(log.usage?.prompt_tokens).toBe(1234);
-      });
-
-      it('should extract output tokens from output', () => {
-        const mockResult: AgentExecutionResult = {
-          exitCode: 0,
-          status: 'success',
-          output: 'Input tokens: 1234\nOutput tokens: 5678',
-          startedAt: '2025-11-25T10:00:00Z',
-          completedAt: '2025-11-25T10:01:00Z',
-          durationMs: 60000,
-          errors: [],
-        };
-
-        const log = adapter.normalizeLog(mockResult.output, mockResult);
-
-        expect(log.usage?.completion_tokens).toBe(5678);
-      });
-
-      it('should calculate total tokens correctly', () => {
-        const mockResult: AgentExecutionResult = {
-          exitCode: 0,
-          status: 'success',
-          output: 'Input tokens: 1000\nOutput tokens: 2000',
-          startedAt: '2025-11-25T10:00:00Z',
-          completedAt: '2025-11-25T10:01:00Z',
-          durationMs: 60000,
-          errors: [],
-        };
-
-        const log = adapter.normalizeLog(mockResult.output, mockResult);
-
-        expect(log.usage?.total_tokens).toBe(3000);
-      });
-
-      it('should estimate tokens when not present in output', () => {
-        const mockResult: AgentExecutionResult = {
-          exitCode: 0,
-          status: 'success',
-          output: 'Output without token information',
-          startedAt: '2025-11-25T10:00:00Z',
-          completedAt: '2025-11-25T10:01:00Z',
-          durationMs: 60000,
-          errors: [],
-        };
-
-        const log = adapter.normalizeLog(mockResult.output, mockResult);
-
-        expect(log.usage?.prompt_tokens).toBeGreaterThan(0);
-        expect(log.usage?.completion_tokens).toBeGreaterThan(0);
-      });
-
-      it('should include cost estimation', () => {
-        const mockResult: AgentExecutionResult = {
-          exitCode: 0,
-          status: 'success',
-          output: 'Input tokens: 1000\nOutput tokens: 2000',
-          startedAt: '2025-11-25T10:00:00Z',
-          completedAt: '2025-11-25T10:01:00Z',
-          durationMs: 60000,
-          errors: [],
-        };
-
-        const log = adapter.normalizeLog(mockResult.output, mockResult);
-
-        expect(log.usage?.estimated_cost_usd).toBeDefined();
-        expect(typeof log.usage?.estimated_cost_usd).toBe('number');
-        expect(log.usage?.estimated_cost_usd).toBeGreaterThan(0);
       });
     });
 
@@ -750,7 +602,7 @@ describe('ClaudeCodeAdapter Contract Tests', () => {
           completedAt: '2025-11-25T10:01:00Z',
           durationMs: 60000,
           errors: [
-            { message: 'Command failed', timestamp: '2025-11-25T10:01:00Z' }
+            { message: 'Command failed', timestamp: '2025-11-25T10:01:00Z' },
           ],
         };
 

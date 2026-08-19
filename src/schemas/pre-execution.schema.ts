@@ -1,6 +1,6 @@
 /**
  * Pre-Execution Schema
- * 
+ *
  * Zod schemas for pre-execution configuration and results.
  * Pre-executions run after workspace setup but before agent execution.
  */
@@ -37,10 +37,12 @@ export const preExecutionResultSchema = z.object({
   duration_ms: z.number().nonnegative(),
   timestamp: z.string(), // ISO 8601 format
   metadata: z.record(z.any()).optional(),
-  error: z.object({
-    message: z.string(),
-    stack_trace: z.string().optional(),
-  }).optional(),
+  error: z
+    .object({
+      message: z.string(),
+      stack_trace: z.string().optional(),
+    })
+    .optional(),
 });
 
 /**

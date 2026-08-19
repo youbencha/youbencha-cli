@@ -1,9 +1,9 @@
 /**
  * Contract tests for AgentAdapter interface
- * 
+ *
  * These tests define the contract that all agent adapters must follow.
  * Tests MUST be written first and MUST FAIL before implementation.
- * 
+ *
  * Purpose: Ensure agent adapters conform to standard interface
  */
 
@@ -25,7 +25,9 @@ class MockAgentAdapter implements AgentAdapter {
     return true;
   }
 
-  async execute(_context: AgentExecutionContext): Promise<AgentExecutionResult> {
+  async execute(
+    _context: AgentExecutionContext
+  ): Promise<AgentExecutionResult> {
     const startedAt = new Date().toISOString();
     const completedAt = new Date(Date.now() + 1000).toISOString();
 
@@ -40,10 +42,7 @@ class MockAgentAdapter implements AgentAdapter {
     };
   }
 
-  normalizeLog(
-    rawOutput: string,
-    result: AgentExecutionResult
-  ): YouBenchaLog {
+  normalizeLog(rawOutput: string, result: AgentExecutionResult): YouBenchaLog {
     return {
       version: '1.0.0',
       agent: {
@@ -133,6 +132,37 @@ describe('AgentAdapter Contract', () => {
       expect(typeof result.completedAt).toBe('string');
       expect(typeof result.durationMs).toBe('number');
       expect(Array.isArray(result.errors)).toBe(true);
+    });
+
+    it('should remain compatible with optional structured telemetry', () => {
+      const result: AgentExecutionResult = {
+        exitCode: 0,
+        status: 'success',
+        output: 'Done',
+        startedAt: '2026-07-25T12:00:00.000Z',
+        completedAt: '2026-07-25T12:00:01.000Z',
+        durationMs: 1000,
+        errors: [],
+        telemetry: {
+          cliVersion: '1.2.3',
+          model: 'provider-model',
+          sessionId: 'session-1',
+          finalResponse: 'Done',
+          structuredOutputFormat: 'jsonl',
+          usage: {
+            promptTokens: 10,
+            cachedPromptTokens: 2,
+            completionTokens: 5,
+            reasoningTokens: 1,
+            totalTokens: 18,
+            costUsd: 0.01,
+            source: 'measured',
+          },
+        },
+      };
+
+      expect(result.output).toBe('Done');
+      expect(result.telemetry?.usage?.source).toBe('measured');
     });
 
     it('should have valid timestamps', async () => {
@@ -304,7 +334,7 @@ describe('AgentAdapter Contract', () => {
       };
 
       const result = await adapter.execute(contextWithTimeout);
-      
+
       // If execution takes longer than timeout, status should be 'timeout'
       if (result.durationMs > contextWithTimeout.timeout) {
         expect(result.status).toBe('timeout');
@@ -327,7 +357,9 @@ describe('AgentAdapter Contract', () => {
         env: {},
       };
 
-      await expect(adapter.execute(contextWithAppendSystemPrompt)).resolves.toBeDefined();
+      await expect(
+        adapter.execute(contextWithAppendSystemPrompt)
+      ).resolves.toBeDefined();
     });
 
     // CR-2.13: permission_mode parameter
@@ -344,7 +376,9 @@ describe('AgentAdapter Contract', () => {
         env: {},
       };
 
-      await expect(adapter.execute(contextWithPermissionMode)).resolves.toBeDefined();
+      await expect(
+        adapter.execute(contextWithPermissionMode)
+      ).resolves.toBeDefined();
     });
 
     it('should accept permission_mode with plan value', async () => {
@@ -393,7 +427,9 @@ describe('AgentAdapter Contract', () => {
         env: {},
       };
 
-      await expect(adapter.execute(contextWithAllowedTools)).resolves.toBeDefined();
+      await expect(
+        adapter.execute(contextWithAllowedTools)
+      ).resolves.toBeDefined();
     });
 
     it('should accept empty allowed_tools array', async () => {
@@ -409,7 +445,9 @@ describe('AgentAdapter Contract', () => {
         env: {},
       };
 
-      await expect(adapter.execute(contextWithEmptyTools)).resolves.toBeDefined();
+      await expect(
+        adapter.execute(contextWithEmptyTools)
+      ).resolves.toBeDefined();
     });
 
     // Additional advanced parameters
@@ -426,7 +464,9 @@ describe('AgentAdapter Contract', () => {
         env: {},
       };
 
-      await expect(adapter.execute(contextWithSystemPrompt)).resolves.toBeDefined();
+      await expect(
+        adapter.execute(contextWithSystemPrompt)
+      ).resolves.toBeDefined();
     });
 
     it('should accept max_tokens configuration', async () => {
@@ -442,7 +482,9 @@ describe('AgentAdapter Contract', () => {
         env: {},
       };
 
-      await expect(adapter.execute(contextWithMaxTokens)).resolves.toBeDefined();
+      await expect(
+        adapter.execute(contextWithMaxTokens)
+      ).resolves.toBeDefined();
     });
 
     it('should accept temperature configuration', async () => {
@@ -458,7 +500,9 @@ describe('AgentAdapter Contract', () => {
         env: {},
       };
 
-      await expect(adapter.execute(contextWithTemperature)).resolves.toBeDefined();
+      await expect(
+        adapter.execute(contextWithTemperature)
+      ).resolves.toBeDefined();
     });
 
     it('should accept combined advanced configuration', async () => {
@@ -478,7 +522,9 @@ describe('AgentAdapter Contract', () => {
         env: {},
       };
 
-      await expect(adapter.execute(contextWithAllAdvanced)).resolves.toBeDefined();
+      await expect(
+        adapter.execute(contextWithAllAdvanced)
+      ).resolves.toBeDefined();
     });
   });
 });

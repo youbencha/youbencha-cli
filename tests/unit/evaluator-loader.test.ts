@@ -1,13 +1,17 @@
 /**
  * Unit tests for Evaluator Loader
- * 
+ *
  * Tests the functionality of loading evaluator definitions from YAML files
  * and resolving file references in test case configurations.
  */
 
 import { writeFileSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
-import { loadEvaluatorDefinition, resolveEvaluatorConfigs, isFileReference } from '../../src/lib/evaluator-loader';
+import {
+  loadEvaluatorDefinition,
+  resolveEvaluatorConfigs,
+  isFileReference,
+} from '../../src/lib/evaluator-loader';
 import { type EvaluatorConfig } from '../../src/schemas/testcase.schema';
 
 describe('Evaluator Loader', () => {
@@ -38,7 +42,10 @@ config:
       const filePath = join(evaluatorsDir, 'readme-grammar.yaml');
       writeFileSync(filePath, evaluatorYaml, 'utf-8');
 
-      const definition = loadEvaluatorDefinition('./evaluators/readme-grammar.yaml', testDir);
+      const definition = loadEvaluatorDefinition(
+        './evaluators/readme-grammar.yaml',
+        testDir
+      );
 
       expect(definition.name).toBe('agentic-judge:readme-grammar');
       expect(definition.description).toBe('Checks README grammar');
@@ -46,7 +53,8 @@ config:
         type: 'copilot-cli',
         agent_name: 'agentic-judge',
         assertions: {
-          grammatically_correct: 'README is grammatically correct. Score 1 if true, 0 if false.',
+          grammatically_correct:
+            'README is grammatically correct. Score 1 if true, 0 if false.',
         },
       });
     });
@@ -58,7 +66,10 @@ name: git-diff
       const filePath = join(evaluatorsDir, 'git-diff.yaml');
       writeFileSync(filePath, evaluatorYaml, 'utf-8');
 
-      const definition = loadEvaluatorDefinition('./evaluators/git-diff.yaml', testDir);
+      const definition = loadEvaluatorDefinition(
+        './evaluators/git-diff.yaml',
+        testDir
+      );
 
       expect(definition.name).toBe('git-diff');
       expect(definition.description).toBeUndefined();
@@ -223,7 +234,8 @@ config:
           type: 'copilot-cli',
           agent_name: 'agentic-judge',
           assertions: {
-            grammatically_correct: 'README is grammatically correct. Score 1 if true, 0 if false.',
+            grammatically_correct:
+              'README is grammatically correct. Score 1 if true, 0 if false.',
           },
         },
       });
@@ -245,8 +257,16 @@ config:
   assertions:
     tests_added: "Tests were added."
 `;
-      writeFileSync(join(evaluatorsDir, 'readme-grammar.yaml'), readmeYaml, 'utf-8');
-      writeFileSync(join(evaluatorsDir, 'test-coverage.yaml'), testYaml, 'utf-8');
+      writeFileSync(
+        join(evaluatorsDir, 'readme-grammar.yaml'),
+        readmeYaml,
+        'utf-8'
+      );
+      writeFileSync(
+        join(evaluatorsDir, 'test-coverage.yaml'),
+        testYaml,
+        'utf-8'
+      );
 
       const configs: EvaluatorConfig[] = [
         {
